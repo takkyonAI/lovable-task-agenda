@@ -27,14 +27,21 @@ const getCurrentOrigin = (): string => {
 // Função para obter todas as possíveis origens que podem ser necessárias
 export const getAllPossibleOrigins = (): string[] => {
   const currentOrigin = getCurrentOrigin();
-  const origins = [currentOrigin];
   
-  // Adicionar localhost se não for a origem atual
-  if (!currentOrigin.includes('localhost')) {
-    origins.push('http://localhost:5173');
-  }
+  // Origens fixas para evitar problemas de conexão
+  const fixedOrigins = [
+    'https://lovableproject.com',
+    'https://*.lovableproject.com',
+    'http://localhost:5173',
+    'http://localhost:3000'
+  ];
   
-  return origins;
+  const origins = [currentOrigin, ...fixedOrigins];
+  
+  // Remover duplicatas e origens inválidas
+  return origins.filter((origin, index, self) => 
+    self.indexOf(origin) === index && origin !== 'N/A'
+  );
 };
 
 // Função para inicializar o Google Identity Services
@@ -75,9 +82,12 @@ export const getOAuthToken = (clientId: string): Promise<string> => {
 
     try {
       const currentOrigin = getCurrentOrigin();
+      const allOrigins = getAllPossibleOrigins();
+      
       console.log('=== CONFIGURAÇÃO OAUTH DETALHADA ===');
       console.log('Client ID:', clientId);
       console.log('Origem detectada:', currentOrigin);
+      console.log('Todas as origens recomendadas:', allOrigins);
       console.log('Escopos:', SCOPES);
       console.log('Modo UX: popup');
       console.log('=====================================');
@@ -113,6 +123,8 @@ export const getOAuthToken = (clientId: string): Promise<string> => {
           let errorMessage = 'Erro na autenticação OAuth';
           
           if (error.type === 'redirect_uri_mismatch') {
+            const originsText = allOrigins.map(origin => `   ${origin}`).join('\n');
+            
             // Mostrar alerta imediatamente com a origem atual
             alert(`🚨 CONFIGURAÇÃO OAUTH NECESSÁRIA 🚨
 
@@ -122,8 +134,8 @@ PASSOS OBRIGATÓRIOS:
 1. Acesse: console.cloud.google.com
 2. APIs & Services → Credentials  
 3. Edite o Client ID: ${clientId}
-4. Em "Authorized JavaScript origins" adicione EXATAMENTE:
-   ${currentOrigin}
+4. Em "Authorized JavaScript origins" adicione TODAS estas origens:
+${originsText}
 5. REMOVA TODAS as "Authorized redirect URIs"
 6. Salve e aguarde 5-10 minutos
 
@@ -139,8 +151,8 @@ SOLUÇÃO OBRIGATÓRIA - Configure no Google Cloud Console:
 1. Acesse: console.cloud.google.com
 2. APIs & Services → Credentials  
 3. Edite o Client ID: ${clientId}
-4. Em "Authorized JavaScript origins" adicione EXATAMENTE:
-   ${currentOrigin}
+4. Em "Authorized JavaScript origins" adicione TODAS estas origens:
+${originsText}
 5. REMOVA COMPLETAMENTE "Authorized redirect URIs"
 6. Salve e aguarde 5-10 minutos para propagação
 
@@ -176,6 +188,7 @@ OPÇÃO 3 - Use a conta da organização:
 
       console.log('🚀 Iniciando solicitação de token OAuth...');
       console.log('🔍 Origem que será verificada pelo Google:', currentOrigin);
+      console.log('📋 Configure TODAS estas origens no Google Cloud Console:', allOrigins);
       tokenClient.requestAccessToken({
         prompt: 'consent'
       });

@@ -38,7 +38,18 @@ const GoogleSheetsConfig: React.FC<GoogleSheetsConfigProps> = ({ onConfigSave, i
   }, []);
 
   const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'N/A';
-  const allOrigins = getAllPossibleOrigins();
+  
+  // Origens fixas para evitar problemas de conexão
+  const fixedOrigins = [
+    'https://lovableproject.com',
+    'https://*.lovableproject.com',
+    'http://localhost:5173',
+    'http://localhost:3000'
+  ];
+  
+  const allOrigins = [currentOrigin, ...fixedOrigins].filter((origin, index, self) => 
+    self.indexOf(origin) === index && origin !== 'N/A'
+  );
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -170,28 +181,32 @@ const GoogleSheetsConfig: React.FC<GoogleSheetsConfigProps> = ({ onConfigSave, i
       
       {isExpanded && (
         <CardContent className="space-y-4">
-          <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+          <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
             <div className="flex items-start space-x-2 mb-3">
-              <AlertTriangle className="w-5 h-5 text-red-400 mt-0.5" />
+              <Info className="w-5 h-5 text-blue-400 mt-0.5" />
               <div className="flex-1">
-                <p className="text-red-400 text-sm font-medium mb-2">
-                  CONFIGURAÇÃO OAUTH NECESSÁRIA
+                <p className="text-blue-400 text-sm font-medium mb-2">
+                  ORIGENS RECOMENDADAS PARA CONFIGURAÇÃO
                 </p>
                 <div className="text-slate-300 text-xs space-y-2">
-                  <p><strong>Origem atual detectada:</strong></p>
-                  <div className="flex items-center space-x-2 p-2 bg-slate-700/50 rounded font-mono text-xs">
-                    <span className="flex-1">{currentOrigin}</span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => copyToClipboard(currentOrigin)}
-                      className="h-6 w-6 p-0 hover:bg-slate-600/50"
-                    >
-                      <Copy className="w-3 h-3" />
-                    </Button>
+                  <p>Configure estas origens no Google Cloud Console para evitar problemas de conexão:</p>
+                  <div className="space-y-1">
+                    {allOrigins.map(origin => (
+                      <div key={origin} className="flex items-center space-x-2 p-2 bg-slate-700/50 rounded font-mono text-xs">
+                        <span className="flex-1 text-green-400">{origin}</span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => copyToClipboard(origin)}
+                          className="h-6 w-6 p-0 hover:bg-slate-600/50"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ))}
                   </div>
                   <p className="text-yellow-400 text-xs mt-2">
-                    <strong>⚠️ ERRO 403 org_internal:</strong> Se aparecer "Acesso bloqueado", o app está configurado como INTERNO. Veja as instruções detalhadas abaixo.
+                    <strong>✅ Dica:</strong> Adicione todas as origens acima para máxima compatibilidade
                   </p>
                 </div>
               </div>
@@ -201,7 +216,7 @@ const GoogleSheetsConfig: React.FC<GoogleSheetsConfigProps> = ({ onConfigSave, i
               variant="outline"
               size="sm"
               onClick={() => setShowConfigHelp(!showConfigHelp)}
-              className="bg-red-500/20 border-red-500/30 text-red-400 hover:bg-red-500/30"
+              className="bg-blue-500/20 border-blue-500/30 text-blue-400 hover:bg-blue-500/30"
             >
               {showConfigHelp ? 'Ocultar' : 'Mostrar'} Instruções Detalhadas
             </Button>
@@ -226,27 +241,10 @@ const GoogleSheetsConfig: React.FC<GoogleSheetsConfigProps> = ({ onConfigSave, i
                   <ol className="list-decimal list-inside ml-2 space-y-1">
                     <li>APIs & Services → Credentials</li>
                     <li>Edite o Client ID OAuth 2.0</li>
-                    <li>Em "Authorized JavaScript origins" adicione:</li>
+                    <li>Em "Authorized JavaScript origins" adicione TODAS as origens mostradas acima</li>
+                    <li><strong className="text-yellow-400">REMOVA TODAS as "Authorized redirect URIs"</strong></li>
+                    <li>Salve e aguarde 5-10 minutos</li>
                   </ol>
-                  
-                  <div className="ml-4 space-y-1 mt-2">
-                    {allOrigins.map(origin => (
-                      <div key={origin} className="flex items-center space-x-2 p-1 bg-slate-700/30 rounded">
-                        <code className="flex-1 text-green-400">{origin}</code>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => copyToClipboard(origin)}
-                          className="h-5 w-5 p-0"
-                        >
-                          <Copy className="w-2 h-2" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <p className="text-yellow-400 mt-2"><strong>4. REMOVA TODAS as "Authorized redirect URIs"</strong></p>
-                  <p>5. Salve e aguarde 5-10 minutos</p>
                 </div>
               </div>
             )}
