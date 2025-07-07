@@ -1,3 +1,4 @@
+
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -82,7 +83,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchUserProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from('user_profiles')
+        .from('user_profiles' as any)
         .select('*')
         .eq('user_id', userId)
         .single();
@@ -98,7 +99,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           user_id: data.user_id,
           name: data.name,
           email: data.email,
-          role: data.role,
+          role: data.role as User['role'],
           is_active: data.is_active,
           password_hash: data.password_hash,
           created_at: new Date(data.created_at),
@@ -108,7 +109,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         // Atualizar último login
         await supabase
-          .from('user_profiles')
+          .from('user_profiles' as any)
           .update({ last_login: new Date().toISOString() })
           .eq('user_id', userId);
       }
@@ -214,7 +215,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Atualizar o perfil com o papel correto
       if (data.user) {
         const { error: profileError } = await supabase
-          .from('user_profiles')
+          .from('user_profiles' as any)
           .update({ role: userData.role })
           .eq('user_id', data.user.id);
 
@@ -238,7 +239,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const getAllUsers = async (): Promise<User[]> => {
     try {
       const { data, error } = await supabase
-        .from('user_profiles')
+        .from('user_profiles' as any)
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -247,12 +248,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return [];
       }
 
-      return data.map(user => ({
+      return (data || []).map((user: any) => ({
         id: user.id,
         user_id: user.user_id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: user.role as User['role'],
         is_active: user.is_active,
         password_hash: user.password_hash,
         created_at: new Date(user.created_at),
@@ -276,12 +277,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return [];
       }
 
-      return data.map((user: any) => ({
+      return (data || []).map((user: any) => ({
         id: user.user_id,
         user_id: user.user_id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: user.role as User['role'],
         is_active: true,
         created_at: new Date(),
         last_login: undefined

@@ -123,7 +123,7 @@ export const useGoogleSheets = () => {
     }
   }, [isConfigured, config]);
 
-  const addTask = useCallback(async (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>, userId?: string): Promise<Task> => {
+  const addTask = useCallback(async (task: Omit<Task, 'id' | 'created_at' | 'updated_at'>, userId?: string): Promise<Task> => {
     if (!isConfigured || !config) {
       throw new Error('Google Sheets não configurado');
     }
@@ -137,8 +137,8 @@ export const useGoogleSheets = () => {
       const newTask: Task = {
         ...task,
         id: Date.now().toString(),
-        createdAt: new Date(),
-        updatedAt: new Date()
+        created_at: new Date(),
+        updated_at: new Date()
       };
 
       const rowData = taskToRow(newTask);
@@ -199,7 +199,7 @@ export const useGoogleSheets = () => {
       const updatedTask: Task = {
         ...currentTask,
         ...updates,
-        updatedAt: new Date()
+        updated_at: new Date()
       };
 
       const rowData = taskToRow(updatedTask);
@@ -255,7 +255,7 @@ export const useGoogleSheets = () => {
     }
   }, [isConfigured, config]);
 
-  const addUser = useCallback(async (userData: Omit<User, 'id' | 'createdAt'>): Promise<User> => {
+  const addUser = useCallback(async (userData: Omit<User, 'id' | 'created_at'>): Promise<User> => {
     if (!isConfigured || !config) {
       throw new Error('Google Sheets não configurado');
     }
@@ -265,8 +265,8 @@ export const useGoogleSheets = () => {
       const newUser: User = {
         ...userData,
         id: Date.now().toString(),
-        createdAt: new Date(),
-        isActive: userData.isActive !== false // Default para true se não especificado
+        created_at: new Date(),
+        is_active: userData.is_active !== false // Default para true se não especificado
       };
 
       const rowData = userToRow(newUser);

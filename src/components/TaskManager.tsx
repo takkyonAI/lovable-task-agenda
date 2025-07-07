@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Calendar, Clock, Edit, Trash2 } from 'lucide-react';
+import { Plus, Calendar, Clock } from 'lucide-react';
 import { Task } from '@/types/task';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -38,46 +37,24 @@ const TaskManager: React.FC = () => {
   const loadTasks = async () => {
     setIsLoading(true);
     try {
-      // Use raw query to avoid TypeScript type issues
-      const { data, error } = await supabase
-        .rpc('get_tasks_for_user');
+      // Usar query direta para evitar problemas com tipos
+      const { data: taskData, error: taskError } = await supabase
+        .from('tasks' as any)
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      if (error && error.code !== 'PGRST202') {
-        // Fallback to direct query if RPC doesn't exist
-        const { data: taskData, error: taskError } = await supabase
-          .from('tasks' as any)
-          .select('*')
-          .order('created_at', { ascending: false });
+      if (taskError) {
+        console.error('Erro ao carregar tarefas:', taskError);
+        toast({
+          title: "Erro",
+          description: "Erro ao carregar tarefas",
+          variant: "destructive"
+        });
+        return;
+      }
 
-        if (taskError) {
-          console.error('Erro ao carregar tarefas:', taskError);
-          toast({
-            title: "Erro",
-            description: "Erro ao carregar tarefas",
-            variant: "destructive"
-          });
-          return;
-        }
-
-        if (taskData) {
-          const formattedTasks: Task[] = taskData.map((task: any) => ({
-            id: task.id,
-            title: task.title,
-            description: task.description || '',
-            status: task.status,
-            priority: task.priority,
-            due_date: task.due_date || undefined,
-            assigned_users: task.assigned_users || [],
-            created_by: task.created_by,
-            created_at: new Date(task.created_at),
-            updated_at: new Date(task.updated_at),
-            completed_at: task.completed_at ? new Date(task.completed_at) : undefined
-          }));
-
-          setTasks(formattedTasks);
-        }
-      } else if (data) {
-        const formattedTasks: Task[] = data.map((task: any) => ({
+      if (taskData) {
+        const formattedTasks: Task[] = (taskData as any[]).map((task: any) => ({
           id: task.id,
           title: task.title,
           description: task.description || '',
