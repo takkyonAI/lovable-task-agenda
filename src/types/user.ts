@@ -4,7 +4,7 @@ export interface User {
   user_id: string;
   name: string;
   email: string;
-  role: 'admin' | 'franqueado' | 'vendedor';
+  role: 'admin' | 'franqueado' | 'vendedor' | 'professor' | 'coordenador' | 'assessora_adm' | 'supervisor_adm';
   is_active: boolean;
   password_hash?: string;
   created_at: Date;

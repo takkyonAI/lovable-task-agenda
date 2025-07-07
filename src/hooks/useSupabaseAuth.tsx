@@ -27,8 +27,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Hierarquia de permissões
 const roleHierarchy = {
-  admin: 3,
-  franqueado: 2,
+  admin: 7,
+  franqueado: 6,
+  supervisor_adm: 5,
+  coordenador: 4,
+  assessora_adm: 3,
+  professor: 2,
   vendedor: 1
 };
 
@@ -348,7 +352,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const canAccessUserManagement = (): boolean => {
-    return hasPermission('admin');
+    return hasPermission('franqueado');
   };
 
   return (
