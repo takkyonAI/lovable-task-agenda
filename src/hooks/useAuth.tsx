@@ -23,6 +23,15 @@ const roleHierarchy = {
   vendedor: 1
 };
 
+// Função utilitária para converter strings de data em objetos Date
+const convertDatesToObjects = (user: any): User => {
+  return {
+    ...user,
+    createdAt: user.createdAt ? new Date(user.createdAt) : new Date(),
+    lastLogin: user.lastLogin ? new Date(user.lastLogin) : undefined
+  };
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [pendingUsers, setPendingUsers] = useState<Array<{ name: string; email: string; role: User['role']; confirmationCode: string }>>([]);
@@ -39,7 +48,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         try {
           const user = JSON.parse(savedUser);
           console.log('Usuário carregado do localStorage:', user);
-          setCurrentUser(user);
+          const userWithDates = convertDatesToObjects(user);
+          console.log('Usuário com datas convertidas:', userWithDates);
+          setCurrentUser(userWithDates);
         } catch (error) {
           console.error('Erro ao fazer parse do usuário salvo:', error);
           localStorage.removeItem('current_user');
@@ -95,7 +106,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log('Usuário encontrado:', user);
         
         if (user) {
-          const updatedUser = { ...user, lastLogin: new Date() };
+          const userWithDates = convertDatesToObjects(user);
+          const updatedUser = { ...userWithDates, lastLogin: new Date() };
           console.log('Atualizando usuário atual:', updatedUser);
           
           setCurrentUser(updatedUser);
