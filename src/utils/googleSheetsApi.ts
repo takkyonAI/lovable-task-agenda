@@ -17,6 +17,14 @@ const SCOPES = [
   'https://www.googleapis.com/auth/drive.file'
 ].join(' ');
 
+// Função para detectar a origem atual
+const getCurrentOrigin = (): string => {
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return 'http://localhost:5173';
+};
+
 // Função para inicializar o Google Identity Services
 export const initGoogleAuth = (clientId: string): Promise<boolean> => {
   return new Promise((resolve) => {
@@ -27,6 +35,10 @@ export const initGoogleAuth = (clientId: string): Promise<boolean> => {
     }
 
     try {
+      const currentOrigin = getCurrentOrigin();
+      console.log('Inicializando Google Auth com origem:', currentOrigin);
+      console.log('Client ID:', clientId);
+      
       window.google.accounts.id.initialize({
         client_id: clientId,
         callback: () => {} // Callback vazio, usaremos OAuth separadamente
@@ -41,7 +53,7 @@ export const initGoogleAuth = (clientId: string): Promise<boolean> => {
   });
 };
 
-// Função para obter token OAuth 2.0
+// Função para obter token OAuth 2.0 com configuração corrigida
 export const getOAuthToken = (clientId: string): Promise<string> => {
   return new Promise((resolve, reject) => {
     if (typeof window.google === 'undefined') {
@@ -50,15 +62,24 @@ export const getOAuthToken = (clientId: string): Promise<string> => {
     }
 
     try {
-      console.log('Configurando OAuth para popup mode (sem redirect_uri)');
+      const currentOrigin = getCurrentOrigin();
+      console.log('=== CONFIGURAÇÃO OAUTH DEBUG ===');
+      console.log('Client ID:', clientId);
+      console.log('Origem atual:', currentOrigin);
+      console.log('Escopos:', SCOPES);
+      console.log('Modo UX: popup (SEM redirect_uri)');
+      console.log('===============================');
       
       const tokenClient = window.google.accounts.oauth2.initTokenClient({
         client_id: clientId,
         scope: SCOPES,
         ux_mode: 'popup',
-        // Removido redirect_uri - não é necessário para popup mode
+        // REMOVIDO: redirect_uri - não é necessário para popup mode
         callback: (response: GoogleAuthResponse) => {
-          console.log('Resposta do OAuth:', response);
+          console.log('=== RESPOSTA OAUTH ===');
+          console.log('Resposta completa:', response);
+          console.log('Token presente:', !!response.access_token);
+          console.log('====================');
           
           if (response.access_token) {
             // Armazenar token com timestamp de expiração
@@ -66,42 +87,55 @@ export const getOAuthToken = (clientId: string): Promise<string> => {
             localStorage.setItem('google_access_token', response.access_token);
             localStorage.setItem('google_token_expires_at', expiresAt.toString());
             
-            console.log('Token OAuth obtido com sucesso');
+            console.log('✅ Token OAuth obtido e armazenado com sucesso');
             resolve(response.access_token);
           } else {
-            console.error('Resposta OAuth sem access_token:', response);
+            console.error('❌ Resposta OAuth sem access_token:', response);
             reject(new Error('Falha ao obter token de acesso'));
           }
         },
         error_callback: (error: any) => {
-          console.error('Erro detalhado na autenticação OAuth:', error);
-          console.error('Detalhes do erro:', {
-            type: error.type,
-            message: error.message,
-            details: error.details
-          });
+          console.error('=== ERRO OAUTH DETALHADO ===');
+          console.error('Erro completo:', error);
+          console.error('Tipo do erro:', error.type);
+          console.error('Mensagem:', error.message);
+          console.error('Detalhes:', error.details);
+          console.error('============================');
           
-          // Mensagem específica para redirect_uri_mismatch
+          // Mensagens específicas para cada tipo de erro
+          let errorMessage = 'Erro desconhecido na autenticação';
+          
           if (error.type === 'redirect_uri_mismatch') {
-            reject(new Error('Erro de configuração OAuth: Verifique se a conta da planilha corresponde à conta do Google Cloud Console'));
-          } else {
-            reject(new Error(`Erro OAuth: ${error.type || error.message || 'Erro desconhecido'}`));
+            errorMessage = `
+ERRO: redirect_uri_mismatch
+
+Para corrigir, acesse o Google Cloud Console:
+1. Vá para APIs & Services > Credentials
+2. Edite o Client ID: ${clientId}
+3. Em "Authorized JavaScript origins", adicione:
+   - ${currentOrigin}
+   - http://localhost:5173
+4. REMOVA completamente "Authorized redirect URIs" (deixe vazio)
+5. Salve as alterações
+
+Origem atual detectada: ${currentOrigin}
+            `;
+          } else if (error.type === 'popup_closed_by_user') {
+            errorMessage = 'Popup de autenticação foi fechado pelo usuário';
+          } else if (error.type === 'access_denied') {
+            errorMessage = 'Acesso negado pelo usuário';
           }
+          
+          reject(new Error(errorMessage));
         }
       });
 
-      console.log('Configuração do token client:', {
-        clientId,
-        scope: SCOPES,
-        uxMode: 'popup (sem redirect_uri)'
-      });
-      
-      console.log('Iniciando solicitação de token...');
+      console.log('🚀 Iniciando solicitação de token OAuth...');
       tokenClient.requestAccessToken({
         prompt: 'consent'
       });
     } catch (error) {
-      console.error('Erro ao inicializar cliente OAuth:', error);
+      console.error('❌ Erro ao inicializar cliente OAuth:', error);
       reject(error);
     }
   });
