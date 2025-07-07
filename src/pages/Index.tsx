@@ -17,11 +17,14 @@ import {
 } from 'lucide-react';
 import { Task } from '@/types/task';
 import { useGoogleSheets } from '@/hooks/useGoogleSheets';
+import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import GoogleSheetsConfig from '@/components/GoogleSheetsConfig';
 import UserManagement from '@/components/UserManagement';
 import SheetSetup from '@/components/SheetSetup';
+import LoginForm from '@/components/LoginForm';
+import UserHeader from '@/components/UserHeader';
 
-const Index = () => {
+const AppContent = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [view, setView] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('daily');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -36,6 +39,12 @@ const Index = () => {
   });
 
   const googleSheets = useGoogleSheets();
+  const { currentUser, canAccessGoogleConfig, canAccessSheetSetup } = useAuth();
+
+  // Se não há usuário logado, mostrar tela de login
+  if (!currentUser) {
+    return <LoginForm />;
+  }
 
   // Carregar configuração e tarefas na inicialização
   useEffect(() => {
@@ -230,16 +239,21 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Configuração Google Sheets */}
-        <GoogleSheetsConfig 
-          onConfigSave={googleSheets.saveConfig}
-          isConfigured={googleSheets.isConfigured}
-        />
+        {/* Header do Usuário */}
+        <UserHeader />
 
-        {/* Configuração da Estrutura da Planilha */}
-        <SheetSetup />
+        {/* Configuração Google Sheets - apenas para Admin */}
+        {canAccessGoogleConfig() && (
+          <GoogleSheetsConfig 
+            onConfigSave={googleSheets.saveConfig}
+            isConfigured={googleSheets.isConfigured}
+          />
+        )}
 
-        {/* Gerenciamento de Usuários */}
+        {/* Configuração da Estrutura da Planilha - apenas para Admin */}
+        {canAccessSheetSetup() && <SheetSetup />}
+
+        {/* Gerenciamento de Usuários - apenas para Admin */}
         <UserManagement />
 
         {/* Header */}
@@ -725,6 +739,14 @@ const Index = () => {
         )}
       </div>
     </div>
+  );
+};
+
+const Index = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 };
 

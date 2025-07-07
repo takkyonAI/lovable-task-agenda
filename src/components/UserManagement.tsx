@@ -7,9 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Users, Plus, Shield, Eye, UserX } from 'lucide-react';
+import { Users, Plus, Crown, Shield, User as UserIcon, UserX } from 'lucide-react';
 import { User } from '@/types/user';
 import { useGoogleSheets } from '@/hooks/useGoogleSheets';
+import { useAuth } from '@/hooks/useAuth';
 
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -17,10 +18,11 @@ const UserManagement: React.FC = () => {
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
-    role: 'user' as const
+    role: 'vendedor' as const
   });
 
   const googleSheets = useGoogleSheets();
+  const { canAccessUserManagement } = useAuth();
 
   useEffect(() => {
     if (googleSheets.isConfigured) {
@@ -28,21 +30,35 @@ const UserManagement: React.FC = () => {
     }
   }, [googleSheets.isConfigured]);
 
+  // Verificar se o usuário tem permissão para acessar este componente
+  if (!canAccessUserManagement()) {
+    return null;
+  }
+
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'admin': return 'bg-red-500/20 text-red-400';
-      case 'user': return 'bg-blue-500/20 text-blue-400';
-      case 'viewer': return 'bg-gray-500/20 text-gray-400';
+      case 'franqueado': return 'bg-blue-500/20 text-blue-400';
+      case 'vendedor': return 'bg-green-500/20 text-green-400';
       default: return 'bg-gray-500/20 text-gray-400';
     }
   };
 
   const getRoleIcon = (role: string) => {
     switch (role) {
-      case 'admin': return <Shield className="w-4 h-4" />;
-      case 'user': return <Users className="w-4 h-4" />;
-      case 'viewer': return <Eye className="w-4 h-4" />;
+      case 'admin': return <Crown className="w-4 h-4" />;
+      case 'franqueado': return <Shield className="w-4 h-4" />;
+      case 'vendedor': return <UserIcon className="w-4 h-4" />;
       default: return <UserX className="w-4 h-4" />;
+    }
+  };
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case 'admin': return 'Administrador';
+      case 'franqueado': return 'Franqueado';
+      case 'vendedor': return 'Vendedor';
+      default: return role;
     }
   };
 
@@ -56,7 +72,7 @@ const UserManagement: React.FC = () => {
       setNewUser({
         name: '',
         email: '',
-        role: 'user'
+        role: 'vendedor'
       });
       setIsAddDialogOpen(false);
     } catch (error) {
@@ -132,8 +148,8 @@ const UserManagement: React.FC = () => {
                     </SelectTrigger>
                     <SelectContent className="bg-slate-800 border-slate-700">
                       <SelectItem value="admin">Administrador</SelectItem>
-                      <SelectItem value="user">Usuário</SelectItem>
-                      <SelectItem value="viewer">Visualizador</SelectItem>
+                      <SelectItem value="franqueado">Franqueado</SelectItem>
+                      <SelectItem value="vendedor">Vendedor</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -166,8 +182,7 @@ const UserManagement: React.FC = () => {
               
               <div className="flex items-center space-x-2">
                 <Badge className={`${getRoleColor(user.role)}`}>
-                  {user.role === 'admin' ? 'Administrador' : 
-                   user.role === 'user' ? 'Usuário' : 'Visualizador'}
+                  {getRoleLabel(user.role)}
                 </Badge>
                 {user.lastLogin && (
                   <span className="text-xs text-slate-400">
