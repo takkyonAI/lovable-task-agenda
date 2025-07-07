@@ -1,5 +1,3 @@
-
-
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -151,54 +149,84 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUp = async (email: string, password: string, name: string): Promise<boolean> => {
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            full_name: name
+      // Para o admin, vamos usar um método diferente
+      if (email === 'wadevenga@hotmail.com') {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`,
+            data: {
+              full_name: name
+            }
           }
+        });
+
+        if (error) {
+          toast({
+            title: "Erro no Cadastro",
+            description: error.message,
+            variant: "destructive"
+          });
+          return false;
         }
-      });
 
-      if (error) {
-        toast({
-          title: "Erro no Cadastro",
-          description: error.message,
-          variant: "destructive"
-        });
-        return false;
-      }
+        // Se for o admin e o cadastro foi bem-sucedido
+        if (data.user) {
+          // Aguardar criação do perfil e então atualizar para admin
+          setTimeout(async () => {
+            try {
+              await supabase
+                .from('user_profiles')
+                .update({ 
+                  role: 'admin', 
+                  name: 'Administrador',
+                  is_active: true 
+                })
+                .eq('user_id', data.user.id);
+              
+              toast({
+                title: "Admin Criado!",
+                description: "Usuário administrador criado com sucesso! Você pode fazer login agora.",
+              });
+            } catch (error) {
+              console.error('Erro ao atualizar perfil admin:', error);
+            }
+          }, 2000);
+        }
 
-      if (data.user && !data.session) {
-        toast({
-          title: "Verifique seu Email",
-          description: "Foi enviado um link de confirmação para seu email.",
-        });
-      }
-
-      // Se o usuário foi criado com sucesso e é o admin
-      if (data.user && email === 'wadevenga@hotmail.com') {
-        // Aguardar um pouco para o trigger criar o perfil
-        setTimeout(async () => {
-          try {
-            await supabase
-              .from('user_profiles')
-              .update({ role: 'admin', name: 'Administrador' })
-              .eq('user_id', data.user.id);
-            
-            toast({
-              title: "Admin Criado",
-              description: "Usuário administrador criado com sucesso! Agora você pode fazer login.",
-            });
-          } catch (error) {
-            console.error('Erro ao atualizar perfil admin:', error);
+        return true;
+      } else {
+        // Para outros usuários, cadastro normal
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`,
+            data: {
+              full_name: name
+            }
           }
-        }, 2000);
-      }
+        });
 
-      return true;
+        if (error) {
+          toast({
+            title: "Erro no Cadastro",
+            description: error.message,
+            variant: "destructive"
+          });
+          return false;
+        }
+
+        if (data.user && !data.session) {
+          toast({
+            title: "Verifique seu Email",
+            description: "Foi enviado um link de confirmação para seu email.",
+          });
+        }
+
+        return true;
+      }
     } catch (error) {
       console.error('Erro no cadastro:', error);
       return false;

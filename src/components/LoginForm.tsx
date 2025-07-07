@@ -5,13 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, User, Crown, Mail, Lock, AlertCircle } from 'lucide-react';
+import { Shield, User, Crown, Mail, Lock, AlertCircle, CheckCircle } from 'lucide-react';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 
 const LoginForm: React.FC = () => {
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [signupData, setSignupData] = useState({ name: '', email: '', password: '' });
   const [isLoading, setIsLoading] = useState(false);
+  const [adminCreated, setAdminCreated] = useState(false);
   const { login, signUp } = useSupabaseAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -21,7 +22,7 @@ const LoginForm: React.FC = () => {
     try {
       const success = await login(loginData.email, loginData.password);
       if (!success) {
-        alert('Credenciais inválidas');
+        alert('Credenciais inválidas. Certifique-se de que você já criou sua conta primeiro.');
       }
     } catch (error) {
       console.error('Erro no login:', error);
@@ -36,7 +37,12 @@ const LoginForm: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await signUp(signupData.email, signupData.password, signupData.name);
+      const success = await signUp(signupData.email, signupData.password, signupData.name);
+      if (success && signupData.email === 'wadevenga@hotmail.com') {
+        setAdminCreated(true);
+        // Limpar formulário
+        setSignupData({ name: '', email: '', password: '' });
+      }
     } catch (error) {
       console.error('Erro no cadastro:', error);
       alert('Erro ao criar conta');
@@ -111,21 +117,33 @@ const LoginForm: React.FC = () => {
               </form>
 
               <div className="pt-4 border-t border-slate-700">
-                <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 mb-3">
-                  <div className="flex items-start space-x-2">
-                    <AlertCircle className="w-4 h-4 text-orange-400 mt-0.5 flex-shrink-0" />
-                    <div className="text-xs text-orange-300">
-                      <strong>Para criar o usuário Admin:</strong><br />
-                      1. Clique em "Cadastrar" acima<br />
-                      2. Use o email: wadevenga@hotmail.com<br />
-                      3. Senha: admin123<br />
-                      4. Nome: Administrador<br />
-                      5. Depois volte para fazer login
+                {!adminCreated ? (
+                  <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 mb-3">
+                    <div className="flex items-start space-x-2">
+                      <AlertCircle className="w-4 h-4 text-orange-400 mt-0.5 flex-shrink-0" />
+                      <div className="text-xs text-orange-300">
+                        <strong>PRIMEIRO ACESSO - Criar Admin:</strong><br />
+                        1. Clique em "Cadastrar" acima<br />
+                        2. Use: wadevenga@hotmail.com<br />
+                        3. Senha: admin123<br />
+                        4. Nome: Administrador<br />
+                        5. Depois faça login normalmente
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 mb-3">
+                    <div className="flex items-start space-x-2">
+                      <CheckCircle className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
+                      <div className="text-xs text-green-300">
+                        <strong>Admin criado com sucesso!</strong><br />
+                        Agora você pode fazer login com as credenciais acima.
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
-                <p className="text-slate-400 text-xs text-center mb-3">Acesso rápido (após cadastro):</p>
+                <p className="text-slate-400 text-xs text-center mb-3">Acesso rápido:</p>
                 <Button
                   variant="outline"
                   size="sm"
@@ -133,7 +151,7 @@ const LoginForm: React.FC = () => {
                   className="w-full bg-red-500/20 border-red-500/30 text-red-400 hover:bg-red-500/30"
                 >
                   <Crown className="w-4 h-4 mr-2" />
-                  Admin
+                  Admin Login
                 </Button>
               </div>
             </TabsContent>
@@ -201,7 +219,7 @@ const LoginForm: React.FC = () => {
                   <div className="flex items-start space-x-2">
                     <AlertCircle className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
                     <p className="text-xs text-blue-300">
-                      O usuário criado com o email <strong>wadevenga@hotmail.com</strong> será automaticamente definido como Admin.
+                      Para criar o admin, use: <strong>wadevenga@hotmail.com</strong> com senha <strong>admin123</strong>
                     </p>
                   </div>
                 </div>
