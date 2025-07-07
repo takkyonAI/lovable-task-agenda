@@ -113,17 +113,34 @@ export const getOAuthToken = (clientId: string): Promise<string> => {
           let errorMessage = 'Erro na autenticação OAuth';
           
           if (error.type === 'redirect_uri_mismatch') {
+            // Mostrar alerta imediatamente com a origem atual
+            alert(`🚨 CONFIGURAÇÃO OAUTH NECESSÁRIA 🚨
+
+ORIGEM ATUAL: ${currentOrigin}
+
+PASSOS OBRIGATÓRIOS:
+1. Acesse: console.cloud.google.com
+2. APIs & Services → Credentials  
+3. Edite o Client ID: ${clientId}
+4. Em "Authorized JavaScript origins" adicione EXATAMENTE:
+   ${currentOrigin}
+5. REMOVA TODAS as "Authorized redirect URIs"
+6. Salve e aguarde 5-10 minutos
+
+❌ ERRO: A origem ${currentOrigin} não está autorizada no Google Cloud Console.
+
+Após configurar, limpe o cache do navegador e tente novamente.`);
+
             errorMessage = `ERRO DE CONFIGURAÇÃO OAUTH - redirect_uri_mismatch
 
 ORIGEM ATUAL: ${currentOrigin}
 
-SOLUÇÃO - Configure no Google Cloud Console:
+SOLUÇÃO OBRIGATÓRIA - Configure no Google Cloud Console:
 1. Acesse: console.cloud.google.com
 2. APIs & Services → Credentials  
 3. Edite o Client ID: ${clientId}
-4. Em "Authorized JavaScript origins" adicione:
-   - ${currentOrigin}
-   - http://localhost:5173
+4. Em "Authorized JavaScript origins" adicione EXATAMENTE:
+   ${currentOrigin}
 5. REMOVA COMPLETAMENTE "Authorized redirect URIs"
 6. Salve e aguarde 5-10 minutos para propagação
 
@@ -158,6 +175,7 @@ OPÇÃO 3 - Use a conta da organização:
       });
 
       console.log('🚀 Iniciando solicitação de token OAuth...');
+      console.log('🔍 Origem que será verificada pelo Google:', currentOrigin);
       tokenClient.requestAccessToken({
         prompt: 'consent'
       });
