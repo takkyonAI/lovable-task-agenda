@@ -6,10 +6,13 @@ interface AuthContextType {
   currentUser: User | null;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
+  createUser: (userData: { name: string; email: string; role: User['role'] }) => Promise<boolean>;
   hasPermission: (requiredRole: User['role']) => boolean;
   canAccessUserManagement: () => boolean;
   canAccessGoogleConfig: () => boolean;
   canAccessSheetSetup: () => boolean;
+  pendingUsers: Array<{ name: string; email: string; role: User['role']; confirmationCode: string }>;
+  confirmUser: (email: string, code: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,6 +26,7 @@ const roleHierarchy = {
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [pendingUsers, setPendingUsers] = useState<Array<{ name: string; email: string; role: User['role']; confirmationCode: string }>>([]);
 
   useEffect(() => {
     // Verificar se há usuário logado no localStorage
@@ -36,27 +40,119 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.removeItem('current_user');
       }
     }
+
+    // Carregar usuários pendentes
+    const savedPendingUsers = localStorage.getItem('pending_users');
+    if (savedPendingUsers) {
+      try {
+        setPendingUsers(JSON.parse(savedPendingUsers));
+      } catch (error) {
+        console.error('Erro ao carregar usuários pendentes:', error);
+      }
+    }
+
+    // Criar o primeiro usuário admin se não existir
+    const existingUsers = localStorage.getItem('confirmed_users');
+    if (!existingUsers) {
+      const adminUser: User = {
+        id: 'admin-1',
+        name: 'Administrador Principal',
+        email: 'wadevenga@hotmail.com',
+        role: 'admin',
+        createdAt: new Date(),
+        lastLogin: new Date()
+      };
+      localStorage.setItem('confirmed_users', JSON.stringify([adminUser]));
+      console.log('Usuário admin criado:', adminUser.email);
+    }
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      // Por enquanto, simulação de login
-      // Em produção, isso seria integrado com o Google Sheets ou outro sistema
-      const mockUser: User = {
-        id: '1',
-        name: 'Administrador',
-        email: email,
-        role: email.includes('admin') ? 'admin' : 
-              email.includes('franqueado') ? 'franqueado' : 'vendedor',
-        createdAt: new Date(),
-        lastLogin: new Date()
-      };
+      // Verificar usuários confirmados
+      const confirmedUsers = localStorage.getItem('confirmed_users');
+      if (confirmedUsers) {
+        const users: User[] = JSON.parse(confirmedUsers);
+        const user = users.find(u => u.email === email);
+        
+        if (user) {
+          const updatedUser = { ...user, lastLogin: new Date() };
+          setCurrentUser(updatedUser);
+          localStorage.setItem('current_user', JSON.stringify(updatedUser));
+          
+          // Atualizar no array de usuários confirmados
+          const updatedUsers = users.map(u => u.id === user.id ? updatedUser : u);
+          localStorage.setItem('confirmed_users', JSON.stringify(updatedUsers));
+          
+          return true;
+        }
+      }
 
-      setCurrentUser(mockUser);
-      localStorage.setItem('current_user', JSON.stringify(mockUser));
-      return true;
+      return false;
     } catch (error) {
       console.error('Erro no login:', error);
+      return false;
+    }
+  };
+
+  const createUser = async (userData: { name: string; email: string; role: User['role'] }): Promise<boolean> => {
+    try {
+      // Gerar código de confirmação
+      const confirmationCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+      
+      const pendingUser = {
+        ...userData,
+        confirmationCode
+      };
+
+      const updatedPendingUsers = [...pendingUsers, pendingUser];
+      setPendingUsers(updatedPendingUsers);
+      localStorage.setItem('pending_users', JSON.stringify(updatedPendingUsers));
+
+      // Simular envio de email (em produção, isso seria feito pelo backend)
+      console.log(`EMAIL ENVIADO PARA: ${userData.email}`);
+      console.log(`CÓDIGO DE CONFIRMAÇÃO: ${confirmationCode}`);
+      console.log(`Olá ${userData.name}, use o código ${confirmationCode} para confirmar sua conta.`);
+
+      return true;
+    } catch (error) {
+      console.error('Erro ao criar usuário:', error);
+      return false;
+    }
+  };
+
+  const confirmUser = async (email: string, code: string): Promise<boolean> => {
+    try {
+      const pendingUser = pendingUsers.find(u => u.email === email && u.confirmationCode === code);
+      
+      if (!pendingUser) {
+        return false;
+      }
+
+      // Criar usuário confirmado
+      const newUser: User = {
+        id: Date.now().toString(),
+        name: pendingUser.name,
+        email: pendingUser.email,
+        role: pendingUser.role,
+        createdAt: new Date()
+      };
+
+      // Adicionar aos usuários confirmados
+      const confirmedUsers = localStorage.getItem('confirmed_users');
+      const users: User[] = confirmedUsers ? JSON.parse(confirmedUsers) : [];
+      users.push(newUser);
+      localStorage.setItem('confirmed_users', JSON.stringify(users));
+
+      // Remover da lista de pendentes
+      const updatedPendingUsers = pendingUsers.filter(u => u.email !== email);
+      setPendingUsers(updatedPendingUsers);
+      localStorage.setItem('pending_users', JSON.stringify(updatedPendingUsers));
+
+      console.log('Usuário confirmado com sucesso:', email);
+      return true;
+    } catch (error) {
+      console.error('Erro ao confirmar usuário:', error);
       return false;
     }
   };
@@ -92,10 +188,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       currentUser,
       login,
       logout,
+      createUser,
       hasPermission,
       canAccessUserManagement,
       canAccessGoogleConfig,
-      canAccessSheetSetup
+      canAccessSheetSetup,
+      pendingUsers,
+      confirmUser
     }}>
       {children}
     </AuthContext.Provider>
