@@ -1,4 +1,5 @@
 
+
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -269,24 +270,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       if (!currentUser) return [];
 
+      // Implementar lógica de visibilidade baseada na hierarquia de papéis
+      const currentUserLevel = roleHierarchy[currentUser.role];
+      
       const { data, error } = await supabase
-        .rpc('get_visible_users_for_role', { user_role: currentUser.role });
+        .from('user_profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Erro ao buscar usuários visíveis:', error);
         return [];
       }
 
-      return (data || []).map((user: any) => ({
-        id: user.user_id as string,
-        user_id: user.user_id as string,
-        name: user.name as string,
-        email: user.email as string,
-        role: user.role as User['role'],
-        is_active: true,
-        created_at: new Date(),
-        last_login: undefined
-      }));
+      // Filtrar usuários baseado na hierarquia
+      return (data || [])
+        .filter((user: any) => {
+          const userLevel = roleHierarchy[user.role as keyof typeof roleHierarchy];
+          return currentUserLevel >= userLevel;
+        })
+        .map((user: any) => ({
+          id: user.id as string,
+          user_id: user.user_id as string,
+          name: user.name as string,
+          email: user.email as string,
+          role: user.role as User['role'],
+          is_active: user.is_active as boolean,
+          password_hash: user.password_hash as string,
+          created_at: new Date(user.created_at as string),
+          last_login: user.last_login ? new Date(user.last_login as string) : undefined
+        }));
     } catch (error) {
       console.error('Erro ao buscar usuários visíveis:', error);
       return [];
@@ -415,3 +428,4 @@ export const useSupabaseAuth = () => {
   }
   return context;
 };
+
