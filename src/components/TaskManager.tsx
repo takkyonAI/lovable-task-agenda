@@ -8,7 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Plus, Calendar, Clock, Play, CheckCircle, X } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Plus, Calendar, Clock, Play, CheckCircle, X, Filter } from 'lucide-react';
 import { Task } from '@/types/task';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -17,9 +18,11 @@ import UserSelector from './UserSelector';
 
 const TaskManager: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [updatingTask, setUpdatingTask] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
   const [newTask, setNewTask] = useState({
     title: '',
     description: '',
@@ -35,6 +38,10 @@ const TaskManager: React.FC = () => {
   useEffect(() => {
     loadTasks();
   }, []);
+
+  useEffect(() => {
+    filterTasks();
+  }, [tasks, activeFilter]);
 
   const loadTasks = async () => {
     setIsLoading(true);
@@ -83,6 +90,81 @@ const TaskManager: React.FC = () => {
     }
   };
 
+  const filterTasks = () => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - today.getDay());
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    let filtered = tasks;
+
+    switch (activeFilter) {
+      case 'today':
+        filtered = tasks.filter(task => {
+          if (!task.due_date) return false;
+          const taskDate = new Date(task.due_date);
+          return taskDate >= today && taskDate < new Date(today.getTime() + 24 * 60 * 60 * 1000);
+        });
+        break;
+      case 'week':
+        filtered = tasks.filter(task => {
+          if (!task.due_date) return false;
+          const taskDate = new Date(task.due_date);
+          const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+          return taskDate >= weekStart && taskDate < weekEnd;
+        });
+        break;
+      case 'month':
+        filtered = tasks.filter(task => {
+          if (!task.due_date) return false;
+          const taskDate = new Date(task.due_date);
+          const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+          return taskDate >= monthStart && taskDate < monthEnd;
+        });
+        break;
+      default:
+        filtered = tasks;
+    }
+
+    setFilteredTasks(filtered);
+  };
+
+  const getFilterCount = (filter: 'all' | 'today' | 'week' | 'month') => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - today.getDay());
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    switch (filter) {
+      case 'all':
+        return tasks.length;
+      case 'today':
+        return tasks.filter(task => {
+          if (!task.due_date) return false;
+          const taskDate = new Date(task.due_date);
+          return taskDate >= today && taskDate < new Date(today.getTime() + 24 * 60 * 60 * 1000);
+        }).length;
+      case 'week':
+        return tasks.filter(task => {
+          if (!task.due_date) return false;
+          const taskDate = new Date(task.due_date);
+          const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+          return taskDate >= weekStart && taskDate < weekEnd;
+        }).length;
+      case 'month':
+        return tasks.filter(task => {
+          if (!task.due_date) return false;
+          const taskDate = new Date(task.due_date);
+          const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+          return taskDate >= monthStart && taskDate < monthEnd;
+        }).length;
+      default:
+        return 0;
+    }
+  };
+
   const updateTaskStatus = async (taskId: string, newStatus: Task['status']) => {
     if (!currentUser) {
       toast({
@@ -100,11 +182,9 @@ const TaskManager: React.FC = () => {
         updated_at: new Date().toISOString()
       };
 
-      // Se a tarefa está sendo concluída, definir completed_at
       if (newStatus === 'concluida') {
         updateData.completed_at = new Date().toISOString();
       } else {
-        // Se mudando para outro status, limpar completed_at
         updateData.completed_at = null;
       }
 
@@ -144,16 +224,10 @@ const TaskManager: React.FC = () => {
   const canEditTask = (task: Task): boolean => {
     if (!currentUser) return false;
     
-    // Criador da tarefa
     if (task.created_by === currentUser.user_id) return true;
-    
-    // Usuário atribuído à tarefa
     if (task.assigned_users.includes(currentUser.user_id)) return true;
-    
-    // Admin e franqueado podem editar todas
     if (['admin', 'franqueado'].includes(currentUser.role)) return true;
     
-    // Outras regras de hierarquia podem ser implementadas aqui
     return false;
   };
 
@@ -517,8 +591,32 @@ const TaskManager: React.FC = () => {
         </CardHeader>
         
         <CardContent>
+          {/* Filtros de Tarefas */}
+          <div className="mb-6">
+            <div className="flex items-center space-x-2 mb-4">
+              <Filter className="w-4 h-4 text-slate-400" />
+              <span className="text-slate-300 text-sm font-medium">Filtrar por:</span>
+            </div>
+            <Tabs value={activeFilter} onValueChange={(value: any) => setActiveFilter(value)} className="w-full">
+              <TabsList className="grid w-full grid-cols-4 bg-slate-800/50 border-slate-700">
+                <TabsTrigger value="all" className="data-[state=active]:bg-purple-600">
+                  Todas ({getFilterCount('all')})
+                </TabsTrigger>
+                <TabsTrigger value="today" className="data-[state=active]:bg-purple-600">
+                  Hoje ({getFilterCount('today')})
+                </TabsTrigger>
+                <TabsTrigger value="week" className="data-[state=active]:bg-purple-600">
+                  Semana ({getFilterCount('week')})
+                </TabsTrigger>
+                <TabsTrigger value="month" className="data-[state=active]:bg-purple-600">
+                  Mês ({getFilterCount('month')})
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
           <div className="space-y-4">
-            {tasks.map(task => (
+            {filteredTasks.map(task => (
               <div key={task.id} className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30 border border-slate-600 hover:bg-slate-700/40 transition-colors">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
@@ -569,11 +667,15 @@ const TaskManager: React.FC = () => {
               </div>
             ))}
             
-            {tasks.length === 0 && !isLoading && (
+            {filteredTasks.length === 0 && !isLoading && (
               <div className="text-center py-8">
                 <Calendar className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                <p className="text-slate-400">Nenhuma tarefa encontrada</p>
-                <p className="text-slate-500 text-sm mt-2">Crie sua primeira tarefa clicando no botão acima</p>
+                <p className="text-slate-400">
+                  {activeFilter === 'all' ? 'Nenhuma tarefa encontrada' : `Nenhuma tarefa encontrada para ${activeFilter === 'today' ? 'hoje' : activeFilter === 'week' ? 'esta semana' : 'este mês'}`}
+                </p>
+                <p className="text-slate-500 text-sm mt-2">
+                  {activeFilter === 'all' ? 'Crie sua primeira tarefa clicando no botão acima' : 'Tente alterar o filtro ou criar uma nova tarefa'}
+                </p>
               </div>
             )}
 
