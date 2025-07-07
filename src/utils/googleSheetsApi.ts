@@ -53,7 +53,10 @@ export const getOAuthToken = (clientId: string): Promise<string> => {
       const tokenClient = window.google.accounts.oauth2.initTokenClient({
         client_id: clientId,
         scope: SCOPES,
+        ux_mode: 'popup',
         callback: (response: GoogleAuthResponse) => {
+          console.log('Resposta do OAuth:', response);
+          
           if (response.access_token) {
             // Armazenar token com timestamp de expiração
             const expiresAt = Date.now() + (response.expires_in * 1000);
@@ -63,16 +66,20 @@ export const getOAuthToken = (clientId: string): Promise<string> => {
             console.log('Token OAuth obtido com sucesso');
             resolve(response.access_token);
           } else {
+            console.error('Resposta OAuth sem access_token:', response);
             reject(new Error('Falha ao obter token de acesso'));
           }
         },
         error_callback: (error: any) => {
-          console.error('Erro na autenticação OAuth:', error);
-          reject(new Error(`Erro OAuth: ${error.type || 'Erro desconhecido'}`));
+          console.error('Erro detalhado na autenticação OAuth:', error);
+          reject(new Error(`Erro OAuth: ${error.type || error.message || 'Erro desconhecido'}`));
         }
       });
 
-      tokenClient.requestAccessToken();
+      console.log('Iniciando solicitação de token...');
+      tokenClient.requestAccessToken({
+        prompt: 'consent'
+      });
     } catch (error) {
       console.error('Erro ao inicializar cliente OAuth:', error);
       reject(error);
