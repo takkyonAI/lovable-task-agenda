@@ -25,7 +25,7 @@ interface Spreadsheet {
 
 const GoogleSheetsConfig: React.FC<GoogleSheetsConfigProps> = ({ onConfigSave, isConfigured }) => {
   const [clientId, setClientId] = useState('72324115240-q1idjsb043dl7ifr1jf7hc6itthvofqk.apps.googleusercontent.com');
-  const [spreadsheetId, setSpreadsheetId] = useState('1Wz0K6XzVwg4zqwd537UifG_w8IQYaRCg1WbY4ZbUEow');
+  const [spreadsheetId, setSpreadsheetId] = useState('1Qj3JSlBYh1ScYpOhpyyz14nmoJ9b0I8MVsnyBYqNZWs');
   const [isExpanded, setIsExpanded] = useState(!isConfigured);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -120,7 +120,7 @@ const GoogleSheetsConfig: React.FC<GoogleSheetsConfigProps> = ({ onConfigSave, i
             </div>
             <div>
               <CardTitle className="text-white text-lg">Configuração Google Sheets</CardTitle>
-              <p className="text-slate-400 text-sm">Conecte com sua conta Google</p>
+              <p className="text-slate-400 text-sm">Conecte com sua conta Takkyon</p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -151,6 +151,15 @@ const GoogleSheetsConfig: React.FC<GoogleSheetsConfigProps> = ({ onConfigSave, i
       
       {isExpanded && (
         <CardContent className="space-y-4">
+          <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+            <p className="text-blue-400 text-sm">
+              <strong>Planilha configurada:</strong> Nova planilha da conta Takkyon
+            </p>
+            <p className="text-slate-300 text-xs mt-1">
+              ID: {spreadsheetId}
+            </p>
+          </div>
+
           <div>
             <Label htmlFor="clientId" className="text-slate-300">Client ID do OAuth 2.0</Label>
             <Input
@@ -177,7 +186,7 @@ const GoogleSheetsConfig: React.FC<GoogleSheetsConfigProps> = ({ onConfigSave, i
                   Conectando...
                 </>
               ) : (
-                'Conectar com Google'
+                'Conectar com Google (Conta Takkyon)'
               )}
             </Button>
           ) : (
@@ -230,7 +239,7 @@ const GoogleSheetsConfig: React.FC<GoogleSheetsConfigProps> = ({ onConfigSave, i
                   placeholder="ID da planilha ou selecione acima"
                 />
                 <p className="text-xs text-slate-400 mt-1">
-                  Ou extraído da URL: https://docs.google.com/spreadsheets/d/[ID_AQUI]/edit
+                  Extraído automaticamente da URL fornecida
                 </p>
               </div>
 
@@ -245,11 +254,11 @@ const GoogleSheetsConfig: React.FC<GoogleSheetsConfigProps> = ({ onConfigSave, i
           )}
           
           <div className="text-xs text-slate-400 space-y-1">
-            <p><strong>Vantagens do OAuth 2.0:</strong></p>
-            <p>• Mais seguro (sem chaves privadas)</p>
-            <p>• Acesso às suas próprias planilhas</p>
-            <p>• Renovação automática de tokens</p>
-            <p>• Melhor experiência de usuário</p>
+            <p><strong>Configuração corrigida:</strong></p>
+            <p>• Removido redirect_uri para popup mode</p>
+            <p>• Planilha criada na conta Takkyon</p>
+            <p>• OAuth configurado corretamente</p>
+            <p>• Melhor tratamento de erros</p>
           </div>
         </CardContent>
       )}

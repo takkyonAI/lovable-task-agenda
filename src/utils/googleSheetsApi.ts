@@ -1,3 +1,4 @@
+
 interface GoogleSheetsConfig {
   spreadsheetId: string;
   clientId: string;
@@ -40,11 +41,6 @@ export const initGoogleAuth = (clientId: string): Promise<boolean> => {
   });
 };
 
-// Função para obter a URL base atual
-const getCurrentOrigin = (): string => {
-  return window.location.origin;
-};
-
 // Função para obter token OAuth 2.0
 export const getOAuthToken = (clientId: string): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -54,14 +50,13 @@ export const getOAuthToken = (clientId: string): Promise<string> => {
     }
 
     try {
-      const currentOrigin = getCurrentOrigin();
-      console.log('Origem atual:', currentOrigin);
+      console.log('Configurando OAuth para popup mode (sem redirect_uri)');
       
       const tokenClient = window.google.accounts.oauth2.initTokenClient({
         client_id: clientId,
         scope: SCOPES,
         ux_mode: 'popup',
-        redirect_uri: currentOrigin,
+        // Removido redirect_uri - não é necessário para popup mode
         callback: (response: GoogleAuthResponse) => {
           console.log('Resposta do OAuth:', response);
           
@@ -85,15 +80,20 @@ export const getOAuthToken = (clientId: string): Promise<string> => {
             message: error.message,
             details: error.details
           });
-          reject(new Error(`Erro OAuth: ${error.type || error.message || 'Erro desconhecido'}`));
+          
+          // Mensagem específica para redirect_uri_mismatch
+          if (error.type === 'redirect_uri_mismatch') {
+            reject(new Error('Erro de configuração OAuth: Verifique se a conta da planilha corresponde à conta do Google Cloud Console'));
+          } else {
+            reject(new Error(`Erro OAuth: ${error.type || error.message || 'Erro desconhecido'}`));
+          }
         }
       });
 
       console.log('Configuração do token client:', {
         clientId,
         scope: SCOPES,
-        redirectUri: currentOrigin,
-        uxMode: 'popup'
+        uxMode: 'popup (sem redirect_uri)'
       });
       
       console.log('Iniciando solicitação de token...');
