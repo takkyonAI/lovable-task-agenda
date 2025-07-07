@@ -6,15 +6,18 @@ interface AuthContextType {
   currentUser: User | null;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
-  createUser: (userData: { name: string; email: string; role: User['role'] }) => Promise<boolean>;
+  createUser: (userData: { name: string; email: string; role: User['role']; password?: string }) => Promise<boolean>;
   hasPermission: (requiredRole: User['role']) => boolean;
   canAccessUserManagement: () => boolean;
   canAccessGoogleConfig: () => boolean;
   canAccessSheetSetup: () => boolean;
-  pendingUsers: Array<{ name: string; email: string; role: User['role']; confirmationCode: string }>;
+  pendingUsers: Array<{ name: string; email: string; role: User['role']; confirmationCode: string; password?: string }>;
   confirmUser: (email: string, code: string) => Promise<boolean>;
   getAllUsers: () => User[];
   refreshUsers: () => Promise<void>;
+  changePassword: (userId: string, newPassword: string) => Promise<boolean>;
+  deleteUser: (userId: string) => Promise<boolean>;
+  toggleUserStatus: (userId: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,7 +40,7 @@ const convertDatesToObjects = (user: any): User => {
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [pendingUsers, setPendingUsers] = useState<Array<{ name: string; email: string; role: User['role']; confirmationCode: string }>>([]);
+  const [pendingUsers, setPendingUsers] = useState<Array<{ name: string; email: string; role: User['role']; confirmationCode: string; password?: string }>>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const googleSheets = useGoogleSheets();
 
@@ -199,15 +202,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     console.log('Tentativa de login para:', email);
     
     try {
-      // Garantir que temos os usuários mais recentes
       await refreshUsers();
-      
       console.log('Usuários disponíveis para login:', allUsers);
       
-      const user = allUsers.find(u => u.email === email);
+      const user = allUsers.find(u => u.email === email && u.isActive !== false);
       console.log('Usuário encontrado:', user);
       
       if (user) {
+        // Se o usuário tem senha definida, verificar
+        if (user.password && user.password !== password) {
+          console.log('Senha incorreta');
+          return false;
+        }
+        
         const updatedUser = { ...user, lastLogin: new Date() };
         console.log('Atualizando usuário atual:', updatedUser);
         
@@ -217,7 +224,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Atualizar no Google Sheets se configurado
         if (googleSheets.isConfigured) {
           try {
-            console.log('Login realizado via Google Sheets');
+            await googleSheets.updateUser(user.id, { lastLogin: new Date() });
+            console.log('Último login atualizado no Google Sheets');
           } catch (error) {
             console.error('Erro ao atualizar último login no Google Sheets:', error);
           }
@@ -231,7 +239,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return true;
       }
 
-      console.log('Login falhou - usuário não encontrado');
+      console.log('Login falhou - usuário não encontrado ou inativo');
       return false;
     } catch (error) {
       console.error('Erro no login:', error);
@@ -239,26 +247,55 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const createUser = async (userData: { name: string; email: string; role: User['role'] }): Promise<boolean> => {
+  const createUser = async (userData: { name: string; email: string; role: User['role']; password?: string }): Promise<boolean> => {
     try {
-      // Gerar código de confirmação
-      const confirmationCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-      
-      const pendingUser = {
-        ...userData,
-        confirmationCode
-      };
+      // Se a senha não foi fornecida, gerar código de confirmação
+      if (!userData.password) {
+        const confirmationCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+        
+        const pendingUser = {
+          ...userData,
+          confirmationCode
+        };
 
-      const updatedPendingUsers = [...pendingUsers, pendingUser];
-      setPendingUsers(updatedPendingUsers);
-      localStorage.setItem('pending_users', JSON.stringify(updatedPendingUsers));
+        const updatedPendingUsers = [...pendingUsers, pendingUser];
+        setPendingUsers(updatedPendingUsers);
+        localStorage.setItem('pending_users', JSON.stringify(updatedPendingUsers));
 
-      // Simular envio de email (em produção, isso seria feito pelo backend)
-      console.log(`EMAIL ENVIADO PARA: ${userData.email}`);
-      console.log(`CÓDIGO DE CONFIRMAÇÃO: ${confirmationCode}`);
-      console.log(`Olá ${userData.name}, use o código ${confirmationCode} para confirmar sua conta.`);
+        console.log(`EMAIL ENVIADO PARA: ${userData.email}`);
+        console.log(`CÓDIGO DE CONFIRMAÇÃO: ${confirmationCode}`);
+        console.log(`Olá ${userData.name}, use o código ${confirmationCode} para confirmar sua conta.`);
 
-      return true;
+        return true;
+      } else {
+        // Criar usuário diretamente com senha
+        const newUserData: Omit<User, 'id' | 'createdAt'> = {
+          name: userData.name,
+          email: userData.email,
+          role: userData.role,
+          password: userData.password,
+          isActive: true
+        };
+
+        if (googleSheets.isConfigured) {
+          await googleSheets.addUser(newUserData);
+          console.log('Usuário adicionado ao Google Sheets:', userData.email);
+        } else {
+          const newUser: User = {
+            ...newUserData,
+            id: Date.now().toString(),
+            createdAt: new Date()
+          };
+
+          const confirmedUsers = localStorage.getItem('confirmed_users');
+          const users: User[] = confirmedUsers ? JSON.parse(confirmedUsers) : [];
+          users.push(newUser);
+          localStorage.setItem('confirmed_users', JSON.stringify(users));
+        }
+
+        await refreshUsers();
+        return true;
+      }
     } catch (error) {
       console.error('Erro ao criar usuário:', error);
       return false;
@@ -273,15 +310,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
 
-      // Criar usuário confirmado
       const newUserData: Omit<User, 'id' | 'createdAt'> = {
         name: pendingUser.name,
         email: pendingUser.email,
-        role: pendingUser.role
+        role: pendingUser.role,
+        password: pendingUser.password,
+        isActive: true
       };
 
       if (googleSheets.isConfigured) {
-        // Adicionar ao Google Sheets
         await googleSheets.addUser(newUserData);
         console.log('Usuário adicionado ao Google Sheets:', email);
       } else {
@@ -303,13 +340,96 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setPendingUsers(updatedPendingUsers);
       localStorage.setItem('pending_users', JSON.stringify(updatedPendingUsers));
 
-      // Atualizar lista de usuários
       await refreshUsers();
-
       console.log('Usuário confirmado com sucesso:', email);
       return true;
     } catch (error) {
       console.error('Erro ao confirmar usuário:', error);
+      return false;
+    }
+  };
+
+  const changePassword = async (userId: string, newPassword: string): Promise<boolean> => {
+    try {
+      if (googleSheets.isConfigured) {
+        await googleSheets.updateUser(userId, { password: newPassword });
+        console.log('Senha atualizada no Google Sheets para usuário:', userId);
+      } else {
+        const confirmedUsers = localStorage.getItem('confirmed_users');
+        if (confirmedUsers) {
+          const users: User[] = JSON.parse(confirmedUsers);
+          const updatedUsers = users.map(user => 
+            user.id === userId ? { ...user, password: newPassword } : user
+          );
+          localStorage.setItem('confirmed_users', JSON.stringify(updatedUsers));
+        }
+      }
+
+      await refreshUsers();
+      return true;
+    } catch (error) {
+      console.error('Erro ao alterar senha:', error);
+      return false;
+    }
+  };
+
+  const deleteUser = async (userId: string): Promise<boolean> => {
+    try {
+      if (userId === currentUser?.id) {
+        console.error('Não é possível excluir o próprio usuário');
+        return false;
+      }
+
+      if (googleSheets.isConfigured) {
+        await googleSheets.deleteUser(userId);
+        console.log('Usuário excluído do Google Sheets:', userId);
+      } else {
+        const confirmedUsers = localStorage.getItem('confirmed_users');
+        if (confirmedUsers) {
+          const users: User[] = JSON.parse(confirmedUsers);
+          const filteredUsers = users.filter(user => user.id !== userId);
+          localStorage.setItem('confirmed_users', JSON.stringify(filteredUsers));
+        }
+      }
+
+      await refreshUsers();
+      return true;
+    } catch (error) {
+      console.error('Erro ao excluir usuário:', error);
+      return false;
+    }
+  };
+
+  const toggleUserStatus = async (userId: string): Promise<boolean> => {
+    try {
+      if (userId === currentUser?.id) {
+        console.error('Não é possível desativar o próprio usuário');
+        return false;
+      }
+
+      const user = allUsers.find(u => u.id === userId);
+      if (!user) return false;
+
+      const newStatus = !user.isActive;
+
+      if (googleSheets.isConfigured) {
+        await googleSheets.updateUser(userId, { isActive: newStatus });
+        console.log('Status do usuário atualizado no Google Sheets:', userId, newStatus);
+      } else {
+        const confirmedUsers = localStorage.getItem('confirmed_users');
+        if (confirmedUsers) {
+          const users: User[] = JSON.parse(confirmedUsers);
+          const updatedUsers = users.map(user => 
+            user.id === userId ? { ...user, isActive: newStatus } : user
+          );
+          localStorage.setItem('confirmed_users', JSON.stringify(updatedUsers));
+        }
+      }
+
+      await refreshUsers();
+      return true;
+    } catch (error) {
+      console.error('Erro ao alterar status do usuário:', error);
       return false;
     }
   };
@@ -355,7 +475,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       pendingUsers,
       confirmUser,
       getAllUsers,
-      refreshUsers
+      refreshUsers,
+      changePassword,
+      deleteUser,
+      toggleUserStatus
     }}>
       {children}
     </AuthContext.Provider>

@@ -1,4 +1,3 @@
-
 import { Task } from '../types/task';
 import { User } from '../types/user';
 
@@ -58,17 +57,21 @@ export const taskToRow = (task: Task): any[] => {
   ];
 };
 
+// Converter linha da planilha para User
 export const rowToUser = (row: any[]): User => {
   return {
     id: row[0] || '',
     name: row[1] || '',
     email: row[2] || '',
-    role: (row[3] as 'admin' | 'franqueado' | 'vendedor') || 'vendedor',
+    role: (row[3] || 'vendedor') as User['role'],
     createdAt: row[4] ? new Date(row[4]) : new Date(),
-    lastLogin: row[5] ? new Date(row[5]) : undefined
+    lastLogin: row[5] ? new Date(row[5]) : undefined,
+    password: row[6] || undefined,
+    isActive: row[7] !== undefined ? row[7] === 'true' : true
   };
 };
 
+// Converter User para linha da planilha
 export const userToRow = (user: User): any[] => {
   return [
     user.id,
@@ -76,6 +79,8 @@ export const userToRow = (user: User): any[] => {
     user.email,
     user.role,
     user.createdAt.toISOString(),
-    user.lastLogin ? user.lastLogin.toISOString() : ''
+    user.lastLogin ? user.lastLogin.toISOString() : '',
+    user.password || '',
+    user.isActive !== false ? 'true' : 'false'
   ];
 };

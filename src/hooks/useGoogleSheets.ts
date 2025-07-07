@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { Task } from '../types/task';
 import { User } from '../types/user';
@@ -236,7 +235,7 @@ export const useGoogleSheets = () => {
       const values = await fetchSheetData(
         config.spreadsheetId,
         config.clientId,
-        'Usuários!A2:F'
+        'Usuários!A2:G'
       );
 
       const users: User[] = [];
@@ -266,7 +265,8 @@ export const useGoogleSheets = () => {
       const newUser: User = {
         ...userData,
         id: Date.now().toString(),
-        createdAt: new Date()
+        createdAt: new Date(),
+        isActive: userData.isActive !== false // Default para true se não especificado
       };
 
       const rowData = userToRow(newUser);
@@ -274,7 +274,7 @@ export const useGoogleSheets = () => {
       await appendSheetData(
         config.spreadsheetId,
         config.clientId,
-        'Usuários!A:F',
+        'Usuários!A:G',
         [rowData]
       );
 
@@ -282,6 +282,122 @@ export const useGoogleSheets = () => {
       return newUser;
     } catch (err) {
       console.error('Erro ao adicionar usuário:', err);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isConfigured, config]);
+
+  const updateUser = useCallback(async (userId: string, updates: Partial<User>): Promise<User> => {
+    if (!isConfigured || !config) {
+      throw new Error('Google Sheets não configurado');
+    }
+
+    setIsLoading(true);
+    try {
+      console.log('Atualizando usuário na planilha:', userId);
+
+      // Buscar usuário atual
+      const values = await fetchSheetData(
+        config.spreadsheetId,
+        config.clientId,
+        'Usuários!A2:G'
+      );
+
+      let rowIndex = -1;
+      let currentUser: User | null = null;
+
+      for (let i = 0; i < values.length; i++) {
+        const row = values[i];
+        if (row[0] === userId) {
+          rowIndex = i + 2;
+          currentUser = rowToUser(row);
+          break;
+        }
+      }
+
+      if (!currentUser || rowIndex === -1) {
+        throw new Error('Usuário não encontrado');
+      }
+
+      const updatedUser: User = {
+        ...currentUser,
+        ...updates
+      };
+
+      const rowData = userToRow(updatedUser);
+
+      await updateSheetData(
+        config.spreadsheetId,
+        config.clientId,
+        `Usuários!A${rowIndex}:G${rowIndex}`,
+        [rowData]
+      );
+
+      console.log('Usuário atualizado com sucesso:', userId);
+      return updatedUser;
+    } catch (err) {
+      console.error('Erro ao atualizar usuário:', err);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isConfigured, config]);
+
+  const deleteUser = useCallback(async (userId: string): Promise<void> => {
+    if (!isConfigured || !config) {
+      throw new Error('Google Sheets não configurado');
+    }
+
+    setIsLoading(true);
+    try {
+      console.log('Excluindo usuário da planilha:', userId);
+
+      // Buscar linha do usuário
+      const values = await fetchSheetData(
+        config.spreadsheetId,
+        config.clientId,
+        'Usuários!A2:G'
+      );
+
+      let rowIndex = -1;
+      for (let i = 0; i < values.length; i++) {
+        const row = values[i];
+        if (row[0] === userId) {
+          rowIndex = i + 2;
+          break;
+        }
+      }
+
+      if (rowIndex === -1) {
+        throw new Error('Usuário não encontrado');
+      }
+
+      // Deletar linha
+      const requests = [{
+        deleteDimension: {
+          range: {
+            sheetId: 0, // Assumindo que é a primeira aba
+            dimension: 'ROWS',
+            startIndex: rowIndex - 1,
+            endIndex: rowIndex
+          }
+        }
+      }];
+
+      const batchUpdateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}:batchUpdate`;
+      await fetch(batchUpdateUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('google_access_token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ requests })
+      });
+
+      console.log('Usuário excluído com sucesso:', userId);
+    } catch (err) {
+      console.error('Erro ao excluir usuário:', err);
       throw err;
     } finally {
       setIsLoading(false);
@@ -299,6 +415,8 @@ export const useGoogleSheets = () => {
     addTask,
     updateTask,
     fetchUsers,
-    addUser
+    addUser,
+    updateUser,
+    deleteUser
   };
 };

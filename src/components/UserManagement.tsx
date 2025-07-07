@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,27 +6,41 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Users, Plus, Crown, Shield, User as UserIcon, UserX, Mail, CheckCircle, Clock, RefreshCw } from 'lucide-react';
+import { Users, Plus, Crown, Shield, User as UserIcon, UserX, Mail, CheckCircle, Clock, RefreshCw, Trash2, UserMinus, Eye, EyeOff } from 'lucide-react';
 import { User } from '@/types/user';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import PasswordManagement from './PasswordManagement';
 
 const UserManagement: React.FC = () => {
   const [confirmedUsers, setConfirmedUsers] = useState<User[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
-    role: 'vendedor' as const
+    role: 'vendedor' as const,
+    password: '',
+    createWithPassword: false
   });
   const [confirmationData, setConfirmationData] = useState({
     email: '',
     code: ''
   });
 
-  const { canAccessUserManagement, createUser, confirmUser, pendingUsers, getAllUsers, refreshUsers } = useAuth();
+  const { 
+    canAccessUserManagement, 
+    createUser, 
+    confirmUser, 
+    pendingUsers, 
+    getAllUsers, 
+    refreshUsers,
+    deleteUser,
+    toggleUserStatus,
+    currentUser
+  } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -53,7 +66,6 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  // Verificar se o usuário tem permissão para acessar este componente
   if (!canAccessUserManagement()) {
     return null;
   }
@@ -95,20 +107,46 @@ const UserManagement: React.FC = () => {
       return;
     }
 
+    if (newUser.createWithPassword && (!newUser.password || newUser.password.length < 6)) {
+      toast({
+        title: "Erro",
+        description: "A senha deve ter pelo menos 6 caracteres",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
-      const success = await createUser(newUser);
+      const userData = {
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        password: newUser.createWithPassword ? newUser.password : undefined
+      };
+
+      const success = await createUser(userData);
       if (success) {
+        const message = newUser.createWithPassword 
+          ? `Usuário ${newUser.name} criado com sucesso!`
+          : `Um email de confirmação foi enviado para ${newUser.email}`;
+        
         toast({
           title: "Usuário Criado",
-          description: `Um email de confirmação foi enviado para ${newUser.email}`,
+          description: message,
         });
         
         setNewUser({
           name: '',
           email: '',
-          role: 'vendedor'
+          role: 'vendedor',
+          password: '',
+          createWithPassword: false
         });
         setIsAddDialogOpen(false);
+        
+        if (newUser.createWithPassword) {
+          await loadUsers();
+        }
       }
     } catch (error) {
       toast({
@@ -155,6 +193,67 @@ const UserManagement: React.FC = () => {
         description: "Erro ao confirmar usuário",
         variant: "destructive"
       });
+    }
+  };
+
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    if (userId === currentUser?.id) {
+      toast({
+        title: "Erro",
+        description: "Você não pode excluir sua própria conta",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (confirm(`Tem certeza que deseja excluir o usuário "${userName}"? Esta ação não pode ser desfeita.`)) {
+      try {
+        const success = await deleteUser(userId);
+        if (success) {
+          toast({
+            title: "Usuário Excluído",
+            description: `${userName} foi excluído com sucesso`,
+          });
+          await loadUsers();
+        }
+      } catch (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao excluir usuário",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
+  const handleToggleUserStatus = async (userId: string, userName: string, currentStatus: boolean) => {
+    if (userId === currentUser?.id) {
+      toast({
+        title: "Erro",
+        description: "Você não pode alterar o status da sua própria conta",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const action = currentStatus ? 'desativar' : 'ativar';
+    if (confirm(`Tem certeza que deseja ${action} o usuário "${userName}"?`)) {
+      try {
+        const success = await toggleUserStatus(userId);
+        if (success) {
+          toast({
+            title: "Status Alterado",
+            description: `${userName} foi ${currentStatus ? 'desativado' : 'ativado'} com sucesso`,
+          });
+          await loadUsers();
+        }
+      } catch (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao alterar status do usuário",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -288,13 +387,64 @@ const UserManagement: React.FC = () => {
                         </SelectContent>
                       </Select>
                     </div>
+
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="createWithPassword"
+                        checked={newUser.createWithPassword}
+                        onChange={(e) => setNewUser(prev => ({ ...prev, createWithPassword: e.target.checked }))}
+                        className="rounded"
+                      />
+                      <Label htmlFor="createWithPassword" className="text-slate-300">
+                        Criar com senha (sem confirmação por email)
+                      </Label>
+                    </div>
+
+                    {newUser.createWithPassword && (
+                      <div>
+                        <Label htmlFor="userPassword" className="text-slate-300">Senha</Label>
+                        <div className="relative">
+                          <Input
+                            id="userPassword"
+                            type={showPassword ? "text" : "password"}
+                            value={newUser.password}
+                            onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
+                            className="bg-slate-700/50 border-slate-600 text-white pr-10"
+                            placeholder="Digite a senha"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4 text-slate-400" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-slate-400" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                     
                     <Button 
                       onClick={handleCreateUser}
                       className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                     >
-                      <Mail className="w-4 h-4 mr-2" />
-                      Enviar Convite por Email
+                      {newUser.createWithPassword ? (
+                        <>
+                          <Plus className="w-4 h-4 mr-2" />
+                          Criar Usuário
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="w-4 h-4 mr-2" />
+                          Enviar Convite por Email
+                        </>
+                      )}
                     </Button>
                   </div>
                 </DialogContent>
@@ -306,13 +456,28 @@ const UserManagement: React.FC = () => {
         <CardContent>
           <div className="space-y-3">
             {confirmedUsers.map(user => (
-              <div key={user.id} className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg border border-slate-600">
+              <div key={user.id} className={`flex items-center justify-between p-3 rounded-lg border ${
+                user.isActive === false 
+                  ? 'bg-red-500/10 border-red-500/30' 
+                  : 'bg-slate-700/30 border-slate-600'
+              }`}>
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-slate-600/50 rounded-lg">
+                  <div className={`p-2 rounded-lg ${
+                    user.isActive === false ? 'bg-red-500/20' : 'bg-slate-600/50'
+                  }`}>
                     {getRoleIcon(user.role)}
                   </div>
                   <div>
-                    <h4 className="font-medium text-white">{user.name}</h4>
+                    <div className="flex items-center space-x-2">
+                      <h4 className={`font-medium ${
+                        user.isActive === false ? 'text-red-300 line-through' : 'text-white'
+                      }`}>
+                        {user.name}
+                      </h4>
+                      {user.isActive === false && (
+                        <Badge className="bg-red-500/20 text-red-400">Inativo</Badge>
+                      )}
+                    </div>
                     <p className="text-sm text-slate-400">{user.email}</p>
                   </div>
                 </div>
@@ -321,6 +486,36 @@ const UserManagement: React.FC = () => {
                   <Badge className={`${getRoleColor(user.role)}`}>
                     {getRoleLabel(user.role)}
                   </Badge>
+                  
+                  {user.id !== currentUser?.id && (
+                    <>
+                      <PasswordManagement userId={user.id} userName={user.name} />
+                      
+                      <Button
+                        onClick={() => handleToggleUserStatus(user.id, user.name, user.isActive !== false)}
+                        variant="outline"
+                        size="sm"
+                        className={user.isActive === false 
+                          ? "bg-green-500/20 border-green-500/30 hover:bg-green-500/30 text-green-400"
+                          : "bg-yellow-500/20 border-yellow-500/30 hover:bg-yellow-500/30 text-yellow-400"
+                        }
+                      >
+                        <UserMinus className="w-4 h-4 mr-2" />
+                        {user.isActive === false ? 'Ativar' : 'Desativar'}
+                      </Button>
+                      
+                      <Button
+                        onClick={() => handleDeleteUser(user.id, user.name)}
+                        variant="outline"
+                        size="sm"
+                        className="bg-red-500/20 border-red-500/30 hover:bg-red-500/30 text-red-400"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Excluir
+                      </Button>
+                    </>
+                  )}
+                  
                   {user.lastLogin && (
                     <span className="text-xs text-slate-400">
                       Último acesso: {user.lastLogin.toLocaleDateString('pt-BR')}
