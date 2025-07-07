@@ -52,10 +52,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setAuthUser(session?.user ?? null);
         
         if (session?.user) {
-          // Buscar perfil do usuário
+          // Buscar perfil do usuário com delay para evitar problemas de timing
           setTimeout(() => {
             fetchUserProfile(session.user.id);
-          }, 0);
+          }, 100);
         } else {
           setCurrentUser(null);
         }
@@ -81,6 +81,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchUserProfile = async (userId: string) => {
     try {
+      console.log('Buscando perfil para userId:', userId);
+      
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
@@ -89,6 +91,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) {
         console.error('Erro ao buscar perfil:', error);
+        
+        // Se o perfil não existir, tentar criar um básico
+        if (error.code === 'PGRST116') {
+          console.log('Perfil não encontrado, tentando criar...');
+          const { data: authData } = await supabase.auth.getUser();
+          if (authData.user) {
+            const { error: insertError } = await supabase
+              .from('user_profiles')
+              .insert({
+                user_id: userId,
+                name: authData.user.user_metadata?.full_name || authData.user.email || 'Usuário',
+                email: authData.user.email || '',
+                role: 'vendedor',
+                is_active: true
+              });
+            
+            if (!insertError) {
+              // Tentar buscar novamente após criar
+              setTimeout(() => fetchUserProfile(userId), 500);
+            }
+          }
+        }
         return;
       }
 
@@ -104,6 +128,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           created_at: new Date(data.created_at as string),
           last_login: data.last_login ? new Date(data.last_login as string) : undefined
         };
+        
+        console.log('Perfil carregado:', userProfile);
         setCurrentUser(userProfile);
         
         // Atualizar último login
@@ -125,6 +151,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
+      console.log('Tentando login para:', email);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -140,6 +168,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
 
+      console.log('Login bem-sucedido:', data.user?.email);
       return true;
     } catch (error) {
       console.error('Erro no login:', error);
