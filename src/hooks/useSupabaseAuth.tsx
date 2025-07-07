@@ -3,6 +3,7 @@ import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@/types/user';
 import { useToast } from '@/hooks/use-toast';
+import { validateEmail, validatePassword, validateName, sanitizeInput, generateSecurePassword } from '@/utils/inputValidation';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -47,7 +48,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Configurar listener de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setAuthUser(session?.user ?? null);
         
@@ -81,8 +81,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchUserProfile = async (userId: string) => {
     try {
-      console.log('Buscando perfil para userId:', userId);
-      
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
@@ -90,11 +88,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .single();
 
       if (error) {
-        console.error('Erro ao buscar perfil:', error);
-        
         // Se o perfil não existir, tentar criar um básico
         if (error.code === 'PGRST116') {
-          console.log('Perfil não encontrado, tentando criar...');
           const { data: authData } = await supabase.auth.getUser();
           if (authData.user) {
             const { error: insertError } = await supabase
@@ -129,7 +124,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           last_login: data.last_login ? new Date(data.last_login as string) : undefined
         };
         
-        console.log('Perfil carregado:', userProfile);
         setCurrentUser(userProfile);
         
         // Atualizar último login
@@ -151,24 +145,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      console.log('Tentando login para:', email);
-      
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (error) {
-        console.error('Erro no login:', error);
+      // Validate input
+      if (!validateEmail(email)) {
         toast({
           title: "Erro no Login",
-          description: error.message,
+          description: "Por favor, insira um email válido",
           variant: "destructive"
         });
         return false;
       }
 
-      console.log('Login bem-sucedido:', data.user?.email);
+      if (!password || password.length < 6) {
+        toast({
+          title: "Erro no Login",
+          description: "Senha deve ter pelo menos 6 caracteres",
+          variant: "destructive"
+        });
+        return false;
+      }
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: sanitizeInput(email),
+        password
+      });
+
+      if (error) {
+        toast({
+          title: "Erro no Login",
+          description: "Credenciais inválidas. Verifique seu email e senha.",
+          variant: "destructive"
+        });
+        return false;
+      }
+
       return true;
     } catch (error) {
       console.error('Erro no login:', error);
@@ -178,84 +187,63 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUp = async (email: string, password: string, name: string): Promise<boolean> => {
     try {
-      // Para o admin, vamos usar um método diferente
-      if (email === 'wadevenga@hotmail.com') {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`,
-            data: {
-              full_name: name
-            }
-          }
+      // Validate inputs
+      if (!validateEmail(email)) {
+        toast({
+          title: "Erro no Cadastro",
+          description: "Por favor, insira um email válido",
+          variant: "destructive"
         });
-
-        if (error) {
-          toast({
-            title: "Erro no Cadastro",
-            description: error.message,
-            variant: "destructive"
-          });
-          return false;
-        }
-
-        // Se for o admin e o cadastro foi bem-sucedido
-        if (data.user) {
-          // Aguardar criação do perfil e então atualizar para admin
-          setTimeout(async () => {
-            try {
-              await supabase
-                .from('user_profiles')
-                .update({ 
-                  role: 'admin', 
-                  name: 'Administrador',
-                  is_active: true 
-                })
-                .eq('user_id', data.user.id);
-              
-              toast({
-                title: "Admin Criado!",
-                description: "Usuário administrador criado com sucesso! Você pode fazer login agora.",
-              });
-            } catch (error) {
-              console.error('Erro ao atualizar perfil admin:', error);
-            }
-          }, 2000);
-        }
-
-        return true;
-      } else {
-        // Para outros usuários, cadastro normal
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`,
-            data: {
-              full_name: name
-            }
-          }
-        });
-
-        if (error) {
-          toast({
-            title: "Erro no Cadastro",
-            description: error.message,
-            variant: "destructive"
-          });
-          return false;
-        }
-
-        if (data.user && !data.session) {
-          toast({
-            title: "Verifique seu Email",
-            description: "Foi enviado um link de confirmação para seu email.",
-          });
-        }
-
-        return true;
+        return false;
       }
+
+      const passwordValidation = validatePassword(password);
+      if (!passwordValidation.isValid) {
+        toast({
+          title: "Erro no Cadastro",
+          description: passwordValidation.message,
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      if (!validateName(name)) {
+        toast({
+          title: "Erro no Cadastro",
+          description: "Nome deve ter entre 2 e 100 caracteres",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      const { data, error } = await supabase.auth.signUp({
+        email: sanitizeInput(email),
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            full_name: sanitizeInput(name)
+          }
+        }
+      });
+
+      if (error) {
+        toast({
+          title: "Erro no Cadastro",
+          description: error.message,
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      if (data.user && !data.session) {
+        toast({
+          title: "Verifique seu Email",
+          description: "Foi enviado um link de confirmação para seu email.",
+        });
+      }
+
+      return true;
     } catch (error) {
       console.error('Erro no cadastro:', error);
       return false;
@@ -271,22 +259,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const createUser = async (userData: { name: string; email: string; role: User['role'] }): Promise<boolean> => {
     try {
-      console.log('Criando usuário:', userData);
+      // Validate inputs
+      if (!validateEmail(userData.email)) {
+        toast({
+          title: "Erro",
+          description: "Por favor, insira um email válido",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      if (!validateName(userData.name)) {
+        toast({
+          title: "Erro",  
+          description: "Nome deve ter entre 2 e 100 caracteres",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      const securePassword = generateSecurePassword();
 
       // Primeiro tentar criar o usuário no auth.users
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: userData.email,
-        password: Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2), // Senha aleatória mais forte
+        email: sanitizeInput(userData.email),
+        password: securePassword,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
-            full_name: userData.name
+            full_name: sanitizeInput(userData.name)
           }
         }
       });
 
       if (authError) {
-        console.error('Erro ao criar usuário no auth:', authError);
         toast({
           title: "Erro",
           description: authError.message,
@@ -304,8 +310,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
 
-      console.log('Usuário criado no auth, ID:', authData.user.id);
-
       // Aguardar um pouco para o trigger criar o perfil
       await new Promise(resolve => setTimeout(resolve, 1000));
 
@@ -314,25 +318,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .from('user_profiles')
         .update({ 
           role: userData.role,
-          name: userData.name 
+          name: sanitizeInput(userData.name)
         })
         .eq('user_id', authData.user.id);
 
       if (profileError) {
-        console.error('Erro ao atualizar perfil:', profileError);
         // Tentar criar o perfil manualmente se a atualização falhar
         const { error: insertError } = await supabase
           .from('user_profiles')
           .insert({
             user_id: authData.user.id,
-            name: userData.name,
-            email: userData.email,
+            name: sanitizeInput(userData.name),
+            email: sanitizeInput(userData.email),
             role: userData.role,
             is_active: true
           });
 
         if (insertError) {
-          console.error('Erro ao inserir perfil:', insertError);
           toast({
             title: "Erro",
             description: "Falha ao criar perfil do usuário",
@@ -344,7 +346,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       toast({
         title: "Usuário Criado",
-        description: `${userData.name} foi criado com sucesso!`,
+        description: `${userData.name} foi criado com sucesso! Senha temporária: ${securePassword}`,
       });
 
       return true;
@@ -430,34 +432,56 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const changePassword = async (userId: string, newPassword: string): Promise<boolean> => {
     try {
-      const { error } = await supabase.auth.admin.updateUserById(userId, {
-        password: newPassword
-      });
-
-      if (error) {
+      const passwordValidation = validatePassword(newPassword);
+      if (!passwordValidation.isValid) {
         toast({
           title: "Erro",
-          description: error.message,
+          description: passwordValidation.message,
           variant: "destructive"
         });
         return false;
       }
 
+      const { data, error } = await supabase.functions.invoke('change-user-password', {
+        body: { userId, newPassword }
+      });
+
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Falha ao alterar senha",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Senha alterada com sucesso",
+      });
+
       return true;
     } catch (error) {
       console.error('Erro ao alterar senha:', error);
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao alterar senha",
+        variant: "destructive"
+      });
       return false;
     }
   };
 
   const deleteUser = async (userId: string): Promise<boolean> => {
     try {
-      const { error } = await supabase.auth.admin.deleteUser(userId);
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { userId }
+      });
 
       if (error) {
         toast({
           title: "Erro",
-          description: error.message,
+          description: "Falha ao excluir usuário",
           variant: "destructive"
         });
         return false;
@@ -466,6 +490,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return true;
     } catch (error) {
       console.error('Erro ao excluir usuário:', error);
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao excluir usuário",
+        variant: "destructive"
+      });
       return false;
     }
   };

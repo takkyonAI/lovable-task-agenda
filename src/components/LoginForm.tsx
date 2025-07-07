@@ -7,25 +7,35 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Shield, User, Mail, Lock } from 'lucide-react';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
+import { validateEmail, validatePassword, validateName, sanitizeInput } from '@/utils/inputValidation';
 
 const LoginForm: React.FC = () => {
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [signupData, setSignupData] = useState({ name: '', email: '', password: '' });
   const [isLoading, setIsLoading] = useState(false);
+  const [loginAttempts, setLoginAttempts] = useState(0);
   const { login, signUp } = useSupabaseAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Rate limiting - simple client-side check
+    if (loginAttempts >= 5) {
+      alert('Muitas tentativas de login. Tente novamente em alguns minutos.');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       const success = await login(loginData.email, loginData.password);
       if (!success) {
-        alert('Credenciais inválidas. Verifique seu email e senha.');
+        setLoginAttempts(prev => prev + 1);
+      } else {
+        setLoginAttempts(0);
       }
     } catch (error) {
-      console.error('Erro no login:', error);
-      alert('Erro ao fazer login');
+      setLoginAttempts(prev => prev + 1);
     } finally {
       setIsLoading(false);
     }
@@ -41,7 +51,6 @@ const LoginForm: React.FC = () => {
       setSignupData({ name: '', email: '', password: '' });
     } catch (error) {
       console.error('Erro no cadastro:', error);
-      alert('Erro ao criar conta');
     } finally {
       setIsLoading(false);
     }
@@ -75,10 +84,11 @@ const LoginForm: React.FC = () => {
                       id="login-email"
                       type="email"
                       value={loginData.email}
-                      onChange={(e) => setLoginData(prev => ({ ...prev, email: e.target.value }))}
+                      onChange={(e) => setLoginData(prev => ({ ...prev, email: sanitizeInput(e.target.value) }))}
                       className="bg-slate-700/50 border-slate-600 text-white pl-10"
                       placeholder="seu@email.com"
                       required
+                      maxLength={100}
                     />
                   </div>
                 </div>
@@ -95,13 +105,15 @@ const LoginForm: React.FC = () => {
                       className="bg-slate-700/50 border-slate-600 text-white pl-10"
                       placeholder="••••••••"
                       required
+                      minLength={6}
+                      maxLength={128}
                     />
                   </div>
                 </div>
                 
                 <Button 
                   type="submit" 
-                  disabled={isLoading}
+                  disabled={isLoading || loginAttempts >= 5}
                   className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
                 >
                   {isLoading ? 'Entrando...' : 'Entrar'}
@@ -119,10 +131,12 @@ const LoginForm: React.FC = () => {
                       id="signup-name"
                       type="text"
                       value={signupData.name}
-                      onChange={(e) => setSignupData(prev => ({ ...prev, name: e.target.value }))}
+                      onChange={(e) => setSignupData(prev => ({ ...prev, name: sanitizeInput(e.target.value) }))}
                       className="bg-slate-700/50 border-slate-600 text-white pl-10"
                       placeholder="Seu nome completo"
                       required
+                      minLength={2}
+                      maxLength={100}
                     />
                   </div>
                 </div>
@@ -135,10 +149,11 @@ const LoginForm: React.FC = () => {
                       id="signup-email"
                       type="email"
                       value={signupData.email}
-                      onChange={(e) => setSignupData(prev => ({ ...prev, email: e.target.value }))}
+                      onChange={(e) => setSignupData(prev => ({ ...prev, email: sanitizeInput(e.target.value) }))}
                       className="bg-slate-700/50 border-slate-600 text-white pl-10"
                       placeholder="seu@email.com"
                       required
+                      maxLength={100}
                     />
                   </div>
                 </div>
@@ -155,9 +170,13 @@ const LoginForm: React.FC = () => {
                       className="bg-slate-700/50 border-slate-600 text-white pl-10"
                       placeholder="Sua senha"
                       required
-                      minLength={6}
+                      minLength={8}
+                      maxLength={128}
                     />
                   </div>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Senha deve ter pelo menos 8 caracteres, incluindo maiúscula, minúscula e número
+                  </p>
                 </div>
                 
                 <Button 
