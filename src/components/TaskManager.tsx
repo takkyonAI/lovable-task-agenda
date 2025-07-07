@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Calendar, Clock } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Plus, Calendar, Clock, Play, CheckCircle, X } from 'lucide-react';
 import { Task } from '@/types/task';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -18,6 +19,7 @@ const TaskManager: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [updatingTask, setUpdatingTask] = useState<string | null>(null);
   const [newTask, setNewTask] = useState({
     title: '',
     description: '',
@@ -78,6 +80,215 @@ const TaskManager: React.FC = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const updateTaskStatus = async (taskId: string, newStatus: Task['status']) => {
+    if (!currentUser) {
+      toast({
+        title: "Erro",
+        description: "Usuário não autenticado",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setUpdatingTask(taskId);
+    try {
+      const updateData: any = {
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      };
+
+      // Se a tarefa está sendo concluída, definir completed_at
+      if (newStatus === 'concluida') {
+        updateData.completed_at = new Date().toISOString();
+      } else {
+        // Se mudando para outro status, limpar completed_at
+        updateData.completed_at = null;
+      }
+
+      const { error } = await supabase
+        .from('tasks')
+        .update(updateData)
+        .eq('id', taskId);
+
+      if (error) {
+        console.error('Erro ao atualizar status da tarefa:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao atualizar status da tarefa",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Sucesso",
+        description: `Tarefa ${getStatusLabel(newStatus).toLowerCase()} com sucesso`,
+      });
+
+      await loadTasks();
+    } catch (error) {
+      console.error('Erro ao atualizar status da tarefa:', error);
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao atualizar tarefa",
+        variant: "destructive"
+      });
+    } finally {
+      setUpdatingTask(null);
+    }
+  };
+
+  const canEditTask = (task: Task): boolean => {
+    if (!currentUser) return false;
+    
+    // Criador da tarefa
+    if (task.created_by === currentUser.user_id) return true;
+    
+    // Usuário atribuído à tarefa
+    if (task.assigned_users.includes(currentUser.user_id)) return true;
+    
+    // Admin e franqueado podem editar todas
+    if (['admin', 'franqueado'].includes(currentUser.role)) return true;
+    
+    // Outras regras de hierarquia podem ser implementadas aqui
+    return false;
+  };
+
+  const getActionButtons = (task: Task) => {
+    if (!canEditTask(task)) return null;
+
+    const isUpdating = updatingTask === task.id;
+
+    switch (task.status) {
+      case 'pendente':
+        return (
+          <div className="flex space-x-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => updateTaskStatus(task.id, 'em_andamento')}
+              disabled={isUpdating}
+              className="bg-blue-500/20 text-blue-400 border-blue-500/30 hover:bg-blue-500/30"
+            >
+              {isUpdating ? (
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-400"></div>
+              ) : (
+                <Play className="w-3 h-3" />
+              )}
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={isUpdating}
+                  className="bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30"
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="bg-slate-800 border-slate-700">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="text-white">Cancelar Tarefa</AlertDialogTitle>
+                  <AlertDialogDescription className="text-slate-400">
+                    Tem certeza que deseja cancelar esta tarefa? Esta ação não pode ser desfeita.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="bg-slate-700 text-white border-slate-600">
+                    Voltar
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => updateTaskStatus(task.id, 'cancelada')}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    Cancelar Tarefa
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        );
+
+      case 'em_andamento':
+        return (
+          <div className="flex space-x-2">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={isUpdating}
+                  className="bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30"
+                >
+                  {isUpdating ? (
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-green-400"></div>
+                  ) : (
+                    <CheckCircle className="w-3 h-3" />
+                  )}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="bg-slate-800 border-slate-700">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="text-white">Concluir Tarefa</AlertDialogTitle>
+                  <AlertDialogDescription className="text-slate-400">
+                    Tem certeza que deseja marcar esta tarefa como concluída?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="bg-slate-700 text-white border-slate-600">
+                    Voltar
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => updateTaskStatus(task.id, 'concluida')}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    Concluir
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={isUpdating}
+                  className="bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30"
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="bg-slate-800 border-slate-700">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="text-white">Cancelar Tarefa</AlertDialogTitle>
+                  <AlertDialogDescription className="text-slate-400">
+                    Tem certeza que deseja cancelar esta tarefa? Esta ação não pode ser desfeita.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="bg-slate-700 text-white border-slate-600">
+                    Voltar
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => updateTaskStatus(task.id, 'cancelada')}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    Cancelar Tarefa
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        );
+
+      case 'concluida':
+      case 'cancelada':
+      default:
+        return null;
     }
   };
 
@@ -335,6 +546,12 @@ const TaskManager: React.FC = () => {
                       <Calendar className="w-3 h-3" />
                       <span>Criado: {task.created_at.toLocaleDateString('pt-BR')}</span>
                     </div>
+                    {task.completed_at && (
+                      <div className="flex items-center space-x-1">
+                        <CheckCircle className="w-3 h-3" />
+                        <span>Concluído: {task.completed_at.toLocaleDateString('pt-BR')}</span>
+                      </div>
+                    )}
                   </div>
 
                   {task.assigned_users && task.assigned_users.length > 0 && (
@@ -344,6 +561,10 @@ const TaskManager: React.FC = () => {
                       </span>
                     </div>
                   )}
+                </div>
+
+                <div className="ml-4">
+                  {getActionButtons(task)}
                 </div>
               </div>
             ))}
