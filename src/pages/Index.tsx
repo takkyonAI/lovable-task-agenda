@@ -41,11 +41,6 @@ const AppContent = () => {
   const googleSheets = useGoogleSheets();
   const { currentUser, canAccessGoogleConfig, canAccessSheetSetup } = useAuth();
 
-  // Se não há usuário logado, mostrar tela de login
-  if (!currentUser) {
-    return <LoginForm />;
-  }
-
   // Carregar configuração e tarefas na inicialização
   useEffect(() => {
     googleSheets.loadConfig();
@@ -56,6 +51,11 @@ const AppContent = () => {
       googleSheets.fetchTasks().then(setTasks);
     }
   }, [googleSheets.isConfigured]);
+
+  // Agora que todos os hooks foram executados, podemos fazer a verificação de autenticação
+  if (!currentUser) {
+    return <LoginForm />;
+  }
 
   const getTaskStats = () => {
     const total = tasks.length;
