@@ -36,49 +36,7 @@ interface Task {
 }
 
 const Index = () => {
-  const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: '1',
-      title: 'Ligação para cliente ABC',
-      description: 'Follow-up da proposta enviada na semana passada',
-      type: 'follow_up',
-      priority: 'alta',
-      status: 'pendente',
-      scheduledDate: new Date(2025, 0, 7, 14, 30),
-      category: 'vendas',
-      estimatedTime: 30,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-    {
-      id: '2',
-      title: 'Reunião de planejamento',
-      description: 'Definir estratégias para Q1 2025',
-      type: 'manual',
-      priority: 'media',
-      status: 'concluido',
-      scheduledDate: new Date(2025, 0, 6, 10, 0),
-      completedDate: new Date(2025, 0, 6, 11, 0),
-      category: 'admin',
-      estimatedTime: 60,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-    {
-      id: '3',
-      title: 'Email para leads qualificados',
-      description: 'Enviar material sobre novos produtos',
-      type: 'follow_up',
-      priority: 'baixa',
-      status: 'pendente',
-      scheduledDate: new Date(2025, 0, 8, 9, 0),
-      category: 'marketing',
-      estimatedTime: 45,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }
-  ]);
-
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [view, setView] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('daily');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -130,6 +88,13 @@ const Index = () => {
   const getTasksForDay = (day: Date) => {
     return tasks.filter(task => 
       task.scheduledDate.toDateString() === day.toDateString()
+    );
+  };
+
+  const getTasksForMonth = (month: number, year: number) => {
+    return tasks.filter(task => 
+      task.scheduledDate.getMonth() === month && 
+      task.scheduledDate.getFullYear() === year
     );
   };
 
@@ -223,6 +188,11 @@ const Index = () => {
     return days;
   };
 
+  const getYearMonths = () => {
+    const year = selectedDate.getFullYear();
+    return Array.from({ length: 12 }, (_, i) => new Date(year, i, 1));
+  };
+
   const stats = getTaskStats();
   const filteredTasks = tasks.filter(task => {
     const taskDate = task.scheduledDate.toDateString();
@@ -237,6 +207,8 @@ const Index = () => {
       case 'monthly':
         return task.scheduledDate.getMonth() === selectedDate.getMonth() &&
                task.scheduledDate.getFullYear() === selectedDate.getFullYear();
+      case 'yearly':
+        return task.scheduledDate.getFullYear() === selectedDate.getFullYear();
       default:
         return true;
     }
@@ -244,16 +216,17 @@ const Index = () => {
 
   const weekDays = getWeekDays();
   const monthDays = getMonthDays();
+  const yearMonths = getYearMonths();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
+                <div className="p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg">
                   <CalendarDays className="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -264,19 +237,28 @@ const Index = () => {
               
               <div className="flex items-center space-x-4">
                 <Select value={view} onValueChange={(value: any) => setView(value)}>
-                  <SelectTrigger className="w-32 bg-slate-700/50 border-slate-600">
+                  <SelectTrigger className="w-40 bg-slate-700/80 border-slate-600 text-white font-medium shadow-lg">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-800 border-slate-700">
-                    <SelectItem value="daily">Diário</SelectItem>
-                    <SelectItem value="weekly">Semanal</SelectItem>
-                    <SelectItem value="monthly">Mensal</SelectItem>
+                    <SelectItem value="daily" className="text-white hover:bg-slate-700">
+                      📅 Diário
+                    </SelectItem>
+                    <SelectItem value="weekly" className="text-white hover:bg-slate-700">
+                      📊 Semanal
+                    </SelectItem>
+                    <SelectItem value="monthly" className="text-white hover:bg-slate-700">
+                      🗓️ Mensal
+                    </SelectItem>
+                    <SelectItem value="yearly" className="text-white hover:bg-slate-700">
+                      📈 Anual
+                    </SelectItem>
                   </SelectContent>
                 </Select>
                 
                 <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                    <Button className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700">
                       <Plus className="w-4 h-4 mr-2" />
                       Nova Tarefa
                     </Button>
@@ -367,7 +349,7 @@ const Index = () => {
                       
                       <Button 
                         onClick={createTask}
-                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                        className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
                       >
                         Criar Tarefa
                       </Button>
@@ -446,6 +428,8 @@ const Index = () => {
                     newDate.setDate(newDate.getDate() - 7);
                   } else if (view === 'monthly') {
                     newDate.setMonth(newDate.getMonth() - 1);
+                  } else if (view === 'yearly') {
+                    newDate.setFullYear(newDate.getFullYear() - 1);
                   }
                   setSelectedDate(newDate);
                 }}
@@ -470,6 +454,8 @@ const Index = () => {
                     newDate.setDate(newDate.getDate() + 7);
                   } else if (view === 'monthly') {
                     newDate.setMonth(newDate.getMonth() + 1);
+                  } else if (view === 'yearly') {
+                    newDate.setFullYear(newDate.getFullYear() + 1);
                   }
                   setSelectedDate(newDate);
                 }}
@@ -643,6 +629,71 @@ const Index = () => {
                         {dayTasks.length > 2 && (
                           <div className="text-xs text-slate-400 text-center">
                             +{dayTasks.length - 2} mais
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {view === 'yearly' && (
+          <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center">
+                <CalendarDays className="w-5 h-5 mr-2" />
+                Visualização Anual - {selectedDate.getFullYear()}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {yearMonths.map((month, index) => {
+                  const monthTasks = getTasksForMonth(month.getMonth(), month.getFullYear());
+                  const isCurrentMonth = month.getMonth() === new Date().getMonth() && 
+                                        month.getFullYear() === new Date().getFullYear();
+                  
+                  return (
+                    <div key={index} className={`border border-slate-600 rounded-lg p-4 min-h-[150px] ${
+                      isCurrentMonth ? 'bg-blue-500/10 border-blue-500' : 'bg-slate-700/20'
+                    }`}>
+                      <div className="text-center mb-3">
+                        <h3 className={`text-sm font-semibold ${
+                          isCurrentMonth ? 'text-blue-400' : 'text-white'
+                        }`}>
+                          {month.toLocaleDateString('pt-BR', { month: 'long' })}
+                        </h3>
+                        <p className="text-xs text-slate-400">
+                          {monthTasks.length} tarefas
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        {monthTasks.slice(0, 3).map(task => (
+                          <div key={task.id} className="p-2 bg-slate-600/30 rounded text-xs">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-white font-medium truncate">{task.title}</span>
+                              <div className={`w-2 h-2 rounded-full ${
+                                task.priority === 'alta' ? 'bg-red-500' :
+                                task.priority === 'media' ? 'bg-yellow-500' :
+                                'bg-green-500'
+                              }`}></div>
+                            </div>
+                            <div className="text-slate-400">
+                              {task.scheduledDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                            </div>
+                          </div>
+                        ))}
+                        {monthTasks.length > 3 && (
+                          <div className="text-xs text-slate-400 text-center">
+                            +{monthTasks.length - 3} mais
+                          </div>
+                        )}
+                        {monthTasks.length === 0 && (
+                          <div className="text-xs text-slate-500 text-center py-4">
+                            Nenhuma tarefa
                           </div>
                         )}
                       </div>
