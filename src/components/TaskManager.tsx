@@ -8,18 +8,19 @@ import { Target, Clock, CheckCircle, TrendingUp, CalendarDays, Calendar, Chevron
 import CreateTaskDialog from './task/CreateTaskDialog';
 import { useTaskManager } from '@/hooks/useTaskManager';
 import { getStatusColor, getPriorityColor, getStatusLabel, getPriorityLabel } from '@/utils/taskUtils';
+import { NewTask } from '@/types/task';
 
 const TaskManager: React.FC = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('week');
-  const [newTask, setNewTask] = useState({
+  const [newTask, setNewTask] = useState<NewTask>({
     title: '',
     description: '',
-    status: 'pendente' as const,
-    priority: 'media' as const,
+    status: 'pendente',
+    priority: 'media',
     due_date: '',
-    assigned_users: [] as string[]
+    assigned_users: []
   });
 
   const {
