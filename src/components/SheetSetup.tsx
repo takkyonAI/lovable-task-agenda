@@ -3,23 +3,43 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, FileSpreadsheet, Settings, AlertCircle } from 'lucide-react';
+import { CheckCircle, FileSpreadsheet, Settings, AlertCircle, Loader2 } from 'lucide-react';
 import { useGoogleSheets } from '@/hooks/useGoogleSheets';
+import { useToast } from '@/hooks/use-toast';
 
 const SheetSetup: React.FC = () => {
   const [isSetupComplete, setIsSetupComplete] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const googleSheets = useGoogleSheets();
+  const { toast } = useToast();
 
   const handleSetupSheets = async () => {
     setIsLoading(true);
     try {
+      console.log('Iniciando configuração da planilha...');
       const success = await googleSheets.setupSheets();
+      
       if (success) {
         setIsSetupComplete(true);
+        toast({
+          title: "Planilha configurada com sucesso!",
+          description: "As abas 'Tarefas' e 'Usuários' foram criadas com todas as colunas necessárias.",
+        });
+        console.log('✅ Planilha configurada com sucesso');
+      } else {
+        toast({
+          title: "Erro na configuração",
+          description: "Não foi possível configurar a planilha. Verifique os logs para mais detalhes.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
-      console.error('Erro ao configurar planilha:', error);
+      console.error('❌ Erro ao configurar planilha:', error);
+      toast({
+        title: "Erro na configuração",
+        description: `Erro: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -63,7 +83,7 @@ const SheetSetup: React.FC = () => {
             </div>
             <div>
               <CardTitle className="text-white text-lg">Estrutura da Planilha</CardTitle>
-              <p className="text-slate-400 text-sm">Configure as abas e colunas necessárias</p>
+              <p className="text-slate-400 text-sm">Configure as abas e colunas necessárias para o banco de dados</p>
             </div>
           </div>
           
@@ -82,21 +102,36 @@ const SheetSetup: React.FC = () => {
               )}
             </Badge>
             
-            {!isSetupComplete && (
-              <Button 
-                onClick={handleSetupSheets}
-                disabled={isLoading}
-                className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
-              >
-                {isLoading ? 'Configurando...' : 'Configurar Planilha'}
-              </Button>
-            )}
+            <Button 
+              onClick={handleSetupSheets}
+              disabled={isLoading}
+              className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Configurando...
+                </>
+              ) : (
+                <>
+                  <Settings className="w-4 h-4 mr-2" />
+                  {isSetupComplete ? 'Reconfigurar' : 'Configurar Planilha'}
+                </>
+              )}
+            </Button>
           </div>
         </div>
       </CardHeader>
       
       <CardContent>
         <div className="space-y-6">
+          <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+            <h4 className="text-emerald-400 font-medium mb-2">✅ Conectado ao Google Sheets</h4>
+            <p className="text-sm text-slate-300">
+              Agora você pode configurar a estrutura da planilha para armazenar suas tarefas e usuários.
+            </p>
+          </div>
+
           {sheetStructure.map(sheet => (
             <div key={sheet.name} className="space-y-3">
               <div className="flex items-center space-x-2">
@@ -117,14 +152,21 @@ const SheetSetup: React.FC = () => {
           ))}
           
           <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-            <h4 className="text-blue-400 font-medium mb-2">Instruções de Configuração:</h4>
+            <h4 className="text-blue-400 font-medium mb-2">O que acontecerá:</h4>
             <ul className="text-sm text-slate-300 space-y-1">
-              <li>1. Certifique-se de que a planilha está compartilhada com a conta de serviço</li>
-              <li>2. A planilha será configurada automaticamente com as abas necessárias</li>
-              <li>3. Os dados serão organizados conforme a estrutura mostrada acima</li>
-              <li>4. Mantenha a primeira linha de cada aba como cabeçalho</li>
+              <li>• Criação automática das abas "Tarefas" e "Usuários"</li>
+              <li>• Configuração dos cabeçalhos das colunas</li>
+              <li>• Estrutura pronta para armazenar dados do sistema</li>
+              <li>• Sincronização automática com o aplicativo</li>
             </ul>
           </div>
+
+          {googleSheets.error && (
+            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+              <h4 className="text-red-400 font-medium mb-2">Erro:</h4>
+              <p className="text-sm text-slate-300">{googleSheets.error}</p>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
