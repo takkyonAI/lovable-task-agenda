@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, User, Crown, Mail, Lock } from 'lucide-react';
+import { Shield, User, Crown, Mail, Lock, AlertCircle } from 'lucide-react';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 
 const LoginForm: React.FC = () => {
@@ -111,7 +111,21 @@ const LoginForm: React.FC = () => {
               </form>
 
               <div className="pt-4 border-t border-slate-700">
-                <p className="text-slate-400 text-xs text-center mb-3">Acesso rápido (para teste):</p>
+                <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 mb-3">
+                  <div className="flex items-start space-x-2">
+                    <AlertCircle className="w-4 h-4 text-orange-400 mt-0.5 flex-shrink-0" />
+                    <div className="text-xs text-orange-300">
+                      <strong>Para criar o usuário Admin:</strong><br />
+                      1. Clique em "Cadastrar" acima<br />
+                      2. Use o email: wadevenga@hotmail.com<br />
+                      3. Senha: admin123<br />
+                      4. Nome: Administrador<br />
+                      5. Depois volte para fazer login
+                    </div>
+                  </div>
+                </div>
+                
+                <p className="text-slate-400 text-xs text-center mb-3">Acesso rápido (após cadastro):</p>
                 <Button
                   variant="outline"
                   size="sm"
@@ -136,7 +150,7 @@ const LoginForm: React.FC = () => {
                       value={signupData.name}
                       onChange={(e) => setSignupData(prev => ({ ...prev, name: e.target.value }))}
                       className="bg-slate-700/50 border-slate-600 text-white pl-10"
-                      placeholder="Seu nome completo"
+                      placeholder="Administrador"
                       required
                     />
                   </div>
@@ -152,7 +166,7 @@ const LoginForm: React.FC = () => {
                       value={signupData.email}
                       onChange={(e) => setSignupData(prev => ({ ...prev, email: e.target.value }))}
                       className="bg-slate-700/50 border-slate-600 text-white pl-10"
-                      placeholder="seu@email.com"
+                      placeholder="wadevenga@hotmail.com"
                       required
                     />
                   </div>
@@ -168,7 +182,7 @@ const LoginForm: React.FC = () => {
                       value={signupData.password}
                       onChange={(e) => setSignupData(prev => ({ ...prev, password: e.target.value }))}
                       className="bg-slate-700/50 border-slate-600 text-white pl-10"
-                      placeholder="••••••••"
+                      placeholder="admin123"
                       required
                       minLength={6}
                     />
@@ -182,6 +196,15 @@ const LoginForm: React.FC = () => {
                 >
                   {isLoading ? 'Criando Conta...' : 'Criar Conta'}
                 </Button>
+                
+                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
+                  <div className="flex items-start space-x-2">
+                    <AlertCircle className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-blue-300">
+                      O usuário criado com o email <strong>wadevenga@hotmail.com</strong> será automaticamente definido como Admin.
+                    </p>
+                  </div>
+                </div>
               </form>
             </TabsContent>
           </Tabs>

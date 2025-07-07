@@ -178,6 +178,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         });
       }
 
+      // Se o usuário foi criado com sucesso e é o admin
+      if (data.user && email === 'wadevenga@hotmail.com') {
+        // Aguardar um pouco para o trigger criar o perfil
+        setTimeout(async () => {
+          try {
+            await supabase
+              .from('user_profiles')
+              .update({ role: 'admin', name: 'Administrador' })
+              .eq('user_id', data.user.id);
+            
+            toast({
+              title: "Admin Criado",
+              description: "Usuário administrador criado com sucesso! Agora você pode fazer login.",
+            });
+          } catch (error) {
+            console.error('Erro ao atualizar perfil admin:', error);
+          }
+        }, 2000);
+      }
+
       return true;
     } catch (error) {
       console.error('Erro no cadastro:', error);
@@ -428,4 +448,3 @@ export const useSupabaseAuth = () => {
   }
   return context;
 };
-
