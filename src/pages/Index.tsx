@@ -39,7 +39,7 @@ const AppContent = () => {
   });
 
   const googleSheets = useGoogleSheets();
-  const { currentUser, canAccessGoogleConfig, canAccessSheetSetup } = useAuth();
+  const { currentUser, canAccessGoogleConfig, canAccessSheetSetup, canAccessUserManagement } = useAuth();
 
   // Carregar configuração e tarefas na inicialização
   useEffect(() => {
@@ -254,7 +254,7 @@ const AppContent = () => {
         {canAccessSheetSetup() && <SheetSetup />}
 
         {/* Gerenciamento de Usuários - apenas para Admin */}
-        <UserManagement />
+        {canAccessUserManagement() && <UserManagement />}
 
         {/* Header */}
         <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700">

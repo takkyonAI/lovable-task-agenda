@@ -1,3 +1,4 @@
+
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User } from '@/types/user';
 
@@ -12,6 +13,7 @@ interface AuthContextType {
   canAccessSheetSetup: () => boolean;
   pendingUsers: Array<{ name: string; email: string; role: User['role']; confirmationCode: string }>;
   confirmUser: (email: string, code: string) => Promise<boolean>;
+  getAllUsers: () => User[];
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -89,6 +91,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error('Erro no useEffect do AuthProvider:', error);
     }
   }, []);
+
+  const getAllUsers = (): User[] => {
+    try {
+      const confirmedUsers = localStorage.getItem('confirmed_users');
+      if (confirmedUsers) {
+        const users = JSON.parse(confirmedUsers);
+        // Converter todas as datas dos usuários
+        return users.map((user: any) => convertDatesToObjects(user));
+      }
+      return [];
+    } catch (error) {
+      console.error('Erro ao carregar usuários:', error);
+      return [];
+    }
+  };
 
   const login = async (email: string, password: string): Promise<boolean> => {
     console.log('Tentativa de login para:', email);
@@ -231,7 +248,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       canAccessGoogleConfig,
       canAccessSheetSetup,
       pendingUsers,
-      confirmUser
+      confirmUser,
+      getAllUsers
     }}>
       {children}
     </AuthContext.Provider>
