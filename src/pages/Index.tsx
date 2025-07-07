@@ -18,6 +18,8 @@ import {
 import { Task } from '@/types/task';
 import { useGoogleSheets } from '@/hooks/useGoogleSheets';
 import GoogleSheetsConfig from '@/components/GoogleSheetsConfig';
+import UserManagement from '@/components/UserManagement';
+import SheetSetup from '@/components/SheetSetup';
 
 const Index = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -233,6 +235,12 @@ const Index = () => {
           onConfigSave={googleSheets.saveConfig}
           isConfigured={googleSheets.isConfigured}
         />
+
+        {/* Configuração da Estrutura da Planilha */}
+        <SheetSetup />
+
+        {/* Gerenciamento de Usuários */}
+        <UserManagement />
 
         {/* Header */}
         <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700">
