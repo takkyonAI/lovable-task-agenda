@@ -20,7 +20,6 @@ import { useGoogleSheets } from '@/hooks/useGoogleSheets';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import GoogleSheetsConfig from '@/components/GoogleSheetsConfig';
 import UserManagement from '@/components/UserManagement';
-import SheetSetup from '@/components/SheetSetup';
 import LoginForm from '@/components/LoginForm';
 import UserHeader from '@/components/UserHeader';
 
@@ -39,7 +38,7 @@ const AppContent = () => {
   });
 
   const googleSheets = useGoogleSheets();
-  const { currentUser, canAccessGoogleConfig, canAccessSheetSetup, canAccessUserManagement } = useAuth();
+  const { currentUser, canAccessGoogleConfig, canAccessUserManagement } = useAuth();
 
   // Carregar configuração e tarefas na inicialização
   useEffect(() => {
@@ -249,9 +248,6 @@ const AppContent = () => {
             isConfigured={googleSheets.isConfigured}
           />
         )}
-
-        {/* Configuração da Estrutura da Planilha - apenas para Admin */}
-        {canAccessSheetSetup() && <SheetSetup />}
 
         {/* Gerenciamento de Usuários - apenas para Admin */}
         {canAccessUserManagement() && <UserManagement />}
