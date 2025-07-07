@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,14 +5,17 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Target, Clock, CheckCircle, TrendingUp, CalendarDays, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import CreateTaskDialog from './task/CreateTaskDialog';
+import TaskDetailsModal from './task/TaskDetailsModal';
 import { useTaskManager } from '@/hooks/useTaskManager';
 import { getStatusColor, getPriorityColor, getStatusLabel, getPriorityLabel } from '@/utils/taskUtils';
-import { NewTask } from '@/types/task';
+import { NewTask, Task } from '@/types/task';
 
 const TaskManager: React.FC = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('week');
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isTaskDetailsOpen, setIsTaskDetailsOpen] = useState(false);
   const [newTask, setNewTask] = useState<NewTask>({
     title: '',
     description: '',
@@ -48,7 +50,16 @@ const TaskManager: React.FC = () => {
     }
   };
 
-  // Calcular estatísticas
+  const handleTaskClick = (task: Task) => {
+    setSelectedTask(task);
+    setIsTaskDetailsOpen(true);
+  };
+
+  const handleCloseTaskDetails = () => {
+    setIsTaskDetailsOpen(false);
+    setSelectedTask(null);
+  };
+
   const stats = {
     total: tasks.length,
     pendentes: tasks.filter(t => t.status === 'pendente').length,
@@ -56,7 +67,6 @@ const TaskManager: React.FC = () => {
     performance: tasks.length > 0 ? Math.round((tasks.filter(t => t.status === 'concluida').length / tasks.length) * 100) : 0
   };
 
-  // Funções para navegação de data
   const navigateDate = (direction: 'prev' | 'next') => {
     const newDate = new Date(selectedDate);
     switch (currentView) {
@@ -90,7 +100,6 @@ const TaskManager: React.FC = () => {
     }
   };
 
-  // Funções para obter tarefas por período
   const getTasksForHour = (hour: number) => {
     return tasks.filter(task => {
       if (!task.due_date) return false;
@@ -107,7 +116,6 @@ const TaskManager: React.FC = () => {
     });
   };
 
-  // Gerar dias da semana
   const getWeekDays = () => {
     const startOfWeek = new Date(selectedDate);
     startOfWeek.setDate(selectedDate.getDate() - selectedDate.getDay());
@@ -118,7 +126,6 @@ const TaskManager: React.FC = () => {
     });
   };
 
-  // Gerar dias do mês
   const getMonthDays = () => {
     const firstDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
     const lastDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
@@ -284,26 +291,23 @@ const TaskManager: React.FC = () => {
                         </div>
                         <div className="flex-1 min-h-[60px] py-2">
                           {getTasksForHour(hour).map(task => (
-                            <div key={task.id} className="flex items-center justify-between p-2 bg-slate-600/30 rounded border-l-4 border-blue-500 mb-1">
-                              <div className="flex-1">
-                                <div className="flex items-center space-x-2 mb-1">
-                                  <h4 className="font-medium text-white text-sm">{task.title}</h4>
-                                  <Badge className={`text-xs ${getPriorityColor(task.priority)}`}>
-                                    {getPriorityLabel(task.priority)}
-                                  </Badge>
-                                </div>
-                                <p className="text-slate-400 text-xs">{task.description}</p>
+                            <div 
+                              key={task.id} 
+                              className="flex flex-col p-3 bg-slate-600/30 rounded border-l-4 border-blue-500 mb-2 cursor-pointer hover:bg-slate-600/40 transition-colors"
+                              onClick={() => handleTaskClick(task)}
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <h4 className="font-medium text-white text-sm break-words flex-1">{task.title}</h4>
+                                <Badge className={`text-xs ml-2 ${getStatusColor(task.status)}`}>
+                                  {getStatusLabel(task.status)}
+                                </Badge>
                               </div>
-                              {task.status === 'pendente' && canEditTask(task) && (
-                                <Button 
-                                  size="sm" 
-                                  className="bg-green-600 hover:bg-green-700 text-white ml-2"
-                                  onClick={() => updateTaskStatus(task.id, 'concluida')}
-                                  disabled={updatingTask === task.id}
-                                >
-                                  <CheckCircle className="w-3 h-3" />
-                                </Button>
+                              {task.description && (
+                                <p className="text-slate-400 text-xs mb-2">{task.description}</p>
                               )}
+                              <Badge className={`text-xs self-start ${getPriorityColor(task.priority)}`}>
+                                {getPriorityLabel(task.priority)}
+                              </Badge>
                             </div>
                           ))}
                         </div>
@@ -342,30 +346,29 @@ const TaskManager: React.FC = () => {
                             </div>
                           </div>
                           
-                          <div className="space-y-1">
+                          <div className="space-y-2">
                             {dayTasks.map(task => (
-                              <div key={task.id} className="p-2 bg-slate-500/30 rounded text-xs">
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-white font-medium truncate">{task.title}</span>
+                              <div 
+                                key={task.id} 
+                                className="p-2 bg-slate-500/30 rounded text-xs cursor-pointer hover:bg-slate-500/40 transition-colors"
+                                onClick={() => handleTaskClick(task)}
+                              >
+                                <div className="mb-2">
+                                  <span className="text-white font-medium break-words block">{task.title}</span>
+                                </div>
+                                {task.due_date && (
+                                  <div className="text-slate-400 mb-2">
+                                    {formatTime(task.due_date)}
+                                  </div>
+                                )}
+                                <div className="flex justify-between items-center">
+                                  <Badge className={`text-xs ${getStatusColor(task.status)}`}>
+                                    {getStatusLabel(task.status).charAt(0).toUpperCase()}
+                                  </Badge>
                                   <Badge className={`text-xs ${getPriorityColor(task.priority)}`}>
                                     {getPriorityLabel(task.priority).charAt(0).toUpperCase()}
                                   </Badge>
                                 </div>
-                                {task.due_date && (
-                                  <div className="text-slate-400">
-                                    {formatTime(task.due_date)}
-                                  </div>
-                                )}
-                                {task.status === 'pendente' && canEditTask(task) && (
-                                  <Button 
-                                    size="sm" 
-                                    className="w-full mt-1 bg-green-600 hover:bg-green-700 text-white h-6 text-xs"
-                                    onClick={() => updateTaskStatus(task.id, 'concluida')}
-                                    disabled={updatingTask === task.id}
-                                  >
-                                    Concluir
-                                  </Button>
-                                )}
                               </div>
                             ))}
                           </div>
@@ -415,10 +418,14 @@ const TaskManager: React.FC = () => {
                           
                           <div className="space-y-1">
                             {dayTasks.slice(0, 2).map(task => (
-                              <div key={task.id} className="p-1 bg-slate-500/30 rounded text-xs">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-white font-medium truncate text-xs">{task.title}</span>
-                                  <div className={`w-2 h-2 rounded-full ${
+                              <div 
+                                key={task.id} 
+                                className="p-1 bg-slate-500/30 rounded text-xs cursor-pointer hover:bg-slate-500/40 transition-colors"
+                                onClick={() => handleTaskClick(task)}
+                              >
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-white font-medium truncate text-xs flex-1">{task.title}</span>
+                                  <div className={`w-2 h-2 rounded-full ml-1 ${
                                     task.priority === 'urgente' ? 'bg-red-500' :
                                     task.priority === 'alta' ? 'bg-orange-500' :
                                     task.priority === 'media' ? 'bg-yellow-500' :
@@ -450,6 +457,15 @@ const TaskManager: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      <TaskDetailsModal
+        task={selectedTask}
+        isOpen={isTaskDetailsOpen}
+        onClose={handleCloseTaskDetails}
+        onUpdateStatus={updateTaskStatus}
+        canEdit={selectedTask ? canEditTask(selectedTask) : false}
+        isUpdating={selectedTask ? updatingTask === selectedTask.id : false}
+      />
     </div>
   );
 };
