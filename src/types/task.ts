@@ -2,14 +2,13 @@
 export interface Task {
   id: string;
   title: string;
-  description: string;
-  type: 'manual' | 'automated' | 'follow-up';
-  priority: 'alta' | 'media' | 'baixa';
-  status: 'pendente' | 'concluido' | 'cancelado';
-  scheduledDate: Date;
-  completedDate?: Date;
-  category: string;
-  estimatedTime?: number;
-  createdAt: Date;
-  updatedAt: Date;
+  description?: string;
+  status: 'pendente' | 'em_andamento' | 'concluida' | 'cancelada';
+  priority: 'baixa' | 'media' | 'alta' | 'urgente';
+  due_date?: string;
+  assigned_to?: string;
+  created_by: string;
+  created_at: Date;
+  updated_at: Date;
+  completed_at?: Date;
 }

@@ -1,53 +1,52 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Shield, User, Crown } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Shield, User, Crown, Mail, Lock } from 'lucide-react';
+import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 
 const LoginForm: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [loginData, setLoginData] = useState({ email: '', password: '' });
+  const [signupData, setSignupData] = useState({ name: '', email: '', password: '' });
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, signUp } = useSupabaseAuth();
 
-  console.log('LoginForm renderizando');
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Iniciando processo de login...');
     setIsLoading(true);
 
     try {
-      console.log('Chamando função login...');
-      const success = await login(email, password);
-      console.log('Resultado do login:', success);
-      
+      const success = await login(loginData.email, loginData.password);
       if (!success) {
-        console.log('Login falhou - mostrando alerta');
         alert('Credenciais inválidas');
-      } else {
-        console.log('Login bem-sucedido');
       }
     } catch (error) {
-      console.error('Erro no handleSubmit:', error);
+      console.error('Erro no login:', error);
       alert('Erro ao fazer login');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const quickLogin = (role: 'admin' | 'franqueado' | 'vendedor') => {
-    console.log('Quick login para:', role);
-    const emailMap = {
-      admin: 'wadevenga@hotmail.com',
-      franqueado: 'franqueado@empresa.com',
-      vendedor: 'vendedor@empresa.com'
-    };
-    
-    setEmail(emailMap[role]);
-    setPassword('123456');
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      await signUp(signupData.email, signupData.password, signupData.name);
+    } catch (error) {
+      console.error('Erro no cadastro:', error);
+      alert('Erro ao criar conta');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const quickLogin = (email: string, password: string = 'admin123') => {
+    setLoginData({ email, password });
   };
 
   return (
@@ -57,79 +56,135 @@ const LoginForm: React.FC = () => {
           <div className="mx-auto w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center mb-4">
             <Shield className="w-6 h-6 text-white" />
           </div>
-          <CardTitle className="text-white text-xl">Acesso ao Sistema</CardTitle>
-          <p className="text-slate-400 text-sm">Entre com suas credenciais</p>
+          <CardTitle className="text-white text-xl">Sistema de Gerenciamento</CardTitle>
+          <p className="text-slate-400 text-sm">Entre ou crie sua conta</p>
         </CardHeader>
         
-        <CardContent className="space-y-4">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="email" className="text-slate-300">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="bg-slate-700/50 border-slate-600 text-white"
-                placeholder="seu@email.com"
-                required
-              />
-            </div>
+        <CardContent>
+          <Tabs defaultValue="login" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-2 bg-slate-700/50">
+              <TabsTrigger value="login" className="text-slate-300">Entrar</TabsTrigger>
+              <TabsTrigger value="signup" className="text-slate-300">Cadastrar</TabsTrigger>
+            </TabsList>
             
-            <div>
-              <Label htmlFor="password" className="text-slate-300">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="bg-slate-700/50 border-slate-600 text-white"
-                placeholder="••••••••"
-                required
-              />
-            </div>
+            <TabsContent value="login" className="space-y-4">
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div>
+                  <Label htmlFor="login-email" className="text-slate-300">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                    <Input
+                      id="login-email"
+                      type="email"
+                      value={loginData.email}
+                      onChange={(e) => setLoginData(prev => ({ ...prev, email: e.target.value }))}
+                      className="bg-slate-700/50 border-slate-600 text-white pl-10"
+                      placeholder="seu@email.com"
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="login-password" className="text-slate-300">Senha</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                    <Input
+                      id="login-password"
+                      type="password"
+                      value={loginData.password}
+                      onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))}
+                      className="bg-slate-700/50 border-slate-600 text-white pl-10"
+                      placeholder="••••••••"
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  disabled={isLoading}
+                  className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
+                >
+                  {isLoading ? 'Entrando...' : 'Entrar'}
+                </Button>
+              </form>
+
+              <div className="pt-4 border-t border-slate-700">
+                <p className="text-slate-400 text-xs text-center mb-3">Acesso rápido (para teste):</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => quickLogin('wadevenga@hotmail.com')}
+                  className="w-full bg-red-500/20 border-red-500/30 text-red-400 hover:bg-red-500/30"
+                >
+                  <Crown className="w-4 h-4 mr-2" />
+                  Admin
+                </Button>
+              </div>
+            </TabsContent>
             
-            <Button 
-              type="submit" 
-              disabled={isLoading}
-              className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
-            >
-              {isLoading ? 'Entrando...' : 'Entrar'}
-            </Button>
-          </form>
-          
-          <div className="pt-4 border-t border-slate-700">
-            <p className="text-slate-400 text-xs text-center mb-3">Acesso rápido para teste:</p>
-            <div className="grid grid-cols-1 gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => quickLogin('admin')}
-                className="bg-red-500/20 border-red-500/30 text-red-400 hover:bg-red-500/30"
-              >
-                <Crown className="w-4 h-4 mr-2" />
-                Admin
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => quickLogin('franqueado')}
-                className="bg-blue-500/20 border-blue-500/30 text-blue-400 hover:bg-blue-500/30"
-              >
-                <Shield className="w-4 h-4 mr-2" />
-                Franqueado
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => quickLogin('vendedor')}
-                className="bg-green-500/20 border-green-500/30 text-green-400 hover:bg-green-500/30"
-              >
-                <User className="w-4 h-4 mr-2" />
-                Vendedor
-              </Button>
-            </div>
-          </div>
+            <TabsContent value="signup" className="space-y-4">
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div>
+                  <Label htmlFor="signup-name" className="text-slate-300">Nome Completo</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                    <Input
+                      id="signup-name"
+                      type="text"
+                      value={signupData.name}
+                      onChange={(e) => setSignupData(prev => ({ ...prev, name: e.target.value }))}
+                      className="bg-slate-700/50 border-slate-600 text-white pl-10"
+                      placeholder="Seu nome completo"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="signup-email" className="text-slate-300">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                    <Input
+                      id="signup-email"
+                      type="email"
+                      value={signupData.email}
+                      onChange={(e) => setSignupData(prev => ({ ...prev, email: e.target.value }))}
+                      className="bg-slate-700/50 border-slate-600 text-white pl-10"
+                      placeholder="seu@email.com"
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="signup-password" className="text-slate-300">Senha</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                    <Input
+                      id="signup-password"
+                      type="password"
+                      value={signupData.password}
+                      onChange={(e) => setSignupData(prev => ({ ...prev, password: e.target.value }))}
+                      className="bg-slate-700/50 border-slate-600 text-white pl-10"
+                      placeholder="••••••••"
+                      required
+                      minLength={6}
+                    />
+                  </div>
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  disabled={isLoading}
+                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                >
+                  {isLoading ? 'Criando Conta...' : 'Criar Conta'}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </div>

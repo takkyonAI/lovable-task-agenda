@@ -1,11 +1,17 @@
 
 export interface User {
   id: string;
+  user_id: string;
   name: string;
   email: string;
-  password?: string; // Senha opcional para manter compatibilidade
   role: 'admin' | 'franqueado' | 'vendedor';
-  createdAt: Date;
-  lastLogin?: Date;
-  isActive?: boolean; // Para soft delete
+  is_active: boolean;
+  password_hash?: string;
+  created_at: Date;
+  last_login?: Date;
+}
+
+export interface AuthUser {
+  id: string;
+  email: string;
 }

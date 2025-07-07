@@ -4,10 +4,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { LogOut, Crown, Shield, User } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 
 const UserHeader: React.FC = () => {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout } = useSupabaseAuth();
 
   if (!currentUser) return null;
 
