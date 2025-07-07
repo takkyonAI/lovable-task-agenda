@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,17 +12,26 @@ const LoginForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
 
+  console.log('LoginForm renderizando');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Iniciando processo de login...');
     setIsLoading(true);
 
     try {
+      console.log('Chamando função login...');
       const success = await login(email, password);
+      console.log('Resultado do login:', success);
+      
       if (!success) {
+        console.log('Login falhou - mostrando alerta');
         alert('Credenciais inválidas');
+      } else {
+        console.log('Login bem-sucedido');
       }
     } catch (error) {
-      console.error('Erro no login:', error);
+      console.error('Erro no handleSubmit:', error);
       alert('Erro ao fazer login');
     } finally {
       setIsLoading(false);
@@ -31,8 +39,9 @@ const LoginForm: React.FC = () => {
   };
 
   const quickLogin = (role: 'admin' | 'franqueado' | 'vendedor') => {
+    console.log('Quick login para:', role);
     const emailMap = {
-      admin: 'admin@empresa.com',
+      admin: 'wadevenga@hotmail.com',
       franqueado: 'franqueado@empresa.com',
       vendedor: 'vendedor@empresa.com'
     };

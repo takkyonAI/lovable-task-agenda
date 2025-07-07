@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User } from '@/types/user';
 
@@ -29,54 +28,76 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [pendingUsers, setPendingUsers] = useState<Array<{ name: string; email: string; role: User['role']; confirmationCode: string }>>([]);
 
   useEffect(() => {
-    // Verificar se há usuário logado no localStorage
-    const savedUser = localStorage.getItem('current_user');
-    if (savedUser) {
-      try {
-        const user = JSON.parse(savedUser);
-        setCurrentUser(user);
-      } catch (error) {
-        console.error('Erro ao carregar usuário:', error);
-        localStorage.removeItem('current_user');
+    console.log('AuthProvider - useEffect iniciado');
+    
+    try {
+      // Verificar se há usuário logado no localStorage
+      const savedUser = localStorage.getItem('current_user');
+      console.log('savedUser:', savedUser);
+      
+      if (savedUser) {
+        try {
+          const user = JSON.parse(savedUser);
+          console.log('Usuário carregado do localStorage:', user);
+          setCurrentUser(user);
+        } catch (error) {
+          console.error('Erro ao fazer parse do usuário salvo:', error);
+          localStorage.removeItem('current_user');
+        }
       }
-    }
 
-    // Carregar usuários pendentes
-    const savedPendingUsers = localStorage.getItem('pending_users');
-    if (savedPendingUsers) {
-      try {
-        setPendingUsers(JSON.parse(savedPendingUsers));
-      } catch (error) {
-        console.error('Erro ao carregar usuários pendentes:', error);
+      // Carregar usuários pendentes
+      const savedPendingUsers = localStorage.getItem('pending_users');
+      if (savedPendingUsers) {
+        try {
+          const pending = JSON.parse(savedPendingUsers);
+          console.log('Usuários pendentes carregados:', pending);
+          setPendingUsers(pending);
+        } catch (error) {
+          console.error('Erro ao carregar usuários pendentes:', error);
+        }
       }
-    }
 
-    // Criar o primeiro usuário admin se não existir
-    const existingUsers = localStorage.getItem('confirmed_users');
-    if (!existingUsers) {
-      const adminUser: User = {
-        id: 'admin-1',
-        name: 'Administrador Principal',
-        email: 'wadevenga@hotmail.com',
-        role: 'admin',
-        createdAt: new Date(),
-        lastLogin: new Date()
-      };
-      localStorage.setItem('confirmed_users', JSON.stringify([adminUser]));
-      console.log('Usuário admin criado:', adminUser.email);
+      // Criar o primeiro usuário admin se não existir
+      const existingUsers = localStorage.getItem('confirmed_users');
+      console.log('Usuários existentes:', existingUsers);
+      
+      if (!existingUsers) {
+        const adminUser: User = {
+          id: 'admin-1',
+          name: 'Administrador Principal',
+          email: 'wadevenga@hotmail.com',
+          role: 'admin',
+          createdAt: new Date(),
+          lastLogin: new Date()
+        };
+        localStorage.setItem('confirmed_users', JSON.stringify([adminUser]));
+        console.log('Usuário admin criado:', adminUser.email);
+      }
+    } catch (error) {
+      console.error('Erro no useEffect do AuthProvider:', error);
     }
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
+    console.log('Tentativa de login para:', email);
+    
     try {
       // Verificar usuários confirmados
       const confirmedUsers = localStorage.getItem('confirmed_users');
+      console.log('Usuários confirmados no localStorage:', confirmedUsers);
+      
       if (confirmedUsers) {
         const users: User[] = JSON.parse(confirmedUsers);
+        console.log('Lista de usuários:', users);
+        
         const user = users.find(u => u.email === email);
+        console.log('Usuário encontrado:', user);
         
         if (user) {
           const updatedUser = { ...user, lastLogin: new Date() };
+          console.log('Atualizando usuário atual:', updatedUser);
+          
           setCurrentUser(updatedUser);
           localStorage.setItem('current_user', JSON.stringify(updatedUser));
           
@@ -84,10 +105,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const updatedUsers = users.map(u => u.id === user.id ? updatedUser : u);
           localStorage.setItem('confirmed_users', JSON.stringify(updatedUsers));
           
+          console.log('Login realizado com sucesso');
           return true;
         }
       }
 
+      console.log('Login falhou - usuário não encontrado');
       return false;
     } catch (error) {
       console.error('Erro no login:', error);
@@ -182,6 +205,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const canAccessSheetSetup = (): boolean => {
     return hasPermission('admin');
   };
+
+  console.log('AuthProvider renderizando com currentUser:', currentUser);
 
   return (
     <AuthContext.Provider value={{
