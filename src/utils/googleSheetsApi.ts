@@ -1,4 +1,3 @@
-
 interface GoogleSheetsConfig {
   spreadsheetId: string;
   clientId: string;
@@ -41,6 +40,11 @@ export const initGoogleAuth = (clientId: string): Promise<boolean> => {
   });
 };
 
+// Função para obter a URL base atual
+const getCurrentOrigin = (): string => {
+  return window.location.origin;
+};
+
 // Função para obter token OAuth 2.0
 export const getOAuthToken = (clientId: string): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -50,10 +54,14 @@ export const getOAuthToken = (clientId: string): Promise<string> => {
     }
 
     try {
+      const currentOrigin = getCurrentOrigin();
+      console.log('Origem atual:', currentOrigin);
+      
       const tokenClient = window.google.accounts.oauth2.initTokenClient({
         client_id: clientId,
         scope: SCOPES,
         ux_mode: 'popup',
+        redirect_uri: currentOrigin,
         callback: (response: GoogleAuthResponse) => {
           console.log('Resposta do OAuth:', response);
           
@@ -72,10 +80,22 @@ export const getOAuthToken = (clientId: string): Promise<string> => {
         },
         error_callback: (error: any) => {
           console.error('Erro detalhado na autenticação OAuth:', error);
+          console.error('Detalhes do erro:', {
+            type: error.type,
+            message: error.message,
+            details: error.details
+          });
           reject(new Error(`Erro OAuth: ${error.type || error.message || 'Erro desconhecido'}`));
         }
       });
 
+      console.log('Configuração do token client:', {
+        clientId,
+        scope: SCOPES,
+        redirectUri: currentOrigin,
+        uxMode: 'popup'
+      });
+      
       console.log('Iniciando solicitação de token...');
       tokenClient.requestAccessToken({
         prompt: 'consent'
