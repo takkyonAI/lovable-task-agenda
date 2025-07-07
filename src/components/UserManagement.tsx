@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Users, Plus, Crown, Shield, User as UserIcon, UserX, Mail, CheckCircle, Clock } from 'lucide-react';
+import { Users, Plus, Crown, Shield, User as UserIcon, UserX, Mail, CheckCircle, Clock, RefreshCw } from 'lucide-react';
 import { User } from '@/types/user';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -15,6 +16,7 @@ const UserManagement: React.FC = () => {
   const [confirmedUsers, setConfirmedUsers] = useState<User[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
@@ -25,14 +27,31 @@ const UserManagement: React.FC = () => {
     code: ''
   });
 
-  const { canAccessUserManagement, createUser, confirmUser, pendingUsers, getAllUsers } = useAuth();
+  const { canAccessUserManagement, createUser, confirmUser, pendingUsers, getAllUsers, refreshUsers } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
-    // Usar getAllUsers do contexto que já converte as datas corretamente
-    const users = getAllUsers();
-    setConfirmedUsers(users);
-  }, [getAllUsers]);
+    loadUsers();
+  }, []);
+
+  const loadUsers = async () => {
+    setIsLoading(true);
+    try {
+      await refreshUsers();
+      const users = getAllUsers();
+      setConfirmedUsers(users);
+      console.log('Usuários carregados no UserManagement:', users.length);
+    } catch (error) {
+      console.error('Erro ao carregar usuários:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar usuários",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Verificar se o usuário tem permissão para acessar este componente
   if (!canAccessUserManagement()) {
@@ -118,9 +137,8 @@ const UserManagement: React.FC = () => {
           description: "Usuário confirmado com sucesso!",
         });
         
-        // Recarregar usuários usando getAllUsers que converte as datas corretamente
-        const users = getAllUsers();
-        setConfirmedUsers(users);
+        // Recarregar usuários
+        await loadUsers();
         
         setConfirmationData({ email: '', code: '' });
         setIsConfirmDialogOpen(false);
@@ -157,6 +175,25 @@ const UserManagement: React.FC = () => {
             </div>
             
             <div className="flex space-x-2">
+              <Button 
+                onClick={loadUsers}
+                disabled={isLoading}
+                variant="outline" 
+                className="bg-slate-700/50 border-slate-600 hover:bg-slate-600/50 text-white"
+              >
+                {isLoading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Carregando...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Atualizar
+                  </>
+                )}
+              </Button>
+
               <Dialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
                 <DialogTrigger asChild>
                   <Button variant="outline" className="bg-slate-700/50 border-slate-600 hover:bg-slate-600/50 text-white">
@@ -293,10 +330,17 @@ const UserManagement: React.FC = () => {
               </div>
             ))}
             
-            {confirmedUsers.length === 0 && (
+            {confirmedUsers.length === 0 && !isLoading && (
               <div className="text-center py-8">
                 <UserX className="w-12 h-12 text-slate-400 mx-auto mb-4" />
                 <p className="text-slate-400">Nenhum usuário ativo</p>
+              </div>
+            )}
+
+            {isLoading && (
+              <div className="text-center py-8">
+                <RefreshCw className="w-8 h-8 text-slate-400 mx-auto mb-4 animate-spin" />
+                <p className="text-slate-400">Carregando usuários...</p>
               </div>
             )}
           </div>

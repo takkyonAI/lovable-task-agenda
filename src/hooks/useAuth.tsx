@@ -1,6 +1,7 @@
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User } from '@/types/user';
+import { useGoogleSheets } from './useGoogleSheets';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -14,6 +15,7 @@ interface AuthContextType {
   pendingUsers: Array<{ name: string; email: string; role: User['role']; confirmationCode: string }>;
   confirmUser: (email: string, code: string) => Promise<boolean>;
   getAllUsers: () => User[];
+  refreshUsers: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,6 +39,8 @@ const convertDatesToObjects = (user: any): User => {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [pendingUsers, setPendingUsers] = useState<Array<{ name: string; email: string; role: User['role']; confirmationCode: string }>>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const googleSheets = useGoogleSheets();
 
   useEffect(() => {
     console.log('AuthProvider - useEffect iniciado');
@@ -72,71 +76,123 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       // Criar o primeiro usuário admin se não existir
-      const existingUsers = localStorage.getItem('confirmed_users');
-      console.log('Usuários existentes:', existingUsers);
-      
-      if (!existingUsers) {
-        const adminUser: User = {
-          id: 'admin-1',
-          name: 'Administrador Principal',
-          email: 'wadevenga@hotmail.com',
-          role: 'admin',
-          createdAt: new Date(),
-          lastLogin: new Date()
-        };
-        localStorage.setItem('confirmed_users', JSON.stringify([adminUser]));
-        console.log('Usuário admin criado:', adminUser.email);
-      }
+      initializeDefaultAdmin();
     } catch (error) {
       console.error('Erro no useEffect do AuthProvider:', error);
     }
   }, []);
 
-  const getAllUsers = (): User[] => {
+  // Carregar usuários do Google Sheets quando a configuração estiver pronta
+  useEffect(() => {
+    if (googleSheets.isConfigured) {
+      refreshUsers();
+    }
+  }, [googleSheets.isConfigured]);
+
+  const initializeDefaultAdmin = async () => {
     try {
-      const confirmedUsers = localStorage.getItem('confirmed_users');
-      if (confirmedUsers) {
-        const users = JSON.parse(confirmedUsers);
-        // Converter todas as datas dos usuários
-        return users.map((user: any) => convertDatesToObjects(user));
+      if (googleSheets.isConfigured) {
+        // Se Google Sheets está configurado, verificar se admin existe lá
+        const sheetsUsers = await googleSheets.fetchUsers();
+        if (sheetsUsers.length === 0) {
+          // Criar admin no Google Sheets
+          const adminUser: Omit<User, 'id' | 'createdAt'> = {
+            name: 'Administrador Principal',
+            email: 'wadevenga@hotmail.com',
+            role: 'admin',
+            lastLogin: new Date()
+          };
+          await googleSheets.addUser(adminUser);
+          console.log('Usuário admin criado no Google Sheets');
+        }
+      } else {
+        // Fallback para localStorage se Google Sheets não estiver configurado
+        const existingUsers = localStorage.getItem('confirmed_users');
+        console.log('Usuários existentes:', existingUsers);
+        
+        if (!existingUsers) {
+          const adminUser: User = {
+            id: 'admin-1',
+            name: 'Administrador Principal',
+            email: 'wadevenga@hotmail.com',
+            role: 'admin',
+            createdAt: new Date(),
+            lastLogin: new Date()
+          };
+          localStorage.setItem('confirmed_users', JSON.stringify([adminUser]));
+          console.log('Usuário admin criado no localStorage:', adminUser.email);
+        }
       }
-      return [];
+    } catch (error) {
+      console.error('Erro ao inicializar admin:', error);
+    }
+  };
+
+  const refreshUsers = async () => {
+    try {
+      if (googleSheets.isConfigured) {
+        console.log('Carregando usuários do Google Sheets...');
+        const users = await googleSheets.fetchUsers();
+        setAllUsers(users);
+        console.log('Usuários carregados do Google Sheets:', users.length);
+      } else {
+        // Fallback para localStorage
+        try {
+          const confirmedUsers = localStorage.getItem('confirmed_users');
+          if (confirmedUsers) {
+            const users = JSON.parse(confirmedUsers);
+            const usersWithDates = users.map((user: any) => convertDatesToObjects(user));
+            setAllUsers(usersWithDates);
+          }
+        } catch (error) {
+          console.error('Erro ao carregar usuários do localStorage:', error);
+          setAllUsers([]);
+        }
+      }
     } catch (error) {
       console.error('Erro ao carregar usuários:', error);
-      return [];
     }
+  };
+
+  const getAllUsers = (): User[] => {
+    return allUsers;
   };
 
   const login = async (email: string, password: string): Promise<boolean> => {
     console.log('Tentativa de login para:', email);
     
     try {
-      // Verificar usuários confirmados
-      const confirmedUsers = localStorage.getItem('confirmed_users');
-      console.log('Usuários confirmados no localStorage:', confirmedUsers);
+      // Garantir que temos os usuários mais recentes
+      await refreshUsers();
       
-      if (confirmedUsers) {
-        const users: User[] = JSON.parse(confirmedUsers);
-        console.log('Lista de usuários:', users);
+      console.log('Usuários disponíveis para login:', allUsers);
+      
+      const user = allUsers.find(u => u.email === email);
+      console.log('Usuário encontrado:', user);
+      
+      if (user) {
+        const updatedUser = { ...user, lastLogin: new Date() };
+        console.log('Atualizando usuário atual:', updatedUser);
         
-        const user = users.find(u => u.email === email);
-        console.log('Usuário encontrado:', user);
+        setCurrentUser(updatedUser);
+        localStorage.setItem('current_user', JSON.stringify(updatedUser));
         
-        if (user) {
-          const userWithDates = convertDatesToObjects(user);
-          const updatedUser = { ...userWithDates, lastLogin: new Date() };
-          console.log('Atualizando usuário atual:', updatedUser);
-          
-          setCurrentUser(updatedUser);
-          localStorage.setItem('current_user', JSON.stringify(updatedUser));
-          
-          // Atualizar no array de usuários confirmados
-          const updatedUsers = users.map(u => u.id === user.id ? updatedUser : u);
+        // Atualizar no Google Sheets se configurado
+        if (googleSheets.isConfigured) {
+          try {
+            // Aqui você pode implementar uma função updateUser no useGoogleSheets se necessário
+            console.log('Usuário logado com sucesso via Google Sheets');
+          } catch (error) {
+            console.error('Erro ao atualizar último login no Google Sheets:', error);
+          }
+        } else {
+          // Atualizar no localStorage
+          const updatedUsers = allUsers.map(u => u.id === user.id ? updatedUser : u);
           localStorage.setItem('confirmed_users', JSON.stringify(updatedUsers));
-          
-          console.log('Login realizado com sucesso');
-          return true;
         }
+        
+        console.log('Login realizado com sucesso');
+        return true;
       }
 
       console.log('Login falhou - usuário não encontrado');
@@ -182,24 +238,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       // Criar usuário confirmado
-      const newUser: User = {
-        id: Date.now().toString(),
+      const newUserData: Omit<User, 'id' | 'createdAt'> = {
         name: pendingUser.name,
         email: pendingUser.email,
-        role: pendingUser.role,
-        createdAt: new Date()
+        role: pendingUser.role
       };
 
-      // Adicionar aos usuários confirmados
-      const confirmedUsers = localStorage.getItem('confirmed_users');
-      const users: User[] = confirmedUsers ? JSON.parse(confirmedUsers) : [];
-      users.push(newUser);
-      localStorage.setItem('confirmed_users', JSON.stringify(users));
+      if (googleSheets.isConfigured) {
+        // Adicionar ao Google Sheets
+        await googleSheets.addUser(newUserData);
+        console.log('Usuário adicionado ao Google Sheets:', email);
+      } else {
+        // Fallback para localStorage
+        const newUser: User = {
+          ...newUserData,
+          id: Date.now().toString(),
+          createdAt: new Date()
+        };
+
+        const confirmedUsers = localStorage.getItem('confirmed_users');
+        const users: User[] = confirmedUsers ? JSON.parse(confirmedUsers) : [];
+        users.push(newUser);
+        localStorage.setItem('confirmed_users', JSON.stringify(users));
+      }
 
       // Remover da lista de pendentes
       const updatedPendingUsers = pendingUsers.filter(u => u.email !== email);
       setPendingUsers(updatedPendingUsers);
       localStorage.setItem('pending_users', JSON.stringify(updatedPendingUsers));
+
+      // Atualizar lista de usuários
+      await refreshUsers();
 
       console.log('Usuário confirmado com sucesso:', email);
       return true;
@@ -249,7 +318,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       canAccessSheetSetup,
       pendingUsers,
       confirmUser,
-      getAllUsers
+      getAllUsers,
+      refreshUsers
     }}>
       {children}
     </AuthContext.Provider>
