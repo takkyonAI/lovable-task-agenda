@@ -89,9 +89,9 @@ const TaskManager: React.FC = () => {
         return selectedDate.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
       case 'week':
         const weekStart = new Date(selectedDate);
-        weekStart.setDate(selectedDate.getDate() - selectedDate.getDay());
+        weekStart.setDate(selectedDate.getDate() - selectedDate.getDay() + 1); // Start from Monday
         const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekStart.getDate() + 6);
+        weekEnd.setDate(weekStart.getDate() + 5); // End on Saturday
         return `${weekStart.getDate()}/${weekStart.getMonth() + 1} - ${weekEnd.getDate()}/${weekEnd.getMonth() + 1}`;
       case 'month':
         return selectedDate.toLocaleDateString('pt-BR', { year: 'numeric', month: 'long' });
@@ -118,8 +118,13 @@ const TaskManager: React.FC = () => {
 
   const getWeekDays = () => {
     const startOfWeek = new Date(selectedDate);
-    startOfWeek.setDate(selectedDate.getDate() - selectedDate.getDay());
-    return Array.from({ length: 7 }, (_, i) => {
+    // Set to Monday (1) instead of Sunday (0)
+    const dayOfWeek = selectedDate.getDay();
+    const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    startOfWeek.setDate(selectedDate.getDate() - daysFromMonday);
+    
+    // Return only 6 days (Monday to Saturday)
+    return Array.from({ length: 6 }, (_, i) => {
       const day = new Date(startOfWeek);
       day.setDate(startOfWeek.getDate() + i);
       return day;
@@ -176,7 +181,6 @@ const TaskManager: React.FC = () => {
         </CardHeader>
         
         <CardContent>
-          {/* Grid de Métricas */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <Card className="bg-slate-700/30 border-slate-600">
               <CardContent className="p-4">
@@ -227,7 +231,6 @@ const TaskManager: React.FC = () => {
             </Card>
           </div>
 
-          {/* Navegação do Calendário */}
           <Card className="bg-slate-700/30 border-slate-600 mb-6">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -259,7 +262,6 @@ const TaskManager: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Tabs para diferentes visualizações */}
           <Tabs value={currentView} onValueChange={(value) => setCurrentView(value as 'day' | 'week' | 'month')}>
             <TabsList className="grid w-full grid-cols-3 bg-slate-700/50 border-slate-600">
               <TabsTrigger value="day" className="data-[state=active]:bg-purple-600">
@@ -273,7 +275,6 @@ const TaskManager: React.FC = () => {
               </TabsTrigger>
             </TabsList>
 
-            {/* Vista Diária - Timeline */}
             <TabsContent value="day">
               <Card className="bg-slate-700/30 border-slate-600">
                 <CardHeader>
@@ -318,17 +319,16 @@ const TaskManager: React.FC = () => {
               </Card>
             </TabsContent>
 
-            {/* Vista Semanal - 7 Colunas */}
             <TabsContent value="week">
               <Card className="bg-slate-700/30 border-slate-600">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center">
                     <CalendarDays className="w-5 h-5 mr-2" />
-                    Visualização Semanal
+                    Visualização Semanal (Segunda a Sábado)
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-7 gap-2">
+                  <div className="grid grid-cols-6 gap-2">
                     {weekDays.map((day, index) => {
                       const dayTasks = getTasksForDay(day);
                       const isToday = day.toDateString() === new Date().toDateString();
@@ -380,7 +380,6 @@ const TaskManager: React.FC = () => {
               </Card>
             </TabsContent>
 
-            {/* Vista Mensal - Grade de Calendário */}
             <TabsContent value="month">
               <Card className="bg-slate-700/30 border-slate-600">
                 <CardHeader>
@@ -391,14 +390,12 @@ const TaskManager: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-7 gap-1">
-                    {/* Cabeçalho dos dias da semana */}
                     {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
                       <div key={day} className="text-center text-xs text-slate-400 py-2 font-medium">
                         {day}
                       </div>
                     ))}
                     
-                    {/* Grade de dias */}
                     {monthDays.map((day, index) => {
                       const dayTasks = getTasksForDay(day);
                       const isCurrentMonth = day.getMonth() === selectedDate.getMonth();
