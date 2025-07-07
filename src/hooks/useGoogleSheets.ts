@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Task } from '../types/task';
 import { User } from '../types/user';
 
@@ -14,6 +14,20 @@ export const useGoogleSheets = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [config, setConfig] = useState<GoogleSheetsConfig | null>(null);
+
+  // Carregar configuração na inicialização
+  useEffect(() => {
+    const savedConfig = localStorage.getItem('googleSheetsConfig');
+    if (savedConfig) {
+      try {
+        const parsedConfig = JSON.parse(savedConfig);
+        setConfig(parsedConfig);
+        setIsConfigured(true);
+      } catch (err) {
+        console.error('Erro ao carregar configuração:', err);
+      }
+    }
+  }, []);
 
   const saveConfig = useCallback((newConfig: GoogleSheetsConfig) => {
     setConfig(newConfig);
@@ -63,23 +77,6 @@ export const useGoogleSheets = () => {
       return false;
     }
   }, [config]);
-
-  const getAccessToken = async (): Promise<string> => {
-    if (!config) throw new Error('Configuração não encontrada');
-    
-    const now = Math.floor(Date.now() / 1000);
-    const payload = {
-      iss: config.serviceAccountEmail,
-      scope: 'https://www.googleapis.com/auth/spreadsheets',
-      aud: 'https://oauth2.googleapis.com/token',
-      iat: now,
-      exp: now + 3600
-    };
-
-    // Em produção, usaríamos uma biblioteca JWT real
-    console.log('Gerando token de acesso para:', config.serviceAccountEmail);
-    return 'mock-access-token';
-  };
 
   const fetchTasks = useCallback(async (): Promise<Task[]> => {
     if (!isConfigured || !config) {
