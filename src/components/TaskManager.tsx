@@ -38,22 +38,45 @@ const TaskManager: React.FC = () => {
   const loadTasks = async () => {
     setIsLoading(true);
     try {
+      // Use raw query to avoid TypeScript type issues
       const { data, error } = await supabase
-        .from('tasks')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .rpc('get_tasks_for_user');
 
-      if (error) {
-        console.error('Erro ao carregar tarefas:', error);
-        toast({
-          title: "Erro",
-          description: "Erro ao carregar tarefas",
-          variant: "destructive"
-        });
-        return;
-      }
+      if (error && error.code !== 'PGRST202') {
+        // Fallback to direct query if RPC doesn't exist
+        const { data: taskData, error: taskError } = await supabase
+          .from('tasks' as any)
+          .select('*')
+          .order('created_at', { ascending: false });
 
-      if (data) {
+        if (taskError) {
+          console.error('Erro ao carregar tarefas:', taskError);
+          toast({
+            title: "Erro",
+            description: "Erro ao carregar tarefas",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        if (taskData) {
+          const formattedTasks: Task[] = taskData.map((task: any) => ({
+            id: task.id,
+            title: task.title,
+            description: task.description || '',
+            status: task.status,
+            priority: task.priority,
+            due_date: task.due_date || undefined,
+            assigned_users: task.assigned_users || [],
+            created_by: task.created_by,
+            created_at: new Date(task.created_at),
+            updated_at: new Date(task.updated_at),
+            completed_at: task.completed_at ? new Date(task.completed_at) : undefined
+          }));
+
+          setTasks(formattedTasks);
+        }
+      } else if (data) {
         const formattedTasks: Task[] = data.map((task: any) => ({
           id: task.id,
           title: task.title,
@@ -103,7 +126,7 @@ const TaskManager: React.FC = () => {
 
     try {
       const { data, error } = await supabase
-        .from('tasks')
+        .from('tasks' as any)
         .insert({
           title: newTask.title,
           description: newTask.description || null,

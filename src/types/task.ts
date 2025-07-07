@@ -6,7 +6,7 @@ export interface Task {
   status: 'pendente' | 'em_andamento' | 'concluida' | 'cancelada';
   priority: 'baixa' | 'media' | 'alta' | 'urgente';
   due_date?: string;
-  assigned_users?: string[];
+  assigned_users: string[];
   created_by: string;
   created_at: Date;
   updated_at: Date;
