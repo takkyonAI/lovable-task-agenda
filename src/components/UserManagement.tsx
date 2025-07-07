@@ -18,6 +18,7 @@ const UserManagement: React.FC = () => {
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
@@ -27,7 +28,9 @@ const UserManagement: React.FC = () => {
   });
   const [confirmationData, setConfirmationData] = useState({
     email: '',
-    code: ''
+    code: '',
+    password: '',
+    confirmPassword: ''
   });
 
   const { 
@@ -158,32 +161,50 @@ const UserManagement: React.FC = () => {
   };
 
   const handleConfirmUser = async () => {
-    if (!confirmationData.email || !confirmationData.code) {
+    if (!confirmationData.email || !confirmationData.code || !confirmationData.password) {
       toast({
         title: "Erro",
-        description: "Preencha o email e o código de confirmação",
+        description: "Preencha todos os campos obrigatórios",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (confirmationData.password !== confirmationData.confirmPassword) {
+      toast({
+        title: "Erro",
+        description: "As senhas não coincidem",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (confirmationData.password.length < 6) {
+      toast({
+        title: "Erro",
+        description: "A senha deve ter pelo menos 6 caracteres",
         variant: "destructive"
       });
       return;
     }
 
     try {
-      const success = await confirmUser(confirmationData.email, confirmationData.code);
+      const success = await confirmUser(confirmationData.email, confirmationData.code, confirmationData.password);
       if (success) {
         toast({
           title: "Usuário Confirmado",
-          description: "Usuário confirmado com sucesso!",
+          description: "Usuário confirmado com sucesso! Agora ele pode fazer login com a senha criada.",
         });
         
         // Recarregar usuários
         await loadUsers();
         
-        setConfirmationData({ email: '', code: '' });
+        setConfirmationData({ email: '', code: '', password: '', confirmPassword: '' });
         setIsConfirmDialogOpen(false);
       } else {
         toast({
           title: "Erro",
-          description: "Código de confirmação inválido",
+          description: "Código de confirmação inválido ou senha muito fraca",
           variant: "destructive"
         });
       }
@@ -303,6 +324,7 @@ const UserManagement: React.FC = () => {
                 <DialogContent className="bg-slate-800 border-slate-700">
                   <DialogHeader>
                     <DialogTitle className="text-white">Confirmar Usuário</DialogTitle>
+                    <p className="text-slate-400 text-sm">O usuário deve criar sua senha durante a confirmação</p>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
@@ -326,6 +348,45 @@ const UserManagement: React.FC = () => {
                         className="bg-slate-700/50 border-slate-600 text-white"
                         placeholder="XXXXXX"
                         maxLength={6}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="confirmPassword" className="text-slate-300">Nova Senha</Label>
+                      <div className="relative">
+                        <Input
+                          id="confirmPassword"
+                          type={showConfirmPassword ? "text" : "password"}
+                          value={confirmationData.password}
+                          onChange={(e) => setConfirmationData(prev => ({ ...prev, password: e.target.value }))}
+                          className="bg-slate-700/50 border-slate-600 text-white pr-10"
+                          placeholder="Digite a senha (mín. 6 caracteres)"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff className="h-4 w-4 text-slate-400" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-slate-400" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="confirmPasswordRepeat" className="text-slate-300">Confirmar Senha</Label>
+                      <Input
+                        id="confirmPasswordRepeat"
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={confirmationData.confirmPassword}
+                        onChange={(e) => setConfirmationData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                        className="bg-slate-700/50 border-slate-600 text-white"
+                        placeholder="Confirme a senha"
                       />
                     </div>
                     
@@ -552,7 +613,7 @@ const UserManagement: React.FC = () => {
               </div>
               <div>
                 <CardTitle className="text-white text-lg">Usuários Pendentes</CardTitle>
-                <p className="text-slate-400 text-sm">Aguardando confirmação por email</p>
+                <p className="text-slate-400 text-sm">Aguardando confirmação por email com criação de senha</p>
               </div>
             </div>
           </CardHeader>
@@ -568,6 +629,7 @@ const UserManagement: React.FC = () => {
                     <div>
                       <h4 className="font-medium text-white">{user.name}</h4>
                       <p className="text-sm text-slate-400">{user.email}</p>
+                      <p className="text-xs text-yellow-400">Deve criar senha na confirmação</p>
                     </div>
                   </div>
                   

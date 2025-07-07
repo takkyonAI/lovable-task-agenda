@@ -12,7 +12,7 @@ interface AuthContextType {
   canAccessGoogleConfig: () => boolean;
   canAccessSheetSetup: () => boolean;
   pendingUsers: Array<{ name: string; email: string; role: User['role']; confirmationCode: string; password?: string }>;
-  confirmUser: (email: string, code: string) => Promise<boolean>;
+  confirmUser: (email: string, code: string, password: string) => Promise<boolean>;
   getAllUsers: () => User[];
   refreshUsers: () => Promise<void>;
   changePassword: (userId: string, newPassword: string) => Promise<boolean>;
@@ -302,11 +302,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const confirmUser = async (email: string, code: string): Promise<boolean> => {
+  const confirmUser = async (email: string, code: string, password: string): Promise<boolean> => {
     try {
+      // Validar senha
+      if (!password || password.length < 6) {
+        console.error('Senha deve ter pelo menos 6 caracteres');
+        return false;
+      }
+
       const pendingUser = pendingUsers.find(u => u.email === email && u.confirmationCode === code);
       
       if (!pendingUser) {
+        console.error('Código de confirmação inválido ou usuário não encontrado');
         return false;
       }
 
@@ -314,7 +321,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         name: pendingUser.name,
         email: pendingUser.email,
         role: pendingUser.role,
-        password: pendingUser.password,
+        password: password, // Usar a senha fornecida pelo usuário
         isActive: true
       };
 
