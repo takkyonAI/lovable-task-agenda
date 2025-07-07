@@ -78,8 +78,9 @@ const GoogleSheetsConfig: React.FC<GoogleSheetsConfigProps> = ({ onConfigSave, i
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       setAuthError(errorMessage);
       
-      // Mostrar alerta apenas para erros que não são de configuração
-      if (!errorMessage.includes('redirect_uri_mismatch')) {
+      // Não mostrar alert para erros que já têm instruções detalhadas
+      if (!errorMessage.includes('redirect_uri_mismatch') && 
+          !errorMessage.includes('org_internal')) {
         alert(`Erro na autenticação: ${errorMessage}`);
       }
     } finally {
@@ -189,6 +190,9 @@ const GoogleSheetsConfig: React.FC<GoogleSheetsConfigProps> = ({ onConfigSave, i
                       <Copy className="w-3 h-3" />
                     </Button>
                   </div>
+                  <p className="text-yellow-400 text-xs mt-2">
+                    <strong>⚠️ ERRO 403 org_internal:</strong> Se aparecer "Acesso bloqueado", o app está configurado como INTERNO. Veja as instruções detalhadas abaixo.
+                  </p>
                 </div>
               </div>
             </div>
@@ -203,34 +207,47 @@ const GoogleSheetsConfig: React.FC<GoogleSheetsConfigProps> = ({ onConfigSave, i
             </Button>
             
             {showConfigHelp && (
-              <div className="mt-3 p-3 bg-slate-900/50 rounded text-xs text-slate-300 space-y-2">
-                <p><strong>PASSO A PASSO - Google Cloud Console:</strong></p>
-                <ol className="list-decimal list-inside space-y-1 ml-2">
-                  <li>Acesse: <code>console.cloud.google.com</code></li>
-                  <li>Vá para: APIs & Services → Credentials</li>
-                  <li>Encontre o Client ID OAuth 2.0</li>
-                  <li>Clique em ✏️ para editar</li>
-                  <li>Em "Authorized JavaScript origins" adicione:</li>
-                </ol>
-                
-                <div className="ml-4 space-y-1">
-                  {allOrigins.map(origin => (
-                    <div key={origin} className="flex items-center space-x-2 p-1 bg-slate-700/30 rounded">
-                      <code className="flex-1 text-green-400">{origin}</code>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => copyToClipboard(origin)}
-                        className="h-5 w-5 p-0"
-                      >
-                        <Copy className="w-2 h-2" />
-                      </Button>
-                    </div>
-                  ))}
+              <div className="mt-3 p-3 bg-slate-900/50 rounded text-xs text-slate-300 space-y-3">
+                <div>
+                  <p className="text-yellow-400 font-medium">📋 SOLUÇÃO PARA ERRO 403 org_internal:</p>
+                  <div className="ml-2 space-y-1">
+                    <p><strong>OPÇÃO 1 - Tornar Público (Recomendado):</strong></p>
+                    <ol className="list-decimal list-inside ml-2 space-y-1">
+                      <li>Acesse: console.cloud.google.com</li>
+                      <li>APIs & Services → OAuth consent screen</li>
+                      <li>Mude de "Internal" para "External"</li>
+                      <li>Complete a configuração</li>
+                    </ol>
+                  </div>
                 </div>
                 
-                <p className="text-yellow-400"><strong>6. REMOVA TODAS as "Authorized redirect URIs"</strong></p>
-                <p>7. Salve e aguarde 5-10 minutos para propagação</p>
+                <div>
+                  <p className="text-green-400 font-medium">🔧 CONFIGURAÇÃO JAVASCRIPT ORIGINS:</p>
+                  <ol className="list-decimal list-inside ml-2 space-y-1">
+                    <li>APIs & Services → Credentials</li>
+                    <li>Edite o Client ID OAuth 2.0</li>
+                    <li>Em "Authorized JavaScript origins" adicione:</li>
+                  </ol>
+                  
+                  <div className="ml-4 space-y-1 mt-2">
+                    {allOrigins.map(origin => (
+                      <div key={origin} className="flex items-center space-x-2 p-1 bg-slate-700/30 rounded">
+                        <code className="flex-1 text-green-400">{origin}</code>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => copyToClipboard(origin)}
+                          className="h-5 w-5 p-0"
+                        >
+                          <Copy className="w-2 h-2" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <p className="text-yellow-400 mt-2"><strong>4. REMOVA TODAS as "Authorized redirect URIs"</strong></p>
+                  <p>5. Salve e aguarde 5-10 minutos</p>
+                </div>
               </div>
             )}
           </div>
@@ -247,7 +264,7 @@ const GoogleSheetsConfig: React.FC<GoogleSheetsConfigProps> = ({ onConfigSave, i
           </div>
 
           {authError && (
-            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg max-h-48 overflow-y-auto">
               <pre className="text-red-400 text-xs whitespace-pre-wrap">{authError}</pre>
             </div>
           )}

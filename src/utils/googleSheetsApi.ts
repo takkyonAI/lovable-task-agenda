@@ -113,7 +113,7 @@ export const getOAuthToken = (clientId: string): Promise<string> => {
           let errorMessage = 'Erro na autenticação OAuth';
           
           if (error.type === 'redirect_uri_mismatch') {
-            errorMessage = `ERRO DE CONFIGURAÇÃO OAUTH
+            errorMessage = `ERRO DE CONFIGURAÇÃO OAUTH - redirect_uri_mismatch
 
 ORIGEM ATUAL: ${currentOrigin}
 
@@ -128,6 +128,29 @@ SOLUÇÃO - Configure no Google Cloud Console:
 6. Salve e aguarde 5-10 minutos para propagação
 
 A origem atual ${currentOrigin} NÃO está autorizada.`;
+          } else if (error.type === 'org_internal') {
+            errorMessage = `ERRO DE ACESSO RESTRITO - org_internal
+
+O aplicativo está configurado como INTERNO, permitindo apenas usuários da organização.
+
+SOLUÇÕES - Configure no Google Cloud Console:
+
+OPÇÃO 1 - Tornar Público (Recomendado):
+1. Acesse: console.cloud.google.com
+2. APIs & Services → OAuth consent screen
+3. Mude de "Internal" para "External"
+4. Complete a configuração (pode precisar verificação)
+
+OPÇÃO 2 - Adicionar Usuários de Teste:
+1. Mantenha como "Internal"
+2. Na seção "Test users" adicione os emails autorizados
+3. Adicione: wadepvenga@gmail.com
+
+OPÇÃO 3 - Use a conta da organização:
+1. Faça logout da conta atual
+2. Login com: contato@takkyon.com`;
+          } else if (error.type === 'popup_closed') {
+            errorMessage = 'Popup de autenticação foi fechado. Tente novamente e complete o processo de login.';
           }
           
           reject(new Error(errorMessage));
