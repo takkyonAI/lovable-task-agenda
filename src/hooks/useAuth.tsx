@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User } from '@/types/user';
 import { useGoogleSheets } from './useGoogleSheets';
@@ -74,9 +73,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           console.error('Erro ao carregar usuários pendentes:', error);
         }
       }
-
-      // Criar o primeiro usuário admin se não existir
-      initializeDefaultAdmin();
     } catch (error) {
       console.error('Erro no useEffect do AuthProvider:', error);
     }
@@ -85,46 +81,87 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Carregar usuários do Google Sheets quando a configuração estiver pronta
   useEffect(() => {
     if (googleSheets.isConfigured) {
-      refreshUsers();
+      initializeAndMigrateUsers();
     }
   }, [googleSheets.isConfigured]);
 
-  const initializeDefaultAdmin = async () => {
+  const initializeAndMigrateUsers = async () => {
     try {
-      if (googleSheets.isConfigured) {
-        // Se Google Sheets está configurado, verificar se admin existe lá
-        const sheetsUsers = await googleSheets.fetchUsers();
-        if (sheetsUsers.length === 0) {
-          // Criar admin no Google Sheets
-          const adminUser: Omit<User, 'id' | 'createdAt'> = {
-            name: 'Administrador Principal',
-            email: 'wadevenga@hotmail.com',
-            role: 'admin',
-            lastLogin: new Date()
-          };
-          await googleSheets.addUser(adminUser);
-          console.log('Usuário admin criado no Google Sheets');
-        }
-      } else {
-        // Fallback para localStorage se Google Sheets não estiver configurado
-        const existingUsers = localStorage.getItem('confirmed_users');
-        console.log('Usuários existentes:', existingUsers);
+      console.log('Inicializando e migrando usuários para Google Sheets...');
+      
+      // Buscar usuários existentes no Google Sheets
+      const sheetsUsers = await googleSheets.fetchUsers();
+      console.log('Usuários no Google Sheets:', sheetsUsers.length);
+      
+      // Verificar se precisa migrar o admin do localStorage
+      const adminExists = sheetsUsers.some(user => user.role === 'admin');
+      
+      if (!adminExists) {
+        console.log('Admin não encontrado no Google Sheets, criando...');
         
-        if (!existingUsers) {
-          const adminUser: User = {
-            id: 'admin-1',
+        // Verificar se existe admin no localStorage para migrar
+        const localStorageUsers = localStorage.getItem('confirmed_users');
+        let adminUser: Omit<User, 'id' | 'createdAt'>;
+        
+        if (localStorageUsers) {
+          try {
+            const users = JSON.parse(localStorageUsers);
+            const existingAdmin = users.find((u: User) => u.role === 'admin');
+            
+            if (existingAdmin) {
+              console.log('Migrando admin do localStorage para Google Sheets');
+              adminUser = {
+                name: existingAdmin.name,
+                email: existingAdmin.email,
+                role: 'admin',
+                lastLogin: existingAdmin.lastLogin ? new Date(existingAdmin.lastLogin) : new Date()
+              };
+            } else {
+              throw new Error('Admin não encontrado no localStorage');
+            }
+          } catch (error) {
+            console.log('Criando admin padrão');
+            adminUser = {
+              name: 'Administrador Principal',
+              email: 'wadevenga@hotmail.com',
+              role: 'admin',
+              lastLogin: new Date()
+            };
+          }
+        } else {
+          console.log('Criando admin padrão');
+          adminUser = {
             name: 'Administrador Principal',
             email: 'wadevenga@hotmail.com',
             role: 'admin',
-            createdAt: new Date(),
             lastLogin: new Date()
           };
-          localStorage.setItem('confirmed_users', JSON.stringify([adminUser]));
-          console.log('Usuário admin criado no localStorage:', adminUser.email);
         }
+        
+        // Adicionar admin ao Google Sheets
+        await googleSheets.addUser(adminUser);
+        console.log('Usuário admin adicionado ao Google Sheets:', adminUser.email);
       }
+      
+      // Atualizar lista de usuários
+      await refreshUsers();
     } catch (error) {
-      console.error('Erro ao inicializar admin:', error);
+      console.error('Erro ao inicializar usuários:', error);
+      
+      // Fallback para localStorage se Google Sheets falhar
+      const existingUsers = localStorage.getItem('confirmed_users');
+      if (!existingUsers) {
+        const adminUser: User = {
+          id: 'admin-1',
+          name: 'Administrador Principal',
+          email: 'wadevenga@hotmail.com',
+          role: 'admin',
+          createdAt: new Date(),
+          lastLogin: new Date()
+        };
+        localStorage.setItem('confirmed_users', JSON.stringify([adminUser]));
+        console.log('Usuário admin criado no localStorage como fallback');
+      }
     }
   };
 
@@ -180,8 +217,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Atualizar no Google Sheets se configurado
         if (googleSheets.isConfigured) {
           try {
-            // Aqui você pode implementar uma função updateUser no useGoogleSheets se necessário
-            console.log('Usuário logado com sucesso via Google Sheets');
+            console.log('Login realizado via Google Sheets');
           } catch (error) {
             console.error('Erro ao atualizar último login no Google Sheets:', error);
           }
