@@ -2,6 +2,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Task } from '../types/task';
 import { User } from '../types/user';
+import { getAccessToken, makeAuthenticatedRequest, setupSheetsStructure } from '../utils/googleSheetsApi';
+import { rowToTask, taskToRow, rowToUser, userToRow } from '../utils/googleSheetsConverters';
 
 interface GoogleSheetsConfig {
   spreadsheetId: string;
@@ -55,26 +57,26 @@ export const useGoogleSheets = () => {
   }, []);
 
   const setupSheets = useCallback(async () => {
-    if (!config) return;
+    if (!config) return false;
 
     try {
+      setIsLoading(true);
       console.log('Configurando planilha com estrutura inicial...');
       
-      // Aqui implementaríamos a criação das abas e estrutura da planilha
-      // Por enquanto, vamos simular a configuração
+      const accessToken = await getAccessToken(config.serviceAccountEmail, config.privateKey);
+      const success = await setupSheetsStructure(config.spreadsheetId, accessToken);
       
-      // Estrutura da aba "Tarefas":
-      // A1:M1 - Cabeçalhos: ID, Título, Descrição, Tipo, Prioridade, Status, Data Agendada, Data Conclusão, Categoria, Tempo Estimado, Criado Em, Atualizado Em, Usuário ID
+      if (success) {
+        console.log('Planilha configurada com sucesso');
+      }
       
-      // Estrutura da aba "Usuários":
-      // A1:F1 - Cabeçalhos: ID, Nome, Email, Papel, Criado Em, Último Login
-      
-      console.log('Planilha configurada com sucesso');
-      return true;
+      return success;
     } catch (err) {
       console.error('Erro ao configurar planilha:', err);
       setError('Erro ao configurar a estrutura da planilha');
       return false;
+    } finally {
+      setIsLoading(false);
     }
   }, [config]);
 
@@ -90,37 +92,23 @@ export const useGoogleSheets = () => {
     try {
       console.log('Buscando tarefas da planilha:', config.spreadsheetId);
       
-      // Simulação da busca - em produção faria chamada real para API
-      const mockTasks: Task[] = [
-        {
-          id: '1',
-          title: 'Configurar sistema de usuários',
-          description: 'Implementar controle de acesso e permissões',
-          type: 'manual',
-          priority: 'alta',
-          status: 'pendente',
-          scheduledDate: new Date(),
-          category: 'desenvolvimento',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        {
-          id: '2',
-          title: 'Testar integração Google Sheets',
-          description: 'Verificar se os dados estão sendo salvos corretamente',
-          type: 'manual',
-          priority: 'media',
-          status: 'concluido',
-          scheduledDate: new Date(Date.now() - 86400000),
-          completedDate: new Date(),
-          category: 'testes',
-          createdAt: new Date(Date.now() - 86400000),
-          updatedAt: new Date()
-        }
-      ];
+      const accessToken = await getAccessToken(config.serviceAccountEmail, config.privateKey);
+      const response = await makeAuthenticatedRequest(
+        `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/Tarefas!A2:M`,
+        accessToken
+      );
 
-      console.log('Tarefas carregadas:', mockTasks.length);
-      return mockTasks;
+      const tasks: Task[] = [];
+      if (response.values) {
+        for (const row of response.values) {
+          if (row[0]) { // Só processar se tiver ID
+            tasks.push(rowToTask(row));
+          }
+        }
+      }
+
+      console.log('Tarefas carregadas:', tasks.length);
+      return tasks;
     } catch (err) {
       const errorMessage = 'Erro ao buscar tarefas do Google Sheets';
       console.error(errorMessage, err);
@@ -149,8 +137,20 @@ export const useGoogleSheets = () => {
         updatedAt: new Date()
       };
 
-      // Aqui implementaríamos a adição real na planilha
-      // Por enquanto, simulamos o sucesso
+      const accessToken = await getAccessToken(config.serviceAccountEmail, config.privateKey);
+      const rowData = taskToRow(newTask);
+
+      await makeAuthenticatedRequest(
+        `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/Tarefas!A:M:append?valueInputOption=RAW`,
+        accessToken,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            values: [rowData]
+          })
+        }
+      );
+
       console.log('Tarefa adicionada com sucesso:', newTask.id);
       return newTask;
     } catch (err) {
@@ -174,19 +174,49 @@ export const useGoogleSheets = () => {
     try {
       console.log('Atualizando tarefa na planilha:', taskId);
 
+      // Primeiro, buscar a tarefa atual
+      const accessToken = await getAccessToken(config.serviceAccountEmail, config.privateKey);
+      const response = await makeAuthenticatedRequest(
+        `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/Tarefas!A2:M`,
+        accessToken
+      );
+
+      let rowIndex = -1;
+      let currentTask: Task | null = null;
+
+      if (response.values) {
+        for (let i = 0; i < response.values.length; i++) {
+          const row = response.values[i];
+          if (row[0] === taskId) {
+            rowIndex = i + 2; // +2 porque começamos na linha 2 (A2)
+            currentTask = rowToTask(row);
+            break;
+          }
+        }
+      }
+
+      if (!currentTask || rowIndex === -1) {
+        throw new Error('Tarefa não encontrada');
+      }
+
       const updatedTask: Task = {
-        id: taskId,
-        title: updates.title || '',
-        description: updates.description || '',
-        type: updates.type || 'manual',
-        priority: updates.priority || 'media',
-        status: updates.status || 'pendente',
-        scheduledDate: updates.scheduledDate || new Date(),
-        category: updates.category || 'geral',
-        createdAt: updates.createdAt || new Date(),
-        updatedAt: new Date(),
-        ...updates
+        ...currentTask,
+        ...updates,
+        updatedAt: new Date()
       };
+
+      const rowData = taskToRow(updatedTask);
+
+      await makeAuthenticatedRequest(
+        `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/Tarefas!A${rowIndex}:M${rowIndex}`,
+        accessToken,
+        {
+          method: 'PUT',
+          body: JSON.stringify({
+            values: [rowData]
+          })
+        }
+      );
 
       console.log('Tarefa atualizada com sucesso:', taskId);
       return updatedTask;
@@ -209,19 +239,23 @@ export const useGoogleSheets = () => {
     try {
       console.log('Buscando usuários da planilha...');
       
-      // Simulação - em produção buscaria da aba "Usuários"
-      const mockUsers: User[] = [
-        {
-          id: '1',
-          name: 'Administrador',
-          email: 'admin@sistema.com',
-          role: 'admin',
-          createdAt: new Date(),
-          lastLogin: new Date()
-        }
-      ];
+      const accessToken = await getAccessToken(config.serviceAccountEmail, config.privateKey);
+      const response = await makeAuthenticatedRequest(
+        `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/Usuários!A2:F`,
+        accessToken
+      );
 
-      return mockUsers;
+      const users: User[] = [];
+      if (response.values) {
+        for (const row of response.values) {
+          if (row[0]) { // Só processar se tiver ID
+            users.push(rowToUser(row));
+          }
+        }
+      }
+
+      console.log('Usuários carregados:', users.length);
+      return users;
     } catch (err) {
       console.error('Erro ao buscar usuários:', err);
       return [];
@@ -235,14 +269,36 @@ export const useGoogleSheets = () => {
       throw new Error('Google Sheets não configurado');
     }
 
-    const newUser: User = {
-      ...userData,
-      id: Date.now().toString(),
-      createdAt: new Date()
-    };
+    setIsLoading(true);
+    try {
+      const newUser: User = {
+        ...userData,
+        id: Date.now().toString(),
+        createdAt: new Date()
+      };
 
-    console.log('Usuário adicionado:', newUser.email);
-    return newUser;
+      const accessToken = await getAccessToken(config.serviceAccountEmail, config.privateKey);
+      const rowData = userToRow(newUser);
+
+      await makeAuthenticatedRequest(
+        `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/Usuários!A:F:append?valueInputOption=RAW`,
+        accessToken,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            values: [rowData]
+          })
+        }
+      );
+
+      console.log('Usuário adicionado:', newUser.email);
+      return newUser;
+    } catch (err) {
+      console.error('Erro ao adicionar usuário:', err);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
   }, [isConfigured, config]);
 
   return {
