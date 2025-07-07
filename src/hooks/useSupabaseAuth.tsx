@@ -271,45 +271,90 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const createUser = async (userData: { name: string; email: string; role: User['role'] }): Promise<boolean> => {
     try {
-      // Criar usuário no auth
-      const { data, error } = await supabase.auth.admin.createUser({
+      console.log('Criando usuário:', userData);
+
+      // Primeiro tentar criar o usuário no auth.users
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: userData.email,
-        password: Math.random().toString(36), // Senha temporária
-        email_confirm: true,
-        user_metadata: {
-          full_name: userData.name
+        password: Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2), // Senha aleatória mais forte
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            full_name: userData.name
+          }
         }
       });
 
-      if (error) {
+      if (authError) {
+        console.error('Erro ao criar usuário no auth:', authError);
         toast({
           title: "Erro",
-          description: error.message,
+          description: authError.message,
           variant: "destructive"
         });
         return false;
       }
 
-      // Atualizar o perfil com o papel correto
-      if (data.user) {
-        const { error: profileError } = await supabase
-          .from('user_profiles')
-          .update({ role: userData.role })
-          .eq('user_id', data.user.id);
+      if (!authData.user) {
+        toast({
+          title: "Erro",
+          description: "Falha ao criar usuário",
+          variant: "destructive"
+        });
+        return false;
+      }
 
-        if (profileError) {
-          console.error('Erro ao atualizar perfil:', profileError);
+      console.log('Usuário criado no auth, ID:', authData.user.id);
+
+      // Aguardar um pouco para o trigger criar o perfil
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Atualizar o perfil com o papel correto
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .update({ 
+          role: userData.role,
+          name: userData.name 
+        })
+        .eq('user_id', authData.user.id);
+
+      if (profileError) {
+        console.error('Erro ao atualizar perfil:', profileError);
+        // Tentar criar o perfil manualmente se a atualização falhar
+        const { error: insertError } = await supabase
+          .from('user_profiles')
+          .insert({
+            user_id: authData.user.id,
+            name: userData.name,
+            email: userData.email,
+            role: userData.role,
+            is_active: true
+          });
+
+        if (insertError) {
+          console.error('Erro ao inserir perfil:', insertError);
+          toast({
+            title: "Erro",
+            description: "Falha ao criar perfil do usuário",
+            variant: "destructive"
+          });
+          return false;
         }
       }
 
       toast({
         title: "Usuário Criado",
-        description: `${userData.name} foi criado com sucesso`,
+        description: `${userData.name} foi criado com sucesso!`,
       });
 
       return true;
     } catch (error) {
-      console.error('Erro ao criar usuário:', error);
+      console.error('Erro geral ao criar usuário:', error);
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao criar usuário",
+        variant: "destructive"
+      });
       return false;
     }
   };

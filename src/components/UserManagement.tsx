@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,13 +16,11 @@ const UserManagement: React.FC = () => {
   const [confirmedUsers, setConfirmedUsers] = useState<User[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
     role: 'vendedor' as const,
-    password: '',
-    createWithPassword: false
   });
 
   const { 
@@ -113,6 +110,18 @@ const UserManagement: React.FC = () => {
       return;
     }
 
+    // Validar email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newUser.email)) {
+      toast({
+        title: "Erro",
+        description: "Por favor, insira um email válido",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsCreating(true);
     try {
       const userData = {
         name: newUser.name,
@@ -122,27 +131,23 @@ const UserManagement: React.FC = () => {
 
       const success = await createUser(userData);
       if (success) {
-        toast({
-          title: "Usuário Criado",
-          description: `Usuário ${newUser.name} criado com sucesso!`,
-        });
-        
         setNewUser({
           name: '',
           email: '',
           role: 'vendedor',
-          password: '',
-          createWithPassword: false
         });
         setIsAddDialogOpen(false);
         await loadUsers();
       }
     } catch (error) {
+      console.error('Erro ao criar usuário no componente:', error);
       toast({
         title: "Erro",
-        description: "Erro ao criar usuário",
+        description: "Erro inesperado ao criar usuário",
         variant: "destructive"
       });
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -209,7 +214,6 @@ const UserManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Usuários Confirmados */}
       <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700">
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -256,18 +260,19 @@ const UserManagement: React.FC = () => {
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="userName" className="text-slate-300">Nome</Label>
+                      <Label htmlFor="userName" className="text-slate-300">Nome *</Label>
                       <Input
                         id="userName"
                         value={newUser.name}
                         onChange={(e) => setNewUser(prev => ({ ...prev, name: e.target.value }))}
                         className="bg-slate-700/50 border-slate-600 text-white"
-                        placeholder="Nome do usuário"
+                        placeholder="Nome completo do usuário"
+                        disabled={isCreating}
                       />
                     </div>
                     
                     <div>
-                      <Label htmlFor="userEmail" className="text-slate-300">Email</Label>
+                      <Label htmlFor="userEmail" className="text-slate-300">Email *</Label>
                       <Input
                         id="userEmail"
                         type="email"
@@ -275,12 +280,17 @@ const UserManagement: React.FC = () => {
                         onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
                         className="bg-slate-700/50 border-slate-600 text-white"
                         placeholder="email@exemplo.com"
+                        disabled={isCreating}
                       />
                     </div>
                     
                     <div>
                       <Label htmlFor="userRole" className="text-slate-300">Papel</Label>
-                      <Select value={newUser.role} onValueChange={(value: any) => setNewUser(prev => ({ ...prev, role: value }))}>
+                      <Select 
+                        value={newUser.role} 
+                        onValueChange={(value: any) => setNewUser(prev => ({ ...prev, role: value }))}
+                        disabled={isCreating}
+                      >
                         <SelectTrigger className="bg-slate-700/50 border-slate-600">
                           <SelectValue />
                         </SelectTrigger>
@@ -298,10 +308,20 @@ const UserManagement: React.FC = () => {
                     
                     <Button 
                       onClick={handleCreateUser}
+                      disabled={isCreating}
                       className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                     >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Criar Usuário
+                      {isCreating ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          Criando...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="w-4 h-4 mr-2" />
+                          Criar Usuário
+                        </>
+                      )}
                     </Button>
                   </div>
                 </DialogContent>
