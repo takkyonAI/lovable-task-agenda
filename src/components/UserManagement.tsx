@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,20 +25,14 @@ const UserManagement: React.FC = () => {
     code: ''
   });
 
-  const { canAccessUserManagement, createUser, confirmUser, pendingUsers } = useAuth();
+  const { canAccessUserManagement, createUser, confirmUser, pendingUsers, getAllUsers } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
-    // Carregar usuários confirmados
-    const savedUsers = localStorage.getItem('confirmed_users');
-    if (savedUsers) {
-      try {
-        setConfirmedUsers(JSON.parse(savedUsers));
-      } catch (error) {
-        console.error('Erro ao carregar usuários:', error);
-      }
-    }
-  }, []);
+    // Usar getAllUsers do contexto que já converte as datas corretamente
+    const users = getAllUsers();
+    setConfirmedUsers(users);
+  }, [getAllUsers]);
 
   // Verificar se o usuário tem permissão para acessar este componente
   if (!canAccessUserManagement()) {
@@ -125,11 +118,9 @@ const UserManagement: React.FC = () => {
           description: "Usuário confirmado com sucesso!",
         });
         
-        // Recarregar usuários confirmados
-        const savedUsers = localStorage.getItem('confirmed_users');
-        if (savedUsers) {
-          setConfirmedUsers(JSON.parse(savedUsers));
-        }
+        // Recarregar usuários usando getAllUsers que converte as datas corretamente
+        const users = getAllUsers();
+        setConfirmedUsers(users);
         
         setConfirmationData({ email: '', code: '' });
         setIsConfirmDialogOpen(false);
