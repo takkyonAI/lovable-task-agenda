@@ -1,3 +1,4 @@
+
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -82,7 +83,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchUserProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from('user_profiles' as any)
+        .from('user_profiles')
         .select('*')
         .eq('user_id', userId)
         .single();
@@ -94,21 +95,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (data) {
         const userProfile: User = {
-          id: data.id,
-          user_id: data.user_id,
-          name: data.name,
-          email: data.email,
+          id: data.id as string,
+          user_id: data.user_id as string,
+          name: data.name as string,
+          email: data.email as string,
           role: data.role as User['role'],
-          is_active: data.is_active,
-          password_hash: data.password_hash,
-          created_at: new Date(data.created_at),
-          last_login: data.last_login ? new Date(data.last_login) : undefined
+          is_active: data.is_active as boolean,
+          password_hash: data.password_hash as string,
+          created_at: new Date(data.created_at as string),
+          last_login: data.last_login ? new Date(data.last_login as string) : undefined
         };
         setCurrentUser(userProfile);
         
         // Atualizar último login
         await supabase
-          .from('user_profiles' as any)
+          .from('user_profiles')
           .update({ last_login: new Date().toISOString() })
           .eq('user_id', userId);
       }
@@ -214,7 +215,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Atualizar o perfil com o papel correto
       if (data.user) {
         const { error: profileError } = await supabase
-          .from('user_profiles' as any)
+          .from('user_profiles')
           .update({ role: userData.role })
           .eq('user_id', data.user.id);
 
@@ -238,7 +239,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const getAllUsers = async (): Promise<User[]> => {
     try {
       const { data, error } = await supabase
-        .from('user_profiles' as any)
+        .from('user_profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -248,15 +249,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       return (data || []).map((user: any) => ({
-        id: user.id,
-        user_id: user.user_id,
-        name: user.name,
-        email: user.email,
+        id: user.id as string,
+        user_id: user.user_id as string,
+        name: user.name as string,
+        email: user.email as string,
         role: user.role as User['role'],
-        is_active: user.is_active,
-        password_hash: user.password_hash,
-        created_at: new Date(user.created_at),
-        last_login: user.last_login ? new Date(user.last_login) : undefined
+        is_active: user.is_active as boolean,
+        password_hash: user.password_hash as string,
+        created_at: new Date(user.created_at as string),
+        last_login: user.last_login ? new Date(user.last_login as string) : undefined
       }));
     } catch (error) {
       console.error('Erro ao buscar usuários:', error);
@@ -269,7 +270,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!currentUser) return [];
 
       const { data, error } = await supabase
-        .rpc('get_visible_users_for_role' as any, { user_role: currentUser.role });
+        .rpc('get_visible_users_for_role', { user_role: currentUser.role });
 
       if (error) {
         console.error('Erro ao buscar usuários visíveis:', error);
@@ -277,10 +278,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       return (data || []).map((user: any) => ({
-        id: user.user_id,
-        user_id: user.user_id,
-        name: user.name,
-        email: user.email,
+        id: user.user_id as string,
+        user_id: user.user_id as string,
+        name: user.name as string,
+        email: user.email as string,
         role: user.role as User['role'],
         is_active: true,
         created_at: new Date(),
@@ -338,7 +339,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       // Buscar usuário atual
       const { data: userData, error: fetchError } = await supabase
-        .from('user_profiles' as any)
+        .from('user_profiles')
         .select('is_active')
         .eq('id', userId)
         .single();
@@ -350,8 +351,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // Alternar status
       const { error } = await supabase
-        .from('user_profiles' as any)
-        .update({ is_active: !userData.is_active })
+        .from('user_profiles')
+        .update({ is_active: !(userData as any).is_active })
         .eq('id', userId);
 
       if (error) {
