@@ -1,4 +1,3 @@
-
 interface GoogleSheetsConfig {
   spreadsheetId: string;
   clientId: string;
@@ -17,12 +16,25 @@ const SCOPES = [
   'https://www.googleapis.com/auth/drive.file'
 ].join(' ');
 
-// Função para detectar a origem atual
+// Função para detectar a origem atual com mais precisão
 const getCurrentOrigin = (): string => {
   if (typeof window !== 'undefined') {
     return window.location.origin;
   }
   return 'http://localhost:5173';
+};
+
+// Função para obter todas as possíveis origens que podem ser necessárias
+export const getAllPossibleOrigins = (): string[] => {
+  const currentOrigin = getCurrentOrigin();
+  const origins = [currentOrigin];
+  
+  // Adicionar localhost se não for a origem atual
+  if (!currentOrigin.includes('localhost')) {
+    origins.push('http://localhost:5173');
+  }
+  
+  return origins;
 };
 
 // Função para inicializar o Google Identity Services
@@ -53,7 +65,7 @@ export const initGoogleAuth = (clientId: string): Promise<boolean> => {
   });
 };
 
-// Função para obter token OAuth 2.0 com configuração corrigida
+// Função para obter token OAuth 2.0 com detecção precisa de origem
 export const getOAuthToken = (clientId: string): Promise<string> => {
   return new Promise((resolve, reject) => {
     if (typeof window.google === 'undefined') {
@@ -63,18 +75,17 @@ export const getOAuthToken = (clientId: string): Promise<string> => {
 
     try {
       const currentOrigin = getCurrentOrigin();
-      console.log('=== CONFIGURAÇÃO OAUTH DEBUG ===');
+      console.log('=== CONFIGURAÇÃO OAUTH DETALHADA ===');
       console.log('Client ID:', clientId);
-      console.log('Origem atual:', currentOrigin);
+      console.log('Origem detectada:', currentOrigin);
       console.log('Escopos:', SCOPES);
-      console.log('Modo UX: popup (SEM redirect_uri)');
-      console.log('===============================');
+      console.log('Modo UX: popup');
+      console.log('=====================================');
       
       const tokenClient = window.google.accounts.oauth2.initTokenClient({
         client_id: clientId,
         scope: SCOPES,
         ux_mode: 'popup',
-        // REMOVIDO: redirect_uri - não é necessário para popup mode
         callback: (response: GoogleAuthResponse) => {
           console.log('=== RESPOSTA OAUTH ===');
           console.log('Resposta completa:', response);
@@ -82,7 +93,6 @@ export const getOAuthToken = (clientId: string): Promise<string> => {
           console.log('====================');
           
           if (response.access_token) {
-            // Armazenar token com timestamp de expiração
             const expiresAt = Date.now() + (response.expires_in * 1000);
             localStorage.setItem('google_access_token', response.access_token);
             localStorage.setItem('google_token_expires_at', expiresAt.toString());
@@ -98,32 +108,26 @@ export const getOAuthToken = (clientId: string): Promise<string> => {
           console.error('=== ERRO OAUTH DETALHADO ===');
           console.error('Erro completo:', error);
           console.error('Tipo do erro:', error.type);
-          console.error('Mensagem:', error.message);
-          console.error('Detalhes:', error.details);
           console.error('============================');
           
-          // Mensagens específicas para cada tipo de erro
-          let errorMessage = 'Erro desconhecido na autenticação';
+          let errorMessage = 'Erro na autenticação OAuth';
           
           if (error.type === 'redirect_uri_mismatch') {
-            errorMessage = `
-ERRO: redirect_uri_mismatch
+            errorMessage = `ERRO DE CONFIGURAÇÃO OAUTH
 
-Para corrigir, acesse o Google Cloud Console:
-1. Vá para APIs & Services > Credentials
-2. Edite o Client ID: ${clientId}
-3. Em "Authorized JavaScript origins", adicione:
+ORIGEM ATUAL: ${currentOrigin}
+
+SOLUÇÃO - Configure no Google Cloud Console:
+1. Acesse: console.cloud.google.com
+2. APIs & Services → Credentials  
+3. Edite o Client ID: ${clientId}
+4. Em "Authorized JavaScript origins" adicione:
    - ${currentOrigin}
    - http://localhost:5173
-4. REMOVA completamente "Authorized redirect URIs" (deixe vazio)
-5. Salve as alterações
+5. REMOVA COMPLETAMENTE "Authorized redirect URIs"
+6. Salve e aguarde 5-10 minutos para propagação
 
-Origem atual detectada: ${currentOrigin}
-            `;
-          } else if (error.type === 'popup_closed_by_user') {
-            errorMessage = 'Popup de autenticação foi fechado pelo usuário';
-          } else if (error.type === 'access_denied') {
-            errorMessage = 'Acesso negado pelo usuário';
+A origem atual ${currentOrigin} NÃO está autorizada.`;
           }
           
           reject(new Error(errorMessage));

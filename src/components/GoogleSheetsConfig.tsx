@@ -5,8 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Settings, Check, X, LogOut, RefreshCw, Info, AlertTriangle } from 'lucide-react';
-import { initGoogleAuth, getOAuthToken, isTokenValid, disconnectGoogle, listUserSpreadsheets } from '@/utils/googleSheetsApi';
+import { Settings, Check, X, LogOut, RefreshCw, Info, AlertTriangle, Copy } from 'lucide-react';
+import { initGoogleAuth, getOAuthToken, isTokenValid, disconnectGoogle, listUserSpreadsheets, getAllPossibleOrigins } from '@/utils/googleSheetsApi';
 
 interface GoogleSheetsConfigProps {
   onConfigSave: (config: {
@@ -31,10 +31,18 @@ const GoogleSheetsConfig: React.FC<GoogleSheetsConfigProps> = ({ onConfigSave, i
   const [spreadsheets, setSpreadsheets] = useState<Spreadsheet[]>([]);
   const [showSpreadsheetSelect, setShowSpreadsheetSelect] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [showConfigHelp, setShowConfigHelp] = useState(false);
 
   useEffect(() => {
     setIsAuthenticated(isTokenValid());
   }, []);
+
+  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'N/A';
+  const allOrigins = getAllPossibleOrigins();
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
 
   const handleGoogleAuth = async () => {
     if (!clientId) {
@@ -130,7 +138,7 @@ const GoogleSheetsConfig: React.FC<GoogleSheetsConfigProps> = ({ onConfigSave, i
             </div>
             <div>
               <CardTitle className="text-white text-lg">Configuração Google Sheets</CardTitle>
-              <p className="text-slate-400 text-sm">Conecte com sua conta Takkyon</p>
+              <p className="text-slate-400 text-sm">Conecte com sua conta Google</p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -161,52 +169,74 @@ const GoogleSheetsConfig: React.FC<GoogleSheetsConfigProps> = ({ onConfigSave, i
       
       {isExpanded && (
         <CardContent className="space-y-4">
-          <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-            <div className="flex items-start space-x-2">
-              <Info className="w-4 h-4 text-blue-400 mt-0.5" />
-              <div>
-                <p className="text-blue-400 text-sm font-medium">
-                  Planilha da Takkyon Configurada
+          <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+            <div className="flex items-start space-x-2 mb-3">
+              <AlertTriangle className="w-5 h-5 text-red-400 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-red-400 text-sm font-medium mb-2">
+                  CONFIGURAÇÃO OAUTH NECESSÁRIA
                 </p>
-                <p className="text-slate-300 text-xs mt-1">
-                  ID: {spreadsheetId}
-                </p>
-                <p className="text-slate-400 text-xs mt-1">
-                  Origem atual: {typeof window !== 'undefined' ? window.location.origin : 'N/A'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {authError && authError.includes('redirect_uri_mismatch') && (
-            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-              <div className="flex items-start space-x-2">
-                <AlertTriangle className="w-4 h-4 text-red-400 mt-0.5" />
-                <div>
-                  <p className="text-red-400 text-sm font-medium">
-                    Erro de Configuração OAuth
-                  </p>
-                  <div className="text-slate-300 text-xs mt-2 space-y-1">
-                    <p><strong>Para corrigir:</strong></p>
-                    <p>1. Acesse Google Cloud Console</p>
-                    <p>2. APIs & Services → Credentials</p>
-                    <p>3. Edite o Client ID da Takkyon</p>
-                    <p>4. Em "Authorized JavaScript origins" adicione:</p>
-                    <p className="ml-2 font-mono bg-slate-700/50 px-2 py-1 rounded">
-                      {typeof window !== 'undefined' ? window.location.origin : 'N/A'}
-                    </p>
-                    <p className="ml-2 font-mono bg-slate-700/50 px-2 py-1 rounded">
-                      http://localhost:5173
-                    </p>
-                    <p>5. <strong>REMOVA</strong> "Authorized redirect URIs"</p>
+                <div className="text-slate-300 text-xs space-y-2">
+                  <p><strong>Origem atual detectada:</strong></p>
+                  <div className="flex items-center space-x-2 p-2 bg-slate-700/50 rounded font-mono text-xs">
+                    <span className="flex-1">{currentOrigin}</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => copyToClipboard(currentOrigin)}
+                      className="h-6 w-6 p-0 hover:bg-slate-600/50"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </Button>
                   </div>
                 </div>
               </div>
             </div>
-          )}
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowConfigHelp(!showConfigHelp)}
+              className="bg-red-500/20 border-red-500/30 text-red-400 hover:bg-red-500/30"
+            >
+              {showConfigHelp ? 'Ocultar' : 'Mostrar'} Instruções Detalhadas
+            </Button>
+            
+            {showConfigHelp && (
+              <div className="mt-3 p-3 bg-slate-900/50 rounded text-xs text-slate-300 space-y-2">
+                <p><strong>PASSO A PASSO - Google Cloud Console:</strong></p>
+                <ol className="list-decimal list-inside space-y-1 ml-2">
+                  <li>Acesse: <code>console.cloud.google.com</code></li>
+                  <li>Vá para: APIs & Services → Credentials</li>
+                  <li>Encontre o Client ID OAuth 2.0</li>
+                  <li>Clique em ✏️ para editar</li>
+                  <li>Em "Authorized JavaScript origins" adicione:</li>
+                </ol>
+                
+                <div className="ml-4 space-y-1">
+                  {allOrigins.map(origin => (
+                    <div key={origin} className="flex items-center space-x-2 p-1 bg-slate-700/30 rounded">
+                      <code className="flex-1 text-green-400">{origin}</code>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => copyToClipboard(origin)}
+                        className="h-5 w-5 p-0"
+                      >
+                        <Copy className="w-2 h-2" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                
+                <p className="text-yellow-400"><strong>6. REMOVA TODAS as "Authorized redirect URIs"</strong></p>
+                <p>7. Salve e aguarde 5-10 minutos para propagação</p>
+              </div>
+            )}
+          </div>
 
           <div>
-            <Label htmlFor="clientId" className="text-slate-300">Client ID do OAuth 2.0 (Takkyon)</Label>
+            <Label htmlFor="clientId" className="text-slate-300">Client ID do OAuth 2.0</Label>
             <Input
               id="clientId"
               value={clientId}
@@ -214,10 +244,13 @@ const GoogleSheetsConfig: React.FC<GoogleSheetsConfigProps> = ({ onConfigSave, i
               className="bg-slate-700/50 border-slate-600 text-white font-mono text-xs"
               placeholder="Client ID do Google Cloud Console"
             />
-            <p className="text-xs text-slate-400 mt-1">
-              Configurado para a conta contato@takkyon.com
-            </p>
           </div>
+
+          {authError && (
+            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+              <pre className="text-red-400 text-xs whitespace-pre-wrap">{authError}</pre>
+            </div>
+          )}
 
           {!isAuthenticated ? (
             <Button 
@@ -231,7 +264,7 @@ const GoogleSheetsConfig: React.FC<GoogleSheetsConfigProps> = ({ onConfigSave, i
                   Conectando...
                 </>
               ) : (
-                'Conectar com Google (Conta Takkyon)'
+                'Conectar com Google'
               )}
             </Button>
           ) : (
@@ -297,14 +330,6 @@ const GoogleSheetsConfig: React.FC<GoogleSheetsConfigProps> = ({ onConfigSave, i
               </Button>
             </div>
           )}
-          
-          <div className="text-xs text-slate-400 space-y-1">
-            <p><strong>Configuração OAuth Corrigida:</strong></p>
-            <p>• Client ID da conta Takkyon configurado</p>
-            <p>• Popup mode sem redirect_uri</p>
-            <p>• Detecção automática de origem</p>
-            <p>• Melhor tratamento de erros OAuth</p>
-          </div>
         </CardContent>
       )}
     </Card>
