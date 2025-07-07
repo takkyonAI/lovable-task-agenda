@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Settings, Check, X, LogOut, RefreshCw, Info, AlertTriangle, Copy } from 'lucide-react';
+import { Settings, Check, X, LogOut, RefreshCw, Info, AlertTriangle, Copy, ChevronDown, ChevronUp } from 'lucide-react';
 import { initGoogleAuth, getOAuthToken, isTokenValid, disconnectGoogle, listUserSpreadsheets, getAllPossibleOrigins } from '@/utils/googleSheetsApi';
 
 interface GoogleSheetsConfigProps {
@@ -25,7 +25,7 @@ interface Spreadsheet {
 const GoogleSheetsConfig: React.FC<GoogleSheetsConfigProps> = ({ onConfigSave, isConfigured }) => {
   const [clientId, setClientId] = useState('72324115240-q1idjsb043dl7ifr1jf7hc6itthvofqk.apps.googleusercontent.com');
   const [spreadsheetId, setSpreadsheetId] = useState('1Qj3JSlBYh1ScYpOhpyyz14nmoJ9b0I8MVsnyBYqNZWs');
-  const [isExpanded, setIsExpanded] = useState(!isConfigured);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [spreadsheets, setSpreadsheets] = useState<Spreadsheet[]>([]);
@@ -142,45 +142,60 @@ const GoogleSheetsConfig: React.FC<GoogleSheetsConfigProps> = ({ onConfigSave, i
 
   return (
     <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700">
-      <CardHeader>
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg">
               <Settings className="w-5 h-5 text-white" />
             </div>
             <div>
-              <CardTitle className="text-white text-lg">Configuração Google Sheets</CardTitle>
-              <p className="text-slate-400 text-sm">Conecte com sua conta Google</p>
+              <CardTitle className="text-white text-lg">Google Sheets</CardTitle>
+              <div className="flex items-center space-x-2 mt-1">
+                <Badge className={`text-xs ${isConfigured && isAuthenticated ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                  {isConfigured && isAuthenticated ? (
+                    <>
+                      <Check className="w-3 h-3 mr-1" />
+                      Conectado
+                    </>
+                  ) : (
+                    <>
+                      <X className="w-3 h-3 mr-1" />
+                      Desconectado
+                    </>
+                  )}
+                </Badge>
+                {isConfigured && isAuthenticated && (
+                  <span className="text-xs text-slate-400">
+                    Sistema configurado e pronto
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <Badge className={`${isConfigured && isAuthenticated ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-              {isConfigured && isAuthenticated ? (
-                <>
-                  <Check className="w-3 h-3 mr-1" />
-                  Conectado
-                </>
-              ) : (
-                <>
-                  <X className="w-3 h-3 mr-1" />
-                  Desconectado
-                </>
-              )}
-            </Badge>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="bg-slate-700/50 border-slate-600 hover:bg-slate-600/50 text-white"
-            >
-              {isExpanded ? 'Fechar' : 'Configurar'}
-            </Button>
-          </div>
+          
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="bg-slate-700/50 border-slate-600 hover:bg-slate-600/50 text-white"
+          >
+            {isExpanded ? (
+              <>
+                <ChevronUp className="w-4 h-4 mr-2" />
+                Ocultar
+              </>
+            ) : (
+              <>
+                <ChevronDown className="w-4 h-4 mr-2" />
+                Configurar
+              </>
+            )}
+          </Button>
         </div>
       </CardHeader>
       
       {isExpanded && (
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 pt-0">
           <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
             <div className="flex items-start space-x-2 mb-3">
               <Info className="w-5 h-5 text-blue-400 mt-0.5" />
