@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -16,24 +15,9 @@ import {
   TrendingUp, 
   Plus
 } from 'lucide-react';
-
-// Interfaces
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  type: 'follow_up' | 'manual';
-  priority: 'alta' | 'media' | 'baixa';
-  status: 'pendente' | 'concluido' | 'cancelado';
-  scheduledDate: Date;
-  completedDate?: Date;
-  assignedTo?: string;
-  category: string;
-  estimatedTime?: number;
-  notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { Task } from '@/types/task';
+import { useGoogleSheets } from '@/hooks/useGoogleSheets';
+import GoogleSheetsConfig from '@/components/GoogleSheetsConfig';
 
 const Index = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -49,7 +33,19 @@ const Index = () => {
     estimatedTime: ''
   });
 
-  // Funções utilitárias
+  const googleSheets = useGoogleSheets();
+
+  // Carregar configuração e tarefas na inicialização
+  useEffect(() => {
+    googleSheets.loadConfig();
+  }, []);
+
+  useEffect(() => {
+    if (googleSheets.isConfigured) {
+      googleSheets.fetchTasks().then(setTasks);
+    }
+  }, [googleSheets.isConfigured]);
+
   const getTaskStats = () => {
     const total = tasks.length;
     const pendentes = tasks.filter(t => t.status === 'pendente').length;
@@ -100,43 +96,6 @@ const Index = () => {
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const completeTask = (taskId: string) => {
-    setTasks(prev => prev.map(task => 
-      task.id === taskId 
-        ? { ...task, status: 'concluido' as const, completedDate: new Date(), updatedAt: new Date() }
-        : task
-    ));
-  };
-
-  const createTask = () => {
-    if (!newTask.title || !newTask.scheduledDate) return;
-
-    const task: Task = {
-      id: Date.now().toString(),
-      title: newTask.title,
-      description: newTask.description,
-      type: 'manual',
-      priority: newTask.priority,
-      status: 'pendente',
-      scheduledDate: new Date(newTask.scheduledDate),
-      category: newTask.category,
-      estimatedTime: newTask.estimatedTime ? parseInt(newTask.estimatedTime) : undefined,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-
-    setTasks(prev => [...prev, task]);
-    setNewTask({
-      title: '',
-      description: '',
-      priority: 'media',
-      category: 'vendas',
-      scheduledDate: '',
-      estimatedTime: ''
-    });
-    setIsCreateDialogOpen(false);
   };
 
   const getViewTitle = () => {
@@ -193,6 +152,54 @@ const Index = () => {
     return Array.from({ length: 12 }, (_, i) => new Date(year, i, 1));
   };
 
+  const completeTask = async (taskId: string) => {
+    try {
+      const updatedTask = await googleSheets.updateTask(taskId, { 
+        status: 'concluido', 
+        completedDate: new Date(), 
+        updatedAt: new Date() 
+      });
+      
+      setTasks(prev => prev.map(task => 
+        task.id === taskId ? updatedTask : task
+      ));
+    } catch (error) {
+      console.error('Erro ao completar tarefa:', error);
+    }
+  };
+
+  const createTask = async () => {
+    if (!newTask.title || !newTask.scheduledDate) return;
+
+    try {
+      const taskData = {
+        title: newTask.title,
+        description: newTask.description,
+        type: 'manual' as const,
+        priority: newTask.priority,
+        status: 'pendente' as const,
+        scheduledDate: new Date(newTask.scheduledDate),
+        category: newTask.category,
+        estimatedTime: newTask.estimatedTime ? parseInt(newTask.estimatedTime) : undefined,
+      };
+
+      const createdTask = await googleSheets.addTask(taskData);
+      setTasks(prev => [...prev, createdTask]);
+      
+      setNewTask({
+        title: '',
+        description: '',
+        priority: 'media',
+        category: 'vendas',
+        scheduledDate: '',
+        estimatedTime: ''
+      });
+      setIsCreateDialogOpen(false);
+    } catch (error) {
+      console.error('Erro ao criar tarefa:', error);
+    }
+  };
+
   const stats = getTaskStats();
   const filteredTasks = tasks.filter(task => {
     const taskDate = task.scheduledDate.toDateString();
@@ -221,6 +228,12 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
+        {/* Configuração Google Sheets */}
+        <GoogleSheetsConfig 
+          onConfigSave={googleSheets.saveConfig}
+          isConfigured={googleSheets.isConfigured}
+        />
+
         {/* Header */}
         <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700">
           <CardHeader>
@@ -588,14 +601,12 @@ const Index = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-7 gap-1">
-                {/* Cabeçalho dos dias da semana */}
                 {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
                   <div key={day} className="text-center text-xs text-slate-400 py-2 font-medium">
                     {day}
                   </div>
                 ))}
                 
-                {/* Grade de dias */}
                 {monthDays.map((day, index) => {
                   const dayTasks = getTasksForDay(day);
                   const isCurrentMonth = day.getMonth() === selectedDate.getMonth();
