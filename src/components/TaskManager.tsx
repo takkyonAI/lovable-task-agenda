@@ -37,9 +37,8 @@ const TaskManager: React.FC = () => {
   const loadTasks = async () => {
     setIsLoading(true);
     try {
-      // Usar query direta para evitar problemas com tipos
       const { data: taskData, error: taskError } = await supabase
-        .from('tasks' as any)
+        .from('tasks')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -54,7 +53,7 @@ const TaskManager: React.FC = () => {
       }
 
       if (taskData) {
-        const formattedTasks: Task[] = (taskData as any[]).map((task: any) => ({
+        const formattedTasks: Task[] = taskData.map((task) => ({
           id: task.id,
           title: task.title,
           description: task.description || '',
@@ -103,7 +102,7 @@ const TaskManager: React.FC = () => {
 
     try {
       const { data, error } = await supabase
-        .from('tasks' as any)
+        .from('tasks')
         .insert({
           title: newTask.title,
           description: newTask.description || null,
