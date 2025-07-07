@@ -8,9 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Calendar, Clock, AlertCircle, CheckCircle, X, Edit } from 'lucide-react';
+import { Plus, Calendar, Clock, Edit, Trash2 } from 'lucide-react';
 import { Task } from '@/types/task';
-import { User } from '@/types/user';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -54,23 +53,30 @@ const TaskManager: React.FC = () => {
         return;
       }
 
-      const formattedTasks: Task[] = data.map(task => ({
-        id: task.id,
-        title: task.title,
-        description: task.description,
-        status: task.status,
-        priority: task.priority,
-        due_date: task.due_date,
-        assigned_users: task.assigned_users || [],
-        created_by: task.created_by,
-        created_at: new Date(task.created_at),
-        updated_at: new Date(task.updated_at),
-        completed_at: task.completed_at ? new Date(task.completed_at) : undefined
-      }));
+      if (data) {
+        const formattedTasks: Task[] = data.map((task: any) => ({
+          id: task.id,
+          title: task.title,
+          description: task.description || '',
+          status: task.status,
+          priority: task.priority,
+          due_date: task.due_date || undefined,
+          assigned_users: task.assigned_users || [],
+          created_by: task.created_by,
+          created_at: new Date(task.created_at),
+          updated_at: new Date(task.updated_at),
+          completed_at: task.completed_at ? new Date(task.completed_at) : undefined
+        }));
 
-      setTasks(formattedTasks);
+        setTasks(formattedTasks);
+      }
     } catch (error) {
       console.error('Erro ao carregar tarefas:', error);
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao carregar tarefas",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -100,7 +106,7 @@ const TaskManager: React.FC = () => {
         .from('tasks')
         .insert({
           title: newTask.title,
-          description: newTask.description,
+          description: newTask.description || null,
           status: newTask.status,
           priority: newTask.priority,
           due_date: newTask.due_date || null,
@@ -139,7 +145,7 @@ const TaskManager: React.FC = () => {
       console.error('Erro ao criar tarefa:', error);
       toast({
         title: "Erro",
-        description: "Erro ao criar tarefa",
+        description: "Erro inesperado ao criar tarefa",
         variant: "destructive"
       });
     }
@@ -147,21 +153,21 @@ const TaskManager: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pendente': return 'bg-yellow-500/20 text-yellow-400';
-      case 'em_andamento': return 'bg-blue-500/20 text-blue-400';
-      case 'concluida': return 'bg-green-500/20 text-green-400';
-      case 'cancelada': return 'bg-red-500/20 text-red-400';
-      default: return 'bg-gray-500/20 text-gray-400';
+      case 'pendente': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+      case 'em_andamento': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+      case 'concluida': return 'bg-green-500/20 text-green-400 border-green-500/30';
+      case 'cancelada': return 'bg-red-500/20 text-red-400 border-red-500/30';
+      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'baixa': return 'bg-green-500/20 text-green-400';
-      case 'media': return 'bg-yellow-500/20 text-yellow-400';
-      case 'alta': return 'bg-orange-500/20 text-orange-400';
-      case 'urgente': return 'bg-red-500/20 text-red-400';
-      default: return 'bg-gray-500/20 text-gray-400';
+      case 'baixa': return 'bg-green-500/20 text-green-400 border-green-500/30';
+      case 'media': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+      case 'alta': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
+      case 'urgente': return 'bg-red-500/20 text-red-400 border-red-500/30';
+      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
     }
   };
 
@@ -303,14 +309,14 @@ const TaskManager: React.FC = () => {
         <CardContent>
           <div className="space-y-4">
             {tasks.map(task => (
-              <div key={task.id} className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30 border border-slate-600">
+              <div key={task.id} className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30 border border-slate-600 hover:bg-slate-700/40 transition-colors">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
                     <h4 className="font-medium text-white">{task.title}</h4>
-                    <Badge className={getStatusColor(task.status)}>
+                    <Badge className={`${getStatusColor(task.status)} border`}>
                       {getStatusLabel(task.status)}
                     </Badge>
-                    <Badge className={getPriorityColor(task.priority)}>
+                    <Badge className={`${getPriorityColor(task.priority)} border`}>
                       {getPriorityLabel(task.priority)}
                     </Badge>
                   </div>
@@ -323,7 +329,7 @@ const TaskManager: React.FC = () => {
                     {task.due_date && (
                       <div className="flex items-center space-x-1">
                         <Clock className="w-3 h-3" />
-                        <span>{new Date(task.due_date).toLocaleDateString('pt-BR')}</span>
+                        <span>Vence: {new Date(task.due_date).toLocaleDateString('pt-BR')}</span>
                       </div>
                     )}
                     <div className="flex items-center space-x-1">
@@ -334,7 +340,9 @@ const TaskManager: React.FC = () => {
 
                   {task.assigned_users && task.assigned_users.length > 0 && (
                     <div className="mt-2">
-                      <span className="text-xs text-slate-400">Atribuído a: {task.assigned_users.length} usuário(s)</span>
+                      <span className="text-xs text-slate-400">
+                        Atribuído a: {task.assigned_users.length} usuário(s)
+                      </span>
                     </div>
                   )}
                 </div>
@@ -345,6 +353,7 @@ const TaskManager: React.FC = () => {
               <div className="text-center py-8">
                 <Calendar className="w-12 h-12 text-slate-400 mx-auto mb-4" />
                 <p className="text-slate-400">Nenhuma tarefa encontrada</p>
+                <p className="text-slate-500 text-sm mt-2">Crie sua primeira tarefa clicando no botão acima</p>
               </div>
             )}
 
