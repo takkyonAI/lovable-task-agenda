@@ -1,114 +1,105 @@
 
 interface GoogleSheetsConfig {
   spreadsheetId: string;
-  serviceAccountEmail: string;
-  privateKey: string;
+  clientId: string;
 }
 
-// Função para criar JWT token manualmente (compatível com navegador)
-const createJWTToken = async (serviceAccountEmail: string, privateKey: string): Promise<string> => {
-  try {
-    console.log('Criando JWT token para:', serviceAccountEmail);
-    
-    // Header do JWT
-    const header = {
-      alg: 'RS256',
-      typ: 'JWT'
-    };
+interface GoogleAuthResponse {
+  access_token: string;
+  expires_in: number;
+  scope: string;
+  token_type: string;
+}
 
-    // Payload do JWT
-    const now = Math.floor(Date.now() / 1000);
-    const payload = {
-      iss: serviceAccountEmail,
-      scope: 'https://www.googleapis.com/auth/spreadsheets',
-      aud: 'https://oauth2.googleapis.com/token',
-      exp: now + 3600,
-      iat: now
-    };
+// Configuração dos escopos necessários
+const SCOPES = [
+  'https://www.googleapis.com/auth/spreadsheets',
+  'https://www.googleapis.com/auth/drive.file'
+].join(' ');
 
-    // Codificar header e payload em base64
-    const encodedHeader = btoa(JSON.stringify(header)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-    const encodedPayload = btoa(JSON.stringify(payload)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-
-    // Criar a mensagem para assinar
-    const message = `${encodedHeader}.${encodedPayload}`;
-
-    // Limpar a chave privada
-    const cleanPrivateKey = privateKey.replace(/\\n/g, '\n');
-    
-    // Importar a chave privada
-    const keyData = cleanPrivateKey
-      .replace('-----BEGIN PRIVATE KEY-----', '')
-      .replace('-----END PRIVATE KEY-----', '')
-      .replace(/\s/g, '');
-    
-    const binaryKey = atob(keyData);
-    const keyBytes = new Uint8Array(binaryKey.length);
-    for (let i = 0; i < binaryKey.length; i++) {
-      keyBytes[i] = binaryKey.charCodeAt(i);
+// Função para inicializar o Google Identity Services
+export const initGoogleAuth = (clientId: string): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if (typeof window.google === 'undefined') {
+      console.error('Google Identity Services não carregado');
+      resolve(false);
+      return;
     }
 
-    // Importar a chave para usar com WebCrypto API
-    const cryptoKey = await crypto.subtle.importKey(
-      'pkcs8',
-      keyBytes,
-      {
-        name: 'RSASSA-PKCS1-v1_5',
-        hash: 'SHA-256'
-      },
-      false,
-      ['sign']
-    );
-
-    // Assinar a mensagem
-    const signature = await crypto.subtle.sign(
-      'RSASSA-PKCS1-v1_5',
-      cryptoKey,
-      new TextEncoder().encode(message)
-    );
-
-    // Codificar a assinatura em base64
-    const signatureArray = new Uint8Array(signature);
-    const signatureBase64 = btoa(String.fromCharCode(...signatureArray))
-      .replace(/=/g, '')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_');
-
-    return `${message}.${signatureBase64}`;
-  } catch (error) {
-    console.error('Erro ao criar JWT token:', error);
-    throw new Error('Erro na criação do token JWT');
-  }
+    try {
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: () => {} // Callback vazio, usaremos OAuth separadamente
+      });
+      
+      console.log('Google Identity Services inicializado com sucesso');
+      resolve(true);
+    } catch (error) {
+      console.error('Erro ao inicializar Google Identity Services:', error);
+      resolve(false);
+    }
+  });
 };
 
-// Função para obter access token
-const getAccessToken = async (serviceAccountEmail: string, privateKey: string): Promise<string> => {
-  try {
-    const jwtToken = await createJWTToken(serviceAccountEmail, privateKey);
-    
-    const response = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: new URLSearchParams({
-        grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-        assertion: jwtToken
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Erro na resposta do OAuth:', errorText);
-      throw new Error(`Erro na autenticação: ${response.status}`);
+// Função para obter token OAuth 2.0
+export const getOAuthToken = (clientId: string): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    if (typeof window.google === 'undefined') {
+      reject(new Error('Google Identity Services não disponível'));
+      return;
     }
 
-    const data = await response.json();
-    return data.access_token;
-  } catch (error) {
-    console.error('Erro ao obter access token:', error);
-    throw error;
+    try {
+      const tokenClient = window.google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: SCOPES,
+        callback: (response: GoogleAuthResponse) => {
+          if (response.access_token) {
+            // Armazenar token com timestamp de expiração
+            const expiresAt = Date.now() + (response.expires_in * 1000);
+            localStorage.setItem('google_access_token', response.access_token);
+            localStorage.setItem('google_token_expires_at', expiresAt.toString());
+            
+            console.log('Token OAuth obtido com sucesso');
+            resolve(response.access_token);
+          } else {
+            reject(new Error('Falha ao obter token de acesso'));
+          }
+        },
+        error_callback: (error: any) => {
+          console.error('Erro na autenticação OAuth:', error);
+          reject(new Error(`Erro OAuth: ${error.type || 'Erro desconhecido'}`));
+        }
+      });
+
+      tokenClient.requestAccessToken();
+    } catch (error) {
+      console.error('Erro ao inicializar cliente OAuth:', error);
+      reject(error);
+    }
+  });
+};
+
+// Função para verificar se o token é válido
+export const isTokenValid = (): boolean => {
+  const token = localStorage.getItem('google_access_token');
+  const expiresAt = localStorage.getItem('google_token_expires_at');
+  
+  if (!token || !expiresAt) {
+    return false;
   }
+  
+  return Date.now() < parseInt(expiresAt);
+};
+
+// Função para obter token válido (renovar se necessário)
+export const getValidToken = async (clientId: string): Promise<string> => {
+  if (isTokenValid()) {
+    return localStorage.getItem('google_access_token')!;
+  }
+  
+  console.log('Token expirado, renovando...');
+  return await getOAuthToken(clientId);
 };
 
 // Função para fazer requisições à API do Google Sheets
@@ -146,16 +137,29 @@ const makeSheetRequest = async (
   }
 };
 
+// Função para listar planilhas do usuário
+export const listUserSpreadsheets = async (clientId: string): Promise<any[]> => {
+  try {
+    const accessToken = await getValidToken(clientId);
+    const url = "https://www.googleapis.com/drive/v3/files?q=mimeType='application/vnd.google-apps.spreadsheet'&fields=files(id,name,modifiedTime)";
+    
+    const response = await makeSheetRequest(url, 'GET', accessToken);
+    return response.files || [];
+  } catch (error) {
+    console.error('Erro ao listar planilhas:', error);
+    throw error;
+  }
+};
+
 // Função para configurar as abas da planilha
 export const setupSheetsStructure = async (
   spreadsheetId: string,
-  serviceAccountEmail: string,
-  privateKey: string
+  clientId: string
 ): Promise<boolean> => {
   try {
     console.log('Configurando estrutura da planilha:', spreadsheetId);
     
-    const accessToken = await getAccessToken(serviceAccountEmail, privateKey);
+    const accessToken = await getValidToken(clientId);
 
     // Verificar abas existentes
     const spreadsheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}`;
@@ -234,14 +238,13 @@ export const setupSheetsStructure = async (
 // Função para buscar dados da planilha
 export const fetchSheetData = async (
   spreadsheetId: string,
-  serviceAccountEmail: string,
-  privateKey: string,
+  clientId: string,
   range: string
 ): Promise<any[][]> => {
   try {
     console.log('Buscando dados da planilha:', range);
     
-    const accessToken = await getAccessToken(serviceAccountEmail, privateKey);
+    const accessToken = await getValidToken(clientId);
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}`;
     
     const response = await makeSheetRequest(url, 'GET', accessToken);
@@ -258,15 +261,14 @@ export const fetchSheetData = async (
 // Função para adicionar dados à planilha
 export const appendSheetData = async (
   spreadsheetId: string,
-  serviceAccountEmail: string,
-  privateKey: string,
+  clientId: string,
   range: string,
   values: any[][]
 ): Promise<void> => {
   try {
     console.log('Adicionando dados à planilha:', range);
     
-    const accessToken = await getAccessToken(serviceAccountEmail, privateKey);
+    const accessToken = await getValidToken(clientId);
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}:append?valueInputOption=RAW`;
     
     await makeSheetRequest(url, 'POST', accessToken, { values });
@@ -280,15 +282,14 @@ export const appendSheetData = async (
 // Função para atualizar dados da planilha
 export const updateSheetData = async (
   spreadsheetId: string,
-  serviceAccountEmail: string,
-  privateKey: string,
+  clientId: string,
   range: string,
   values: any[][]
 ): Promise<void> => {
   try {
     console.log('Atualizando dados da planilha:', range);
     
-    const accessToken = await getAccessToken(serviceAccountEmail, privateKey);
+    const accessToken = await getValidToken(clientId);
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?valueInputOption=RAW`;
     
     await makeSheetRequest(url, 'PUT', accessToken, { values });
@@ -297,4 +298,11 @@ export const updateSheetData = async (
     console.error('Erro ao atualizar dados:', error);
     throw error;
   }
+};
+
+// Função para desconectar (limpar tokens)
+export const disconnectGoogle = (): void => {
+  localStorage.removeItem('google_access_token');
+  localStorage.removeItem('google_token_expires_at');
+  console.log('Usuário desconectado do Google');
 };

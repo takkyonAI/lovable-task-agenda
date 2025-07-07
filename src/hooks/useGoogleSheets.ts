@@ -2,13 +2,12 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Task } from '../types/task';
 import { User } from '../types/user';
-import { setupSheetsStructure, fetchSheetData, appendSheetData, updateSheetData } from '../utils/googleSheetsApi';
+import { setupSheetsStructure, fetchSheetData, appendSheetData, updateSheetData, isTokenValid } from '../utils/googleSheetsApi';
 import { rowToTask, taskToRow, rowToUser, userToRow } from '../utils/googleSheetsConverters';
 
 interface GoogleSheetsConfig {
   spreadsheetId: string;
-  serviceAccountEmail: string;
-  privateKey: string;
+  clientId: string;
 }
 
 export const useGoogleSheets = () => {
@@ -24,7 +23,10 @@ export const useGoogleSheets = () => {
       try {
         const parsedConfig = JSON.parse(savedConfig);
         setConfig(parsedConfig);
-        setIsConfigured(true);
+        // Verificar se ainda está autenticado
+        if (isTokenValid()) {
+          setIsConfigured(true);
+        }
       } catch (err) {
         console.error('Erro ao carregar configuração:', err);
       }
@@ -37,7 +39,7 @@ export const useGoogleSheets = () => {
     localStorage.setItem('googleSheetsConfig', JSON.stringify(newConfig));
     console.log('Configuração do Google Sheets salva:', { 
       spreadsheetId: newConfig.spreadsheetId,
-      serviceAccountEmail: newConfig.serviceAccountEmail 
+      clientId: newConfig.clientId 
     });
   }, []);
 
@@ -47,7 +49,9 @@ export const useGoogleSheets = () => {
       try {
         const parsedConfig = JSON.parse(savedConfig);
         setConfig(parsedConfig);
-        setIsConfigured(true);
+        if (isTokenValid()) {
+          setIsConfigured(true);
+        }
         return parsedConfig;
       } catch (err) {
         console.error('Erro ao carregar configuração:', err);
@@ -66,8 +70,7 @@ export const useGoogleSheets = () => {
       
       const success = await setupSheetsStructure(
         config.spreadsheetId, 
-        config.serviceAccountEmail, 
-        config.privateKey
+        config.clientId
       );
       
       if (success) {
@@ -98,8 +101,7 @@ export const useGoogleSheets = () => {
       
       const values = await fetchSheetData(
         config.spreadsheetId,
-        config.serviceAccountEmail,
-        config.privateKey,
+        config.clientId,
         'Tarefas!A2:M'
       );
 
@@ -144,8 +146,7 @@ export const useGoogleSheets = () => {
 
       await appendSheetData(
         config.spreadsheetId,
-        config.serviceAccountEmail,
-        config.privateKey,
+        config.clientId,
         'Tarefas!A:M',
         [rowData]
       );
@@ -176,8 +177,7 @@ export const useGoogleSheets = () => {
       // Primeiro, buscar a tarefa atual
       const values = await fetchSheetData(
         config.spreadsheetId,
-        config.serviceAccountEmail,
-        config.privateKey,
+        config.clientId,
         'Tarefas!A2:M'
       );
 
@@ -207,8 +207,7 @@ export const useGoogleSheets = () => {
 
       await updateSheetData(
         config.spreadsheetId,
-        config.serviceAccountEmail,
-        config.privateKey,
+        config.clientId,
         `Tarefas!A${rowIndex}:M${rowIndex}`,
         [rowData]
       );
@@ -236,8 +235,7 @@ export const useGoogleSheets = () => {
       
       const values = await fetchSheetData(
         config.spreadsheetId,
-        config.serviceAccountEmail,
-        config.privateKey,
+        config.clientId,
         'Usuários!A2:F'
       );
 
@@ -275,8 +273,7 @@ export const useGoogleSheets = () => {
 
       await appendSheetData(
         config.spreadsheetId,
-        config.serviceAccountEmail,
-        config.privateKey,
+        config.clientId,
         'Usuários!A:F',
         [rowData]
       );
