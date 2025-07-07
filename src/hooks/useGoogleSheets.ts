@@ -2,7 +2,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Task } from '../types/task';
 import { User } from '../types/user';
-import { getAccessToken, makeAuthenticatedRequest, setupSheetsStructure } from '../utils/googleSheetsApi';
+import { setupSheetsStructure, fetchSheetData, appendSheetData, updateSheetData } from '../utils/googleSheetsApi';
 import { rowToTask, taskToRow, rowToUser, userToRow } from '../utils/googleSheetsConverters';
 
 interface GoogleSheetsConfig {
@@ -61,10 +61,14 @@ export const useGoogleSheets = () => {
 
     try {
       setIsLoading(true);
+      setError(null);
       console.log('Configurando planilha com estrutura inicial...');
       
-      const accessToken = await getAccessToken(config.serviceAccountEmail, config.privateKey);
-      const success = await setupSheetsStructure(config.spreadsheetId, accessToken);
+      const success = await setupSheetsStructure(
+        config.spreadsheetId, 
+        config.serviceAccountEmail, 
+        config.privateKey
+      );
       
       if (success) {
         console.log('Planilha configurada com sucesso');
@@ -73,7 +77,7 @@ export const useGoogleSheets = () => {
       return success;
     } catch (err) {
       console.error('Erro ao configurar planilha:', err);
-      setError('Erro ao configurar a estrutura da planilha');
+      setError(`Erro ao configurar a estrutura da planilha: ${err instanceof Error ? err.message : 'Erro desconhecido'}`);
       return false;
     } finally {
       setIsLoading(false);
@@ -92,18 +96,17 @@ export const useGoogleSheets = () => {
     try {
       console.log('Buscando tarefas da planilha:', config.spreadsheetId);
       
-      const accessToken = await getAccessToken(config.serviceAccountEmail, config.privateKey);
-      const response = await makeAuthenticatedRequest(
-        `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/Tarefas!A2:M`,
-        accessToken
+      const values = await fetchSheetData(
+        config.spreadsheetId,
+        config.serviceAccountEmail,
+        config.privateKey,
+        'Tarefas!A2:M'
       );
 
       const tasks: Task[] = [];
-      if (response.values) {
-        for (const row of response.values) {
-          if (row[0]) { // Só processar se tiver ID
-            tasks.push(rowToTask(row));
-          }
+      for (const row of values) {
+        if (row[0]) { // Só processar se tiver ID
+          tasks.push(rowToTask(row));
         }
       }
 
@@ -112,7 +115,7 @@ export const useGoogleSheets = () => {
     } catch (err) {
       const errorMessage = 'Erro ao buscar tarefas do Google Sheets';
       console.error(errorMessage, err);
-      setError(errorMessage);
+      setError(`${errorMessage}: ${err instanceof Error ? err.message : 'Erro desconhecido'}`);
       return [];
     } finally {
       setIsLoading(false);
@@ -137,18 +140,14 @@ export const useGoogleSheets = () => {
         updatedAt: new Date()
       };
 
-      const accessToken = await getAccessToken(config.serviceAccountEmail, config.privateKey);
       const rowData = taskToRow(newTask);
 
-      await makeAuthenticatedRequest(
-        `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/Tarefas!A:M:append?valueInputOption=RAW`,
-        accessToken,
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            values: [rowData]
-          })
-        }
+      await appendSheetData(
+        config.spreadsheetId,
+        config.serviceAccountEmail,
+        config.privateKey,
+        'Tarefas!A:M',
+        [rowData]
       );
 
       console.log('Tarefa adicionada com sucesso:', newTask.id);
@@ -156,7 +155,7 @@ export const useGoogleSheets = () => {
     } catch (err) {
       const errorMessage = 'Erro ao adicionar tarefa no Google Sheets';
       console.error(errorMessage, err);
-      setError(errorMessage);
+      setError(`${errorMessage}: ${err instanceof Error ? err.message : 'Erro desconhecido'}`);
       throw err;
     } finally {
       setIsLoading(false);
@@ -175,23 +174,22 @@ export const useGoogleSheets = () => {
       console.log('Atualizando tarefa na planilha:', taskId);
 
       // Primeiro, buscar a tarefa atual
-      const accessToken = await getAccessToken(config.serviceAccountEmail, config.privateKey);
-      const response = await makeAuthenticatedRequest(
-        `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/Tarefas!A2:M`,
-        accessToken
+      const values = await fetchSheetData(
+        config.spreadsheetId,
+        config.serviceAccountEmail,
+        config.privateKey,
+        'Tarefas!A2:M'
       );
 
       let rowIndex = -1;
       let currentTask: Task | null = null;
 
-      if (response.values) {
-        for (let i = 0; i < response.values.length; i++) {
-          const row = response.values[i];
-          if (row[0] === taskId) {
-            rowIndex = i + 2; // +2 porque começamos na linha 2 (A2)
-            currentTask = rowToTask(row);
-            break;
-          }
+      for (let i = 0; i < values.length; i++) {
+        const row = values[i];
+        if (row[0] === taskId) {
+          rowIndex = i + 2; // +2 porque começamos na linha 2 (A2)
+          currentTask = rowToTask(row);
+          break;
         }
       }
 
@@ -207,15 +205,12 @@ export const useGoogleSheets = () => {
 
       const rowData = taskToRow(updatedTask);
 
-      await makeAuthenticatedRequest(
-        `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/Tarefas!A${rowIndex}:M${rowIndex}`,
-        accessToken,
-        {
-          method: 'PUT',
-          body: JSON.stringify({
-            values: [rowData]
-          })
-        }
+      await updateSheetData(
+        config.spreadsheetId,
+        config.serviceAccountEmail,
+        config.privateKey,
+        `Tarefas!A${rowIndex}:M${rowIndex}`,
+        [rowData]
       );
 
       console.log('Tarefa atualizada com sucesso:', taskId);
@@ -223,7 +218,7 @@ export const useGoogleSheets = () => {
     } catch (err) {
       const errorMessage = 'Erro ao atualizar tarefa no Google Sheets';
       console.error(errorMessage, err);
-      setError(errorMessage);
+      setError(`${errorMessage}: ${err instanceof Error ? err.message : 'Erro desconhecido'}`);
       throw err;
     } finally {
       setIsLoading(false);
@@ -239,18 +234,17 @@ export const useGoogleSheets = () => {
     try {
       console.log('Buscando usuários da planilha...');
       
-      const accessToken = await getAccessToken(config.serviceAccountEmail, config.privateKey);
-      const response = await makeAuthenticatedRequest(
-        `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/Usuários!A2:F`,
-        accessToken
+      const values = await fetchSheetData(
+        config.spreadsheetId,
+        config.serviceAccountEmail,
+        config.privateKey,
+        'Usuários!A2:F'
       );
 
       const users: User[] = [];
-      if (response.values) {
-        for (const row of response.values) {
-          if (row[0]) { // Só processar se tiver ID
-            users.push(rowToUser(row));
-          }
+      for (const row of values) {
+        if (row[0]) { // Só processar se tiver ID
+          users.push(rowToUser(row));
         }
       }
 
@@ -277,18 +271,14 @@ export const useGoogleSheets = () => {
         createdAt: new Date()
       };
 
-      const accessToken = await getAccessToken(config.serviceAccountEmail, config.privateKey);
       const rowData = userToRow(newUser);
 
-      await makeAuthenticatedRequest(
-        `https://sheets.googleapis.com/v4/spreadsheets/${config.spreadsheetId}/values/Usuários!A:F:append?valueInputOption=RAW`,
-        accessToken,
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            values: [rowData]
-          })
-        }
+      await appendSheetData(
+        config.spreadsheetId,
+        config.serviceAccountEmail,
+        config.privateKey,
+        'Usuários!A:F',
+        [rowData]
       );
 
       console.log('Usuário adicionado:', newUser.email);

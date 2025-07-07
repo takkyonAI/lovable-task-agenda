@@ -1,140 +1,58 @@
 
-interface JWTHeader {
-  alg: string;
-  typ: string;
+import { google } from 'googleapis';
+
+interface GoogleSheetsConfig {
+  spreadsheetId: string;
+  serviceAccountEmail: string;
+  privateKey: string;
 }
 
-interface JWTPayload {
-  iss: string;
-  scope: string;
-  aud: string;
-  iat: number;
-  exp: number;
-}
-
-// Função para codificar em Base64URL
-const base64UrlEncode = (str: string): string => {
-  return btoa(str)
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '');
-};
-
-// Função para criar JWT token
-const createJWTToken = async (serviceAccountEmail: string, privateKey: string): Promise<string> => {
-  const header: JWTHeader = {
-    alg: 'RS256',
-    typ: 'JWT'
-  };
-
-  const now = Math.floor(Date.now() / 1000);
-  const payload: JWTPayload = {
-    iss: serviceAccountEmail,
-    scope: 'https://www.googleapis.com/auth/spreadsheets',
-    aud: 'https://oauth2.googleapis.com/token',
-    iat: now,
-    exp: now + 3600
-  };
-
-  const encodedHeader = base64UrlEncode(JSON.stringify(header));
-  const encodedPayload = base64UrlEncode(JSON.stringify(payload));
-  const unsignedToken = `${encodedHeader}.${encodedPayload}`;
-
-  // Importar chave privada para assinatura
-  const keyData = privateKey.replace(/\\n/g, '\n');
-  const cryptoKey = await crypto.subtle.importKey(
-    'pkcs8',
-    new TextEncoder().encode(keyData),
-    {
-      name: 'RSASSA-PKCS1-v1_5',
-      hash: 'SHA-256'
-    },
-    false,
-    ['sign']
-  );
-
-  const signature = await crypto.subtle.sign(
-    'RSASSA-PKCS1-v1_5',
-    cryptoKey,
-    new TextEncoder().encode(unsignedToken)
-  );
-
-  const encodedSignature = base64UrlEncode(
-    String.fromCharCode(...new Uint8Array(signature))
-  );
-
-  return `${unsignedToken}.${encodedSignature}`;
-};
-
-// Função para obter access token
-export const getAccessToken = async (serviceAccountEmail: string, privateKey: string): Promise<string> => {
+// Criar cliente autenticado usando googleapis
+const createAuthenticatedClient = (serviceAccountEmail: string, privateKey: string) => {
   try {
-    const jwtToken = await createJWTToken(serviceAccountEmail, privateKey);
+    console.log('Criando cliente autenticado para:', serviceAccountEmail);
+    
+    // Limpar a chave privada removendo caracteres de escape
+    const cleanPrivateKey = privateKey.replace(/\\n/g, '\n');
+    
+    const auth = new google.auth.JWT(
+      serviceAccountEmail,
+      undefined,
+      cleanPrivateKey,
+      ['https://www.googleapis.com/auth/spreadsheets']
+    );
 
-    const response = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: new URLSearchParams({
-        grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-        assertion: jwtToken
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Erro na autenticação: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.access_token;
+    return google.sheets({ version: 'v4', auth });
   } catch (error) {
-    console.error('Erro ao obter access token:', error);
-    throw error;
+    console.error('Erro ao criar cliente autenticado:', error);
+    throw new Error('Erro na autenticação: Verifique as credenciais da conta de serviço');
   }
-};
-
-// Função para fazer requisições autenticadas para Google Sheets API
-export const makeAuthenticatedRequest = async (
-  url: string,
-  accessToken: string,
-  options: RequestInit = {}
-): Promise<any> => {
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      ...options.headers,
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json'
-    }
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`API Error ${response.status}: ${errorText}`);
-  }
-
-  return response.json();
 };
 
 // Função para configurar as abas da planilha
 export const setupSheetsStructure = async (
   spreadsheetId: string,
-  accessToken: string
+  serviceAccountEmail: string,
+  privateKey: string
 ): Promise<boolean> => {
   try {
-    // Primeiro, verificar se as abas já existem
-    const spreadsheetInfo = await makeAuthenticatedRequest(
-      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}`,
-      accessToken
-    );
+    console.log('Configurando estrutura da planilha:', spreadsheetId);
+    
+    const sheets = createAuthenticatedClient(serviceAccountEmail, privateKey);
 
-    const existingSheets = spreadsheetInfo.sheets.map((sheet: any) => sheet.properties.title);
+    // Primeiro, verificar se as abas já existem
+    const spreadsheetInfo = await sheets.spreadsheets.get({
+      spreadsheetId: spreadsheetId
+    });
+
+    const existingSheets = spreadsheetInfo.data.sheets?.map(sheet => sheet.properties?.title) || [];
+    console.log('Abas existentes:', existingSheets);
     
     const requests = [];
 
     // Criar aba "Tarefas" se não existir
     if (!existingSheets.includes('Tarefas')) {
+      console.log('Criando aba Tarefas...');
       requests.push({
         addSheet: {
           properties: {
@@ -146,6 +64,7 @@ export const setupSheetsStructure = async (
 
     // Criar aba "Usuários" se não existir
     if (!existingSheets.includes('Usuários')) {
+      console.log('Criando aba Usuários...');
       requests.push({
         addSheet: {
           properties: {
@@ -157,14 +76,11 @@ export const setupSheetsStructure = async (
 
     // Executar requests se houver
     if (requests.length > 0) {
-      await makeAuthenticatedRequest(
-        `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`,
-        accessToken,
-        {
-          method: 'POST',
-          body: JSON.stringify({ requests })
-        }
-      );
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: spreadsheetId,
+        requestBody: { requests }
+      });
+      console.log('Abas criadas com sucesso');
     }
 
     // Configurar headers da aba "Tarefas"
@@ -174,36 +90,122 @@ export const setupSheetsStructure = async (
       'Criado Em', 'Atualizado Em', 'Usuário ID'
     ];
 
-    await makeAuthenticatedRequest(
-      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Tarefas!A1:M1`,
-      accessToken,
-      {
-        method: 'PUT',
-        body: JSON.stringify({
-          values: [taskHeaders]
-        })
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: spreadsheetId,
+      range: 'Tarefas!A1:M1',
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: [taskHeaders]
       }
-    );
+    });
+
+    console.log('Headers da aba Tarefas configurados');
 
     // Configurar headers da aba "Usuários"
     const userHeaders = [
       'ID', 'Nome', 'Email', 'Papel', 'Criado Em', 'Último Login'
     ];
 
-    await makeAuthenticatedRequest(
-      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Usuários!A1:F1`,
-      accessToken,
-      {
-        method: 'PUT',
-        body: JSON.stringify({
-          values: [userHeaders]
-        })
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: spreadsheetId,
+      range: 'Usuários!A1:F1',
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: [userHeaders]
       }
-    );
+    });
 
+    console.log('Headers da aba Usuários configurados');
+    console.log('Configuração da planilha concluída com sucesso!');
+    
     return true;
   } catch (error) {
     console.error('Erro ao configurar estrutura das abas:', error);
+    throw error;
+  }
+};
+
+// Função para buscar dados da planilha
+export const fetchSheetData = async (
+  spreadsheetId: string,
+  serviceAccountEmail: string,
+  privateKey: string,
+  range: string
+): Promise<any[][]> => {
+  try {
+    console.log('Buscando dados da planilha:', range);
+    
+    const sheets = createAuthenticatedClient(serviceAccountEmail, privateKey);
+    
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: spreadsheetId,
+      range: range
+    });
+
+    const values = response.data.values || [];
+    console.log('Dados obtidos:', values.length, 'linhas');
+    
+    return values;
+  } catch (error) {
+    console.error('Erro ao buscar dados:', error);
+    throw error;
+  }
+};
+
+// Função para adicionar dados à planilha
+export const appendSheetData = async (
+  spreadsheetId: string,
+  serviceAccountEmail: string,
+  privateKey: string,
+  range: string,
+  values: any[][]
+): Promise<void> => {
+  try {
+    console.log('Adicionando dados à planilha:', range);
+    
+    const sheets = createAuthenticatedClient(serviceAccountEmail, privateKey);
+    
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: spreadsheetId,
+      range: range,
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: values
+      }
+    });
+
+    console.log('Dados adicionados com sucesso');
+  } catch (error) {
+    console.error('Erro ao adicionar dados:', error);
+    throw error;
+  }
+};
+
+// Função para atualizar dados da planilha
+export const updateSheetData = async (
+  spreadsheetId: string,
+  serviceAccountEmail: string,
+  privateKey: string,
+  range: string,
+  values: any[][]
+): Promise<void> => {
+  try {
+    console.log('Atualizando dados da planilha:', range);
+    
+    const sheets = createAuthenticatedClient(serviceAccountEmail, privateKey);
+    
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: spreadsheetId,
+      range: range,
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: values
+      }
+    });
+
+    console.log('Dados atualizados com sucesso');
+  } catch (error) {
+    console.error('Erro ao atualizar dados:', error);
     throw error;
   }
 };
