@@ -1,4 +1,3 @@
-
 import { google } from 'googleapis';
 
 interface GoogleSheetsConfig {
@@ -15,12 +14,11 @@ const createAuthenticatedClient = (serviceAccountEmail: string, privateKey: stri
     // Limpar a chave privada removendo caracteres de escape
     const cleanPrivateKey = privateKey.replace(/\\n/g, '\n');
     
-    const auth = new google.auth.JWT(
-      serviceAccountEmail,
-      undefined,
-      cleanPrivateKey,
-      ['https://www.googleapis.com/auth/spreadsheets']
-    );
+    const auth = new google.auth.JWT({
+      email: serviceAccountEmail,
+      key: cleanPrivateKey,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets']
+    });
 
     return google.sheets({ version: 'v4', auth });
   } catch (error) {
