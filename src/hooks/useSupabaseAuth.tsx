@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -270,7 +269,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!currentUser) return [];
 
       const { data, error } = await supabase
-        .rpc('get_visible_users_for_role', { user_role: currentUser.role });
+        .rpc('get_visible_users_for_role' as any, { user_role: currentUser.role });
 
       if (error) {
         console.error('Erro ao buscar usuários visíveis:', error);
@@ -339,7 +338,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       // Buscar usuário atual
       const { data: userData, error: fetchError } = await supabase
-        .from('user_profiles')
+        .from('user_profiles' as any)
         .select('is_active')
         .eq('id', userId)
         .single();
@@ -351,7 +350,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // Alternar status
       const { error } = await supabase
-        .from('user_profiles')
+        .from('user_profiles' as any)
         .update({ is_active: !userData.is_active })
         .eq('id', userId);
 
