@@ -16,6 +16,7 @@ interface AuthContextType {
   hasPermission: (requiredRole: User['role']) => boolean;
   canAccessUserManagement: () => boolean;
   getAllUsers: () => Promise<User[]>;
+  getVisibleUsers: () => Promise<User[]>;
   refreshProfile: () => Promise<void>;
   changePassword: (userId: string, newPassword: string) => Promise<boolean>;
   deleteUser: (userId: string) => Promise<boolean>;
@@ -264,6 +265,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const getVisibleUsers = async (): Promise<User[]> => {
+    try {
+      if (!currentUser) return [];
+
+      const { data, error } = await supabase
+        .rpc('get_visible_users_for_role', { user_role: currentUser.role });
+
+      if (error) {
+        console.error('Erro ao buscar usuários visíveis:', error);
+        return [];
+      }
+
+      return data.map((user: any) => ({
+        id: user.user_id,
+        user_id: user.user_id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        is_active: true,
+        created_at: new Date(),
+        last_login: undefined
+      }));
+    } catch (error) {
+      console.error('Erro ao buscar usuários visíveis:', error);
+      return [];
+    }
+  };
+
   const changePassword = async (userId: string, newPassword: string): Promise<boolean> => {
     try {
       const { error } = await supabase.auth.admin.updateUserById(userId, {
@@ -367,6 +396,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       hasPermission,
       canAccessUserManagement,
       getAllUsers,
+      getVisibleUsers,
       refreshProfile,
       changePassword,
       deleteUser,
