@@ -10,6 +10,8 @@ export const useTaskManager = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [updatingTask, setUpdatingTask] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
+  const [selectedUser, setSelectedUser] = useState<string>('all');
+  const [selectedAccessLevel, setSelectedAccessLevel] = useState<string>('all');
 
   const { currentUser } = useSupabaseAuth();
   const { toast } = useToast();
@@ -49,7 +51,7 @@ export const useTaskManager = () => {
 
   useEffect(() => {
     filterTasks();
-  }, [tasks, activeFilter]);
+  }, [tasks, activeFilter, selectedUser, selectedAccessLevel]);
 
   const loadTasks = async () => {
     setIsLoading(true);
@@ -106,7 +108,7 @@ export const useTaskManager = () => {
     }
   };
 
-  const filterTasks = () => {
+  const filterTasks = async () => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const weekStart = new Date(today);
@@ -115,16 +117,17 @@ export const useTaskManager = () => {
 
     let filtered = tasks;
 
+    // Filtro temporal
     switch (activeFilter) {
       case 'today':
-        filtered = tasks.filter(task => {
+        filtered = filtered.filter(task => {
           if (!task.due_date) return false;
           const taskDate = new Date(task.due_date);
           return taskDate >= today && taskDate < new Date(today.getTime() + 24 * 60 * 60 * 1000);
         });
         break;
       case 'week':
-        filtered = tasks.filter(task => {
+        filtered = filtered.filter(task => {
           if (!task.due_date) return false;
           const taskDate = new Date(task.due_date);
           const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -132,7 +135,7 @@ export const useTaskManager = () => {
         });
         break;
       case 'month':
-        filtered = tasks.filter(task => {
+        filtered = filtered.filter(task => {
           if (!task.due_date) return false;
           const taskDate = new Date(task.due_date);
           const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
@@ -140,10 +143,43 @@ export const useTaskManager = () => {
         });
         break;
       default:
-        filtered = tasks;
+        break;
+    }
+
+    // Filtro por usuário
+    if (selectedUser !== 'all') {
+      filtered = filtered.filter(task => 
+        task.created_by === selectedUser || 
+        task.assigned_users.includes(selectedUser)
+      );
+    }
+
+    // Filtro por nível de acesso
+    if (selectedAccessLevel !== 'all') {
+      try {
+        const { data: userProfiles } = await supabase
+          .from('user_profiles')
+          .select('user_id, role')
+          .eq('role', selectedAccessLevel);
+
+        if (userProfiles) {
+          const userIds = userProfiles.map(profile => profile.user_id);
+          filtered = filtered.filter(task => 
+            userIds.includes(task.created_by) || 
+            task.assigned_users.some(userId => userIds.includes(userId))
+          );
+        }
+      } catch (error) {
+        console.error('Erro ao filtrar por nível de acesso:', error);
+      }
     }
 
     setFilteredTasks(filtered);
+  };
+
+  const clearAdvancedFilters = () => {
+    setSelectedUser('all');
+    setSelectedAccessLevel('all');
   };
 
   const getFilterCount = (filter: 'all' | 'today' | 'week' | 'month') => {
@@ -420,6 +456,11 @@ export const useTaskManager = () => {
     updatingTask,
     activeFilter,
     setActiveFilter,
+    selectedUser,
+    setSelectedUser,
+    selectedAccessLevel,
+    setSelectedAccessLevel,
+    clearAdvancedFilters,
     getFilterCount,
     updateTaskStatus,
     canEditTask,

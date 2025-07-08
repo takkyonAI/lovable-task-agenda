@@ -6,6 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Target, Clock, CheckCircle, TrendingUp, CalendarDays, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import CreateTaskDialog from './task/CreateTaskDialog';
 import TaskDetailsModal from './task/TaskDetailsModal';
+import TaskFilters from './task/TaskFilters';
+import AdvancedTaskFilters from './task/AdvancedTaskFilters';
 import { useTaskManager } from '@/hooks/useTaskManager';
 import { useUserProfiles } from '@/hooks/useUserProfiles';
 import { getStatusColor, getPriorityColor, getStatusLabel, getPriorityLabel } from '@/utils/taskUtils';
@@ -33,6 +35,14 @@ const TaskManager: React.FC = () => {
     filteredTasks,
     isLoading,
     updatingTask,
+    activeFilter,
+    setActiveFilter,
+    selectedUser,
+    setSelectedUser,
+    selectedAccessLevel,
+    setSelectedAccessLevel,
+    clearAdvancedFilters,
+    getFilterCount,
     updateTaskStatus,
     canEditTask,
     createTask,
@@ -40,7 +50,7 @@ const TaskManager: React.FC = () => {
     canDeleteTask
   } = useTaskManager();
 
-  const { getUserName } = useUserProfiles();
+  const { getUserName, userProfiles } = useUserProfiles();
 
   const handleCreateTask = async () => {
     const success = await createTask(newTask);
@@ -140,7 +150,7 @@ const TaskManager: React.FC = () => {
 
   // Função corrigida para comparar datas sem conversão de timezone
   const getTasksForHour = (hour: number) => {
-    return tasks.filter(task => {
+    return filteredTasks.filter(task => {
       if (!task.due_date) return false;
       
       // Parse da data da tarefa sem conversão de timezone
@@ -172,7 +182,7 @@ const TaskManager: React.FC = () => {
 
   // Função corrigida para comparar datas sem conversão de timezone
   const getTasksForDay = (day: Date) => {
-    return tasks.filter(task => {
+    return filteredTasks.filter(task => {
       if (!task.due_date) return false;
       
       // Parse da data da tarefa sem conversão de timezone
@@ -270,6 +280,21 @@ const TaskManager: React.FC = () => {
               </CardContent>
             </Card>
           </div>
+
+          <TaskFilters
+            activeFilter={activeFilter}
+            onFilterChange={setActiveFilter}
+            getFilterCount={getFilterCount}
+          />
+
+          <AdvancedTaskFilters
+            selectedUser={selectedUser}
+            onUserChange={setSelectedUser}
+            selectedAccessLevel={selectedAccessLevel}
+            onAccessLevelChange={setSelectedAccessLevel}
+            userProfiles={userProfiles}
+            onClearFilters={clearAdvancedFilters}
+          />
 
           <Card className="bg-slate-700/30 border-slate-600 mb-6">
             <CardContent className="p-4">
