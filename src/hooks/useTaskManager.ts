@@ -84,6 +84,19 @@ export const useTaskManager = () => {
             updated_at: task.updated_at
           });
           
+          // Debug adicional para due_date
+          if (task.due_date) {
+            const dueDateObj = new Date(task.due_date);
+            console.log(`🔍 DEBUG loadTasks - Due date analysis for "${task.title}":`, {
+              raw_due_date: task.due_date,
+              parsed_date_object: dueDateObj,
+              parsed_locale: dueDateObj.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
+              parsed_date_only: dueDateObj.toLocaleDateString('pt-BR'),
+              parsed_time_only: dueDateObj.toLocaleTimeString('pt-BR'),
+              timezone_offset: dueDateObj.getTimezoneOffset()
+            });
+          }
+          
           // Map "alta" priority to "urgente" for backward compatibility
           let priority: 'baixa' | 'media' | 'urgente' = task.priority as 'baixa' | 'media' | 'urgente';
           if (task.priority === 'alta') {
@@ -358,20 +371,16 @@ export const useTaskManager = () => {
         
         // Extrair componentes da hora
         const time = newTask.due_time || '09:00';
-        const [hours, minutes] = time.split(':');
         
-        // Criar objeto Date usando componentes individuais para evitar problemas de timezone
-        const [year, month, day] = dateOnly.split('-').map(Number);
-        const localDate = new Date(year, month - 1, day, Number(hours), Number(minutes), 0);
+        // SOLUÇÃO DEFINITIVA: Incluir timezone explicitamente para evitar conversão UTC
+        // Usar formato TIMESTAMP WITH TIME ZONE com timezone do Brasil (-03:00)
+        formattedDueDate = `${dateOnly} ${time}:00-03:00`;
         
-        console.log('🔍 DEBUG createTask - Local date object:', localDate);
-        console.log('🔍 DEBUG createTask - Local date ISO:', localDate.toISOString());
+        console.log('🔍 DEBUG createTask - Final formatted date with timezone:', formattedDueDate);
         
-        // Enviar a data no formato TIMESTAMP WITH TIME ZONE do PostgreSQL
-        // Isso garante que a data seja interpretada corretamente no banco
-        formattedDueDate = localDate.toISOString();
-        
-        console.log('🔍 DEBUG createTask - Final formatted date (ISO):', formattedDueDate);
+        // Log adicional para debug
+        console.log('🔍 DEBUG createTask - Date components:', { dateOnly, time });
+        console.log('🔍 DEBUG createTask - Current timezone offset:', new Date().getTimezoneOffset());
       } else {
         console.log('🔍 DEBUG createTask - No due_date provided');
       }
