@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Target, Clock, CheckCircle, TrendingUp, CalendarDays, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Target, Clock, CheckCircle, TrendingUp, CalendarDays, Calendar, ChevronLeft, ChevronRight, User, Users } from 'lucide-react';
 import CreateTaskDialog from './task/CreateTaskDialog';
 import TaskDetailsModal from './task/TaskDetailsModal';
 import TaskFilters from './task/TaskFilters';
@@ -51,6 +51,64 @@ const TaskManager: React.FC = () => {
   } = useTaskManager();
 
   const { getUserName, userProfiles } = useUserProfiles();
+
+  // Função para calcular altura dinâmica baseada na quantidade de tarefas
+  const calculateDynamicHeight = (taskCount: number, view: 'week' | 'month') => {
+    if (view === 'week') {
+      // Visualização semanal - altura base + altura por tarefa
+      const baseHeight = 150; // altura base em pixels
+      const taskHeight = 60; // altura por tarefa em pixels
+      const minHeight = baseHeight + (taskCount * taskHeight);
+      return `min-h-[${minHeight}px] sm:min-h-[${minHeight + 50}px]`;
+    } else if (view === 'month') {
+      // Visualização mensal - altura base + altura por tarefa
+      const baseHeight = 60; // altura base em pixels
+      const taskHeight = 30; // altura por tarefa em pixels
+      const minHeight = baseHeight + (taskCount * taskHeight);
+      return `min-h-[${minHeight}px] sm:min-h-[${minHeight + 40}px]`;
+    }
+    return '';
+  };
+
+  // Função para renderizar informações dos usuários de forma compacta
+  const renderUserInfo = (task: Task, compact: boolean = false) => {
+    const assignedNames = task.assigned_users.map(id => getUserName(id));
+    const creatorName = getUserName(task.created_by);
+    
+    if (compact) {
+      // Versão compacta para visualização mensal
+      return (
+        <div className="text-xs text-slate-300 space-y-1">
+          {assignedNames.length > 0 && (
+            <div className="flex items-center gap-1">
+              <Users className="w-3 h-3" />
+              <span className="truncate">{assignedNames.slice(0, 2).join(', ')}{assignedNames.length > 2 ? '...' : ''}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-1">
+            <User className="w-3 h-3" />
+            <span className="truncate">{creatorName}</span>
+          </div>
+        </div>
+      );
+    } else {
+      // Versão completa para visualizações diária e semanal
+      return (
+        <div className="text-xs text-slate-300 space-y-1">
+          {assignedNames.length > 0 && (
+            <div className="flex items-center gap-1">
+              <Users className="w-3 h-3" />
+              <span className="text-xs">Atribuído: {assignedNames.join(', ')}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-1">
+            <User className="w-3 h-3" />
+            <span className="text-xs">Criado por: {creatorName}</span>
+          </div>
+        </div>
+      );
+    }
+  };
 
   const handleCreateTask = async () => {
     const success = await createTask(newTask);
@@ -154,25 +212,19 @@ const TaskManager: React.FC = () => {
     return filteredTasks.filter(task => {
       if (!task.due_date) return false;
       
-      // Parse da data da tarefa sem conversão de timezone
-      const taskDateStr = task.due_date.toString();
-      const taskDateParts = taskDateStr.split(' ')[0].split('-'); // YYYY-MM-DD
-      const taskTimeParts = taskDateStr.split(' ')[1]?.split(':') || ['0', '0']; // HH:MM:SS
-      
-      const taskYear = parseInt(taskDateParts[0]);
-      const taskMonth = parseInt(taskDateParts[1]) - 1; // JS months are 0-based
-      const taskDay = parseInt(taskDateParts[2]);
-      const taskHour = parseInt(taskTimeParts[0]);
+      // Usar a mesma lógica que formatTimeToBR - converter para Date e extrair a hora local
+      const taskDate = new Date(task.due_date);
+      const taskHour = taskDate.getHours();
       
       // Data selecionada
       const selectedYear = selectedDate.getFullYear();
       const selectedMonth = selectedDate.getMonth();
       const selectedDay = selectedDate.getDate();
       
-      console.log('Comparando datas:', {
-        task: { year: taskYear, month: taskMonth, day: taskDay, hour: taskHour },
-        selected: { year: selectedYear, month: selectedMonth, day: selectedDay, hour }
-      });
+      // Data da tarefa
+      const taskYear = taskDate.getFullYear();
+      const taskMonth = taskDate.getMonth();
+      const taskDay = taskDate.getDate();
       
       return taskYear === selectedYear && 
              taskMonth === selectedMonth && 
@@ -186,13 +238,13 @@ const TaskManager: React.FC = () => {
     return filteredTasks.filter(task => {
       if (!task.due_date) return false;
       
-      // Parse da data da tarefa sem conversão de timezone
-      const taskDateStr = task.due_date.toString();
-      const taskDateParts = taskDateStr.split(' ')[0].split('-'); // YYYY-MM-DD
+      // Usar a mesma lógica que formatTimeToBR - converter para Date e extrair a data local
+      const taskDate = new Date(task.due_date);
       
-      const taskYear = parseInt(taskDateParts[0]);
-      const taskMonth = parseInt(taskDateParts[1]) - 1; // JS months are 0-based
-      const taskDay = parseInt(taskDateParts[2]);
+      // Data da tarefa
+      const taskYear = taskDate.getFullYear();
+      const taskMonth = taskDate.getMonth();
+      const taskDay = taskDate.getDate();
       
       // Data do dia comparado
       const dayYear = day.getFullYear();
@@ -274,28 +326,30 @@ const TaskManager: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-slate-400 text-sm">Performance</p>
-                    <p className="text-2xl font-bold text-green-400">{stats.performance}%</p>
+                    <p className="text-2xl font-bold text-blue-400">{stats.performance}%</p>
                   </div>
-                  <TrendingUp className="w-8 h-8 text-green-500" />
+                  <TrendingUp className="w-8 h-8 text-blue-500" />
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          <TaskFilters
-            activeFilter={activeFilter}
-            onFilterChange={setActiveFilter}
-            getFilterCount={getFilterCount}
-          />
-
-          <AdvancedTaskFilters
-            selectedUser={selectedUser}
-            onUserChange={setSelectedUser}
-            selectedAccessLevel={selectedAccessLevel}
-            onAccessLevelChange={setSelectedAccessLevel}
-            userProfiles={userProfiles}
-            onClearFilters={clearAdvancedFilters}
-          />
+          <div className="space-y-4">
+            <TaskFilters
+              activeFilter={activeFilter}
+              onFilterChange={setActiveFilter}
+              getFilterCount={getFilterCount}
+            />
+            
+            <AdvancedTaskFilters
+              selectedUser={selectedUser}
+              onUserChange={setSelectedUser}
+              selectedAccessLevel={selectedAccessLevel}
+              onAccessLevelChange={setSelectedAccessLevel}
+              onClearFilters={clearAdvancedFilters}
+              userProfiles={userProfiles}
+            />
+          </div>
 
           <Card className="bg-slate-700/30 border-slate-600 mb-6">
             <CardContent className="p-4">
@@ -387,16 +441,12 @@ const TaskManager: React.FC = () => {
                               {task.description && (
                                 <p className="text-slate-400 text-xs mb-2 text-left">{task.description}</p>
                               )}
-                              <div className="flex items-center justify-between">
+                              <div className="flex items-center justify-between mb-2">
                                 <Badge className={`text-xs ${getPriorityColor(task.priority)}`}>
                                   {getPriorityLabel(task.priority)}
                                 </Badge>
-                                {task.assigned_users.length > 0 && (
-                                  <span className="text-xs text-slate-400">
-                                    {getUserName(task.assigned_users[0])}
-                                  </span>
-                                )}
                               </div>
+                              {renderUserInfo(task)}
                             </div>
                           ))}
                         </div>
@@ -421,14 +471,16 @@ const TaskManager: React.FC = () => {
                     {weekDays.map((day, index) => {
                       const dayTasks = getTasksForDay(day);
                       const isToday = isSameDay(day, getTodayBR());
+                      const dynamicHeight = calculateDynamicHeight(dayTasks.length, 'week');
                       
                       return (
                         <div 
                           key={index} 
-                          className={`border border-slate-600 rounded-lg p-2 sm:p-3 min-h-[150px] sm:min-h-[200px] cursor-pointer hover:bg-slate-600/10 transition-colors ${
+                          className={`border border-slate-600 rounded-lg p-2 sm:p-3 ${dynamicHeight} cursor-pointer hover:bg-slate-600/10 transition-colors ${
                             isToday ? 'bg-blue-500/10 border-blue-500' : 'bg-slate-600/20'
                           }`}
                           onDoubleClick={() => handleDoubleClickDay(day)}
+                          style={{ minHeight: `${150 + (dayTasks.length * 80)}px` }}
                         >
                           <div className="text-center mb-2 sm:mb-3">
                             <div className="text-xs text-slate-400">
@@ -443,7 +495,7 @@ const TaskManager: React.FC = () => {
                             {dayTasks.map(task => (
                               <div 
                                 key={task.id} 
-                                className="p-1 sm:p-2 bg-slate-500/30 rounded text-xs cursor-pointer hover:bg-slate-500/40 transition-colors"
+                                className="p-2 bg-slate-500/30 rounded text-xs cursor-pointer hover:bg-slate-500/40 transition-colors"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleTaskClick(task);
@@ -462,7 +514,7 @@ const TaskManager: React.FC = () => {
                                     {task.description}
                                   </div>
                                 )}
-                                <div className="flex justify-between items-center mb-1">
+                                <div className="flex justify-between items-center mb-2">
                                   <Badge className={`text-xs ${getStatusColor(task.status)}`}>
                                     {getStatusLabel(task.status).charAt(0).toUpperCase()}
                                   </Badge>
@@ -470,11 +522,7 @@ const TaskManager: React.FC = () => {
                                     {getPriorityLabel(task.priority).charAt(0).toUpperCase()}
                                   </Badge>
                                 </div>
-                                {task.assigned_users.length > 0 && (
-                                  <div className="text-xs text-slate-400 text-left truncate">
-                                    {getUserName(task.assigned_users[0])}
-                                  </div>
-                                )}
+                                {renderUserInfo(task)}
                               </div>
                             ))}
                           </div>
@@ -510,7 +558,7 @@ const TaskManager: React.FC = () => {
                       return (
                         <div 
                           key={index} 
-                          className={`border border-slate-600 rounded p-1 min-h-[60px] sm:min-h-[100px] text-xs cursor-pointer hover:bg-slate-600/10 transition-colors ${
+                          className={`border border-slate-600 rounded p-1 text-xs cursor-pointer hover:bg-slate-600/10 transition-colors ${
                             isCurrentMonth 
                               ? isToday 
                                 ? 'bg-blue-500/20 border-blue-500' 
@@ -518,13 +566,14 @@ const TaskManager: React.FC = () => {
                               : 'bg-slate-800/20 text-slate-500'
                           }`}
                           onDoubleClick={() => handleDoubleClickDay(day)}
+                          style={{ minHeight: `${60 + (dayTasks.length * 50)}px` }}
                         >
                           <div className={`text-center mb-1 text-xs sm:text-sm ${isToday ? 'text-blue-400 font-bold' : 'text-slate-300'}`}>
                             {day.getDate()}
                           </div>
                           
-                          <div className="space-y-1">
-                            {dayTasks.slice(0, 2).map(task => (
+                          <div className="space-y-1 max-h-[120px] overflow-y-auto">
+                            {dayTasks.map(task => (
                               <div 
                                 key={task.id} 
                                 className="p-1 bg-slate-500/30 rounded text-xs cursor-pointer hover:bg-slate-500/40 transition-colors"
@@ -541,13 +590,9 @@ const TaskManager: React.FC = () => {
                                     'bg-blue-500'
                                   }`}></div>
                                 </div>
+                                {renderUserInfo(task, true)}
                               </div>
                             ))}
-                            {dayTasks.length > 2 && (
-                              <div className="text-xs text-slate-400 text-center">
-                                +{dayTasks.length - 2} mais
-                              </div>
-                            )}
                           </div>
                         </div>
                       );

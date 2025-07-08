@@ -55,7 +55,7 @@ const Index = () => {
             >
               <Calendar className="w-4 h-4 mr-2" />
               <span className="hidden sm:inline">Tarefas</span>
-              <span className="sm:hidden">Tasks</span>
+              <span className="sm:hidden">Tarefas</span>
             </TabsTrigger>
             <TabsTrigger 
               value="notifications" 
@@ -63,7 +63,7 @@ const Index = () => {
             >
               <Bell className="w-4 h-4 mr-2" />
               <span className="hidden sm:inline">Notificações</span>
-              <span className="sm:hidden">Notif</span>
+              <span className="sm:hidden">Notific.</span>
             </TabsTrigger>
             {canAccessUserManagement() && (
               <TabsTrigger 
@@ -72,7 +72,7 @@ const Index = () => {
               >
                 <Users className="w-4 h-4 mr-2" />
                 <span className="hidden sm:inline">Usuários</span>
-                <span className="sm:hidden">Users</span>
+                <span className="sm:hidden">Usuários</span>
               </TabsTrigger>
             )}
           </TabsList>
