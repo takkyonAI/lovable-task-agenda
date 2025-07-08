@@ -61,6 +61,36 @@ const TaskManager: React.FC = () => {
     setSelectedTask(null);
   };
 
+  const handleDoubleClickHour = (hour: number, date: Date) => {
+    const taskDate = new Date(date);
+    taskDate.setHours(hour, 0, 0, 0);
+    
+    setNewTask({
+      title: '',
+      description: '',
+      status: 'pendente',
+      priority: 'media',
+      due_date: taskDate.toISOString(),
+      assigned_users: []
+    });
+    setIsCreateDialogOpen(true);
+  };
+
+  const handleDoubleClickDay = (date: Date) => {
+    const taskDate = new Date(date);
+    taskDate.setHours(9, 0, 0, 0); // Define um horário padrão (9:00)
+    
+    setNewTask({
+      title: '',
+      description: '',
+      status: 'pendente',
+      priority: 'media',
+      due_date: taskDate.toISOString(),
+      assigned_users: []
+    });
+    setIsCreateDialogOpen(true);
+  };
+
   const stats = {
     total: tasks.length,
     pendentes: tasks.filter(t => t.status === 'pendente').length,
@@ -237,21 +267,24 @@ const TaskManager: React.FC = () => {
                         <div className="w-16 text-sm text-slate-400 py-3 pr-4">
                           {hour.toString().padStart(2, '0')}:00
                         </div>
-                        <div className="flex-1 min-h-[60px] py-2">
+                        <div 
+                          className="flex-1 min-h-[60px] py-2 cursor-pointer hover:bg-slate-600/20 transition-colors" 
+                          onDoubleClick={() => handleDoubleClickHour(hour, selectedDate)}
+                        >
                           {getTasksForHour(hour).map(task => (
                             <div 
                               key={task.id} 
                               className="flex flex-col p-3 bg-slate-600/30 rounded border-l-4 border-blue-500 mb-2 cursor-pointer hover:bg-slate-600/40 transition-colors"
                               onClick={() => handleTaskClick(task)}
                             >
-                              <div className="flex items-center justify-between mb-2">
-                                <h4 className="font-medium text-white text-sm break-words flex-1">{task.title}</h4>
+                              <div className="flex items-start justify-between mb-2">
+                                <h4 className="font-medium text-white text-sm break-words flex-1 text-left">{task.title}</h4>
                                 <Badge className={`text-xs ml-2 ${getStatusColor(task.status)}`}>
                                   {getStatusLabel(task.status)}
                                 </Badge>
                               </div>
                               {task.description && (
-                                <p className="text-slate-400 text-xs mb-2">{task.description}</p>
+                                <p className="text-slate-400 text-xs mb-2 text-left">{task.description}</p>
                               )}
                               <Badge className={`text-xs self-start ${getPriorityColor(task.priority)}`}>
                                 {getPriorityLabel(task.priority)}
@@ -281,9 +314,13 @@ const TaskManager: React.FC = () => {
                       const isToday = isSameDay(day, getTodayBR());
                       
                       return (
-                        <div key={index} className={`border border-slate-600 rounded-lg p-3 min-h-[200px] ${
-                          isToday ? 'bg-blue-500/10 border-blue-500' : 'bg-slate-600/20'
-                        }`}>
+                        <div 
+                          key={index} 
+                          className={`border border-slate-600 rounded-lg p-3 min-h-[200px] cursor-pointer hover:bg-slate-600/10 transition-colors ${
+                            isToday ? 'bg-blue-500/10 border-blue-500' : 'bg-slate-600/20'
+                          }`}
+                          onDoubleClick={() => handleDoubleClickDay(day)}
+                        >
                           <div className="text-center mb-3">
                             <div className="text-xs text-slate-400">
                               {day.toLocaleDateString('pt-BR', { weekday: 'short' })}
@@ -298,14 +335,22 @@ const TaskManager: React.FC = () => {
                               <div 
                                 key={task.id} 
                                 className="p-2 bg-slate-500/30 rounded text-xs cursor-pointer hover:bg-slate-500/40 transition-colors"
-                                onClick={() => handleTaskClick(task)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleTaskClick(task);
+                                }}
                               >
                                 <div className="mb-2">
-                                  <span className="text-white font-medium break-words block">{task.title}</span>
+                                  <span className="text-white font-medium break-words block text-left">{task.title}</span>
                                 </div>
                                 {task.due_date && (
-                                  <div className="text-slate-400 mb-2">
+                                  <div className="text-slate-400 mb-2 text-left">
                                     {formatTimeToBR(task.due_date)}
+                                  </div>
+                                )}
+                                {task.description && (
+                                  <div className="text-slate-400 mb-2 text-left text-xs">
+                                    {task.description}
                                   </div>
                                 )}
                                 <div className="flex justify-between items-center">
@@ -349,13 +394,17 @@ const TaskManager: React.FC = () => {
                       const isToday = isSameDay(day, getTodayBR());
                       
                       return (
-                        <div key={index} className={`border border-slate-600 rounded p-1 min-h-[100px] text-xs ${
-                          isCurrentMonth 
-                            ? isToday 
-                              ? 'bg-blue-500/20 border-blue-500' 
-                              : 'bg-slate-600/20' 
-                            : 'bg-slate-800/20 text-slate-500'
-                        }`}>
+                        <div 
+                          key={index} 
+                          className={`border border-slate-600 rounded p-1 min-h-[100px] text-xs cursor-pointer hover:bg-slate-600/10 transition-colors ${
+                            isCurrentMonth 
+                              ? isToday 
+                                ? 'bg-blue-500/20 border-blue-500' 
+                                : 'bg-slate-600/20' 
+                              : 'bg-slate-800/20 text-slate-500'
+                          }`}
+                          onDoubleClick={() => handleDoubleClickDay(day)}
+                        >
                           <div className={`text-center mb-1 ${isToday ? 'text-blue-400 font-bold' : 'text-slate-300'}`}>
                             {day.getDate()}
                           </div>
@@ -365,10 +414,13 @@ const TaskManager: React.FC = () => {
                               <div 
                                 key={task.id} 
                                 className="p-1 bg-slate-500/30 rounded text-xs cursor-pointer hover:bg-slate-500/40 transition-colors"
-                                onClick={() => handleTaskClick(task)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleTaskClick(task);
+                                }}
                               >
                                 <div className="flex items-center justify-between mb-1">
-                                  <span className="text-white font-medium truncate text-xs flex-1">{task.title}</span>
+                                  <span className="text-white font-medium truncate text-xs flex-1 text-left">{task.title}</span>
                                   <div className={`w-2 h-2 rounded-full ml-1 ${
                                     task.priority === 'urgente' ? 'bg-red-500' :
                                     task.priority === 'alta' ? 'bg-orange-500' :
