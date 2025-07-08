@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Calendar, Users, LogOut, Settings } from 'lucide-react';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
+import { useGoogleSheets } from '@/hooks/useGoogleSheets';
 import UserManagement from '@/components/UserManagement';
 import TaskManager from '@/components/TaskManager';
 import GoogleSheetsConfig from '@/components/GoogleSheetsConfig';
@@ -13,9 +14,14 @@ import UserHeader from '@/components/UserHeader';
 const Index = () => {
   const [activeTab, setActiveTab] = useState('tasks');
   const { currentUser, logout, canAccessUserManagement } = useSupabaseAuth();
+  const { saveConfig, isConfigured } = useGoogleSheets();
 
   const handleLogout = async () => {
     await logout();
+  };
+
+  const handleConfigSave = (config: { spreadsheetId: string; clientId: string }) => {
+    saveConfig(config);
   };
 
   if (!currentUser) {
@@ -104,7 +110,10 @@ const Index = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <GoogleSheetsConfig />
+                <GoogleSheetsConfig 
+                  onConfigSave={handleConfigSave}
+                  isConfigured={isConfigured}
+                />
               </CardContent>
             </Card>
           </TabsContent>
