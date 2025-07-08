@@ -117,13 +117,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // 🔄 INICIALIZAÇÃO: Verificar se já existe sessão ativa
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!isCreatingUser) {
-        setSession(session);
-        setAuthUser(session?.user ?? null);
-        
-        if (session?.user) {
-          fetchUserProfile(session.user.id);
-        } else {
-          setLoading(false);
+      setSession(session);
+      setAuthUser(session?.user ?? null);
+      
+      if (session?.user) {
+        fetchUserProfile(session.user.id);
+      } else {
+        setLoading(false);
         }
       }
     });
@@ -276,51 +276,51 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       const passwordValidation = validatePassword(password);
       if (!passwordValidation.isValid) {
-        toast({
-          title: "Erro no Cadastro",
+          toast({
+            title: "Erro no Cadastro",
           description: passwordValidation.message,
-          variant: "destructive"
-        });
-        return false;
-      }
+            variant: "destructive"
+          });
+          return false;
+        }
 
       if (!validateName(name)) {
-        toast({
+              toast({
           title: "Erro no Cadastro",
           description: "Nome deve ter entre 2 e 100 caracteres",
           variant: "destructive"
-        });
+              });
         return false;
-      }
+        }
 
-      const { data, error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
         email: sanitizeInput(email),
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`,
+            data: {
             full_name: sanitizeInput(name)
           }
+          }
+        });
+
+        if (error) {
+          toast({
+            title: "Erro no Cadastro",
+            description: error.message,
+            variant: "destructive"
+          });
+          return false;
         }
-      });
 
-      if (error) {
-        toast({
-          title: "Erro no Cadastro",
-          description: error.message,
-          variant: "destructive"
-        });
-        return false;
-      }
+        if (data.user && !data.session) {
+          toast({
+            title: "Verifique seu Email",
+            description: "Foi enviado um link de confirmação para seu email.",
+          });
+        }
 
-      if (data.user && !data.session) {
-        toast({
-          title: "Verifique seu Email",
-          description: "Foi enviado um link de confirmação para seu email.",
-        });
-      }
-
-      return true;
+        return true;
     } catch (error) {
       console.error('Erro no cadastro:', error);
       return false;
@@ -440,16 +440,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // 🔄 ATUALIZAÇÃO: Perfil já existe, apenas atualizar dados
         console.log('🔄 Atualizando perfil existente para user_id:', authData.user.id);
         const { error } = await supabase
-          .from('user_profiles')
-          .update({
+        .from('user_profiles')
+        .update({ 
             name: sanitizeInput(userData.name),
             email: sanitizeInput(userData.email),
-            role: userData.role,
+          role: userData.role,
             is_active: true,
             first_login_completed: false // Forçar mudança de senha no primeiro login
           } as any)
-          .eq('user_id', authData.user.id);
-        
+        .eq('user_id', authData.user.id);
+
         profileError = error;
       } else {
         // ✨ CRIAÇÃO: Novo perfil, inserir todos os dados
@@ -470,13 +470,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (profileError) {
         console.error('Erro ao criar/atualizar perfil:', profileError);
-        toast({
-          title: "Erro",
-          description: "Falha ao criar perfil do usuário",
-          variant: "destructive"
-        });
-        return false;
-      }
+          toast({
+            title: "Erro",
+            description: "Falha ao criar perfil do usuário",
+            variant: "destructive"
+          });
+          return false;
+        }
 
       // 📧 EMAIL: Enviar credenciais via EmailJS para o novo usuário
       try {
@@ -549,7 +549,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log('📝 Texto da resposta:', (response as any).text);
         
         // 🎉 FEEDBACK: Notificar administrador do sucesso
-        toast({
+      toast({
           title: "Usuário Criado com Sucesso!",
           description: `${userData.name} foi criado e um email com as credenciais foi enviado para ${userData.email}`,
         });
@@ -634,25 +634,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       if (!currentUser) return [];
 
-      // Implementar lógica de visibilidade baseada na hierarquia de papéis
-      const currentUserLevel = roleHierarchy[currentUser.role];
-      
+      // Remover restrições de hierarquia - todos os usuários podem ver todos os usuários ativos
+      // Isso permite que qualquer usuário possa atribuir tarefas a qualquer outro usuário
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
-        .order('created_at', { ascending: false });
+        .eq('is_active', true)
+        .order('name', { ascending: true });
 
       if (error) {
         console.error('Erro ao buscar usuários visíveis:', error);
         return [];
       }
 
-      // Filtrar usuários baseado na hierarquia
+      // Retornar todos os usuários ativos sem filtrar por hierarquia
       return (data || [])
-        .filter((user: any) => {
-          const userLevel = roleHierarchy[user.role as keyof typeof roleHierarchy];
-          return currentUserLevel >= userLevel;
-        })
         .map((user: any) => ({
           id: user.id as string,
           user_id: user.user_id as string,
