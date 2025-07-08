@@ -23,6 +23,7 @@ const TaskManager: React.FC = () => {
     status: 'pendente',
     priority: 'media',
     due_date: '',
+    due_time: '09:00',
     assigned_users: []
   });
 
@@ -45,6 +46,7 @@ const TaskManager: React.FC = () => {
         status: 'pendente',
         priority: 'media',
         due_date: '',
+        due_time: '09:00',
         assigned_users: []
       });
       setIsCreateDialogOpen(false);
@@ -71,6 +73,7 @@ const TaskManager: React.FC = () => {
       status: 'pendente',
       priority: 'media',
       due_date: taskDate.toISOString(),
+      due_time: `${hour.toString().padStart(2, '0')}:00`,
       assigned_users: []
     });
     setIsCreateDialogOpen(true);
@@ -78,7 +81,7 @@ const TaskManager: React.FC = () => {
 
   const handleDoubleClickDay = (date: Date) => {
     const taskDate = new Date(date);
-    taskDate.setHours(9, 0, 0, 0); // Define um horário padrão (9:00)
+    taskDate.setHours(9, 0, 0, 0);
     
     setNewTask({
       title: '',
@@ -86,6 +89,7 @@ const TaskManager: React.FC = () => {
       status: 'pendente',
       priority: 'media',
       due_date: taskDate.toISOString(),
+      due_time: '09:00',
       assigned_users: []
     });
     setIsCreateDialogOpen(true);
@@ -241,13 +245,13 @@ const TaskManager: React.FC = () => {
 
           <Tabs value={currentView} onValueChange={(value) => setCurrentView(value as 'day' | 'week' | 'month')}>
             <TabsList className="grid w-full grid-cols-3 bg-slate-700/50 border-slate-600">
-              <TabsTrigger value="day" className="data-[state=active]:bg-purple-600">
+              <TabsTrigger value="day" className="data-[state=active]:bg-blue-600">
                 Dia
               </TabsTrigger>
-              <TabsTrigger value="week" className="data-[state=active]:bg-purple-600">
+              <TabsTrigger value="week" className="data-[state=active]:bg-blue-600">
                 Semana
               </TabsTrigger>
-              <TabsTrigger value="month" className="data-[state=active]:bg-purple-600">
+              <TabsTrigger value="month" className="data-[state=active]:bg-blue-600">
                 Mês
               </TabsTrigger>
             </TabsList>

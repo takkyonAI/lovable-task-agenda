@@ -15,6 +15,7 @@ interface NewTask {
   status: 'pendente' | 'em_andamento' | 'concluida' | 'cancelada';
   priority: 'baixa' | 'media' | 'alta' | 'urgente';
   due_date: string;
+  due_time: string;
   assigned_users: string[];
 }
 
@@ -101,15 +102,38 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="taskDueDate" className="text-slate-300">Data de Vencimento</Label>
-            <Input
-              id="taskDueDate"
-              type="date"
-              value={newTask.due_date}
-              onChange={(e) => onTaskChange({ ...newTask, due_date: e.target.value })}
-              className="bg-slate-700/50 border-slate-600 text-white"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="taskDueDate" className="text-slate-300">Data de Vencimento</Label>
+              <Input
+                id="taskDueDate"
+                type="date"
+                value={newTask.due_date ? newTask.due_date.split('T')[0] : ''}
+                onChange={(e) => {
+                  const date = e.target.value;
+                  const time = newTask.due_time || '09:00';
+                  const dateTime = date ? `${date}T${time}:00.000Z` : '';
+                  onTaskChange({ ...newTask, due_date: dateTime });
+                }}
+                className="bg-slate-700/50 border-slate-600 text-white"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="taskDueTime" className="text-slate-300">Horário</Label>
+              <Input
+                id="taskDueTime"
+                type="time"
+                value={newTask.due_time}
+                onChange={(e) => {
+                  const time = e.target.value;
+                  const date = newTask.due_date ? newTask.due_date.split('T')[0] : new Date().toISOString().split('T')[0];
+                  const dateTime = `${date}T${time}:00.000Z`;
+                  onTaskChange({ ...newTask, due_time: time, due_date: dateTime });
+                }}
+                className="bg-slate-700/50 border-slate-600 text-white"
+              />
+            </div>
           </div>
 
           <div>

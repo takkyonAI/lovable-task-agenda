@@ -19,5 +19,6 @@ export interface NewTask {
   status: 'pendente' | 'em_andamento' | 'concluida' | 'cancelada';
   priority: 'baixa' | 'media' | 'alta' | 'urgente';
   due_date: string;
+  due_time: string;
   assigned_users: string[];
 }

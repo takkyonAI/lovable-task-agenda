@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Task } from '@/types/task';
 import { supabase } from '@/integrations/supabase/client';
@@ -224,6 +223,7 @@ export const useTaskManager = () => {
     status: 'pendente' | 'em_andamento' | 'concluida' | 'cancelada';
     priority: 'baixa' | 'media' | 'alta' | 'urgente';
     due_date: string;
+    due_time: string;
     assigned_users: string[];
   }) => {
     if (!newTask.title.trim()) {
