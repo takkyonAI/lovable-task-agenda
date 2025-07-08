@@ -8,11 +8,12 @@ import CreateTaskDialog from './task/CreateTaskDialog';
 import TaskDetailsModal from './task/TaskDetailsModal';
 import { useTaskManager } from '@/hooks/useTaskManager';
 import { getStatusColor, getPriorityColor, getStatusLabel, getPriorityLabel } from '@/utils/taskUtils';
+import { formatDateToBR, formatTimeToBR, isSameDay, getTodayBR, getWeekDaysBR, getMonthDaysBR, getViewTitleBR } from '@/utils/dateUtils';
 import { NewTask, Task } from '@/types/task';
 
 const TaskManager: React.FC = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(getTodayBR());
   const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('week');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isTaskDetailsOpen, setIsTaskDetailsOpen] = useState(false);
@@ -83,77 +84,23 @@ const TaskManager: React.FC = () => {
     setSelectedDate(newDate);
   };
 
-  const getViewTitle = () => {
-    switch (currentView) {
-      case 'day':
-        return selectedDate.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
-      case 'week':
-        const weekStart = new Date(selectedDate);
-        weekStart.setDate(selectedDate.getDate() - selectedDate.getDay() + 1); // Start from Monday
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekStart.getDate() + 5); // End on Saturday
-        return `${weekStart.getDate()}/${weekStart.getMonth() + 1} - ${weekEnd.getDate()}/${weekEnd.getMonth() + 1}`;
-      case 'month':
-        return selectedDate.toLocaleDateString('pt-BR', { year: 'numeric', month: 'long' });
-      default:
-        return '';
-    }
-  };
-
   const getTasksForHour = (hour: number) => {
     return tasks.filter(task => {
       if (!task.due_date) return false;
       const taskDate = new Date(task.due_date);
-      return taskDate.toDateString() === selectedDate.toDateString() && taskDate.getHours() === hour;
+      return isSameDay(taskDate, selectedDate) && taskDate.getHours() === hour;
     });
   };
 
   const getTasksForDay = (day: Date) => {
     return tasks.filter(task => {
       if (!task.due_date) return false;
-      const taskDate = new Date(task.due_date);
-      return taskDate.toDateString() === day.toDateString();
+      return isSameDay(task.due_date, day);
     });
   };
 
-  const getWeekDays = () => {
-    const startOfWeek = new Date(selectedDate);
-    // Set to Monday (1) instead of Sunday (0)
-    const dayOfWeek = selectedDate.getDay();
-    const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    startOfWeek.setDate(selectedDate.getDate() - daysFromMonday);
-    
-    // Return only 6 days (Monday to Saturday)
-    return Array.from({ length: 6 }, (_, i) => {
-      const day = new Date(startOfWeek);
-      day.setDate(startOfWeek.getDate() + i);
-      return day;
-    });
-  };
-
-  const getMonthDays = () => {
-    const firstDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-    const lastDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
-    const startDate = new Date(firstDay);
-    startDate.setDate(firstDay.getDate() - firstDay.getDay());
-    
-    const days = [];
-    const current = new Date(startDate);
-    
-    while (current <= lastDay || current.getDay() !== 0) {
-      days.push(new Date(current));
-      current.setDate(current.getDate() + 1);
-    }
-    
-    return days;
-  };
-
-  const formatTime = (date: string) => {
-    return new Date(date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const weekDays = getWeekDays();
-  const monthDays = getMonthDays();
+  const weekDays = getWeekDaysBR(selectedDate);
+  const monthDays = getMonthDaysBR(selectedDate);
 
   return (
     <div className="space-y-6">
@@ -245,7 +192,7 @@ const TaskManager: React.FC = () => {
                 </Button>
                 
                 <div className="text-center">
-                  <h3 className="text-lg font-semibold text-white">{getViewTitle()}</h3>
+                  <h3 className="text-lg font-semibold text-white">{getViewTitleBR(currentView, selectedDate)}</h3>
                   <p className="text-sm text-slate-400">{filteredTasks.length} tarefas</p>
                 </div>
                 
@@ -280,7 +227,7 @@ const TaskManager: React.FC = () => {
                 <CardHeader>
                   <CardTitle className="text-white flex items-center">
                     <Clock className="w-5 h-5 mr-2" />
-                    Agenda do Dia - {selectedDate.toLocaleDateString('pt-BR')}
+                    Agenda do Dia - {formatDateToBR(selectedDate)}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -331,7 +278,7 @@ const TaskManager: React.FC = () => {
                   <div className="grid grid-cols-6 gap-2">
                     {weekDays.map((day, index) => {
                       const dayTasks = getTasksForDay(day);
-                      const isToday = day.toDateString() === new Date().toDateString();
+                      const isToday = isSameDay(day, getTodayBR());
                       
                       return (
                         <div key={index} className={`border border-slate-600 rounded-lg p-3 min-h-[200px] ${
@@ -358,7 +305,7 @@ const TaskManager: React.FC = () => {
                                 </div>
                                 {task.due_date && (
                                   <div className="text-slate-400 mb-2">
-                                    {formatTime(task.due_date)}
+                                    {formatTimeToBR(task.due_date)}
                                   </div>
                                 )}
                                 <div className="flex justify-between items-center">
@@ -385,7 +332,7 @@ const TaskManager: React.FC = () => {
                 <CardHeader>
                   <CardTitle className="text-white flex items-center">
                     <Calendar className="w-5 h-5 mr-2" />
-                    {selectedDate.toLocaleDateString('pt-BR', { year: 'numeric', month: 'long' })}
+                    {getViewTitleBR('month', selectedDate)}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -399,7 +346,7 @@ const TaskManager: React.FC = () => {
                     {monthDays.map((day, index) => {
                       const dayTasks = getTasksForDay(day);
                       const isCurrentMonth = day.getMonth() === selectedDate.getMonth();
-                      const isToday = day.toDateString() === new Date().toDateString();
+                      const isToday = isSameDay(day, getTodayBR());
                       
                       return (
                         <div key={index} className={`border border-slate-600 rounded p-1 min-h-[100px] text-xs ${

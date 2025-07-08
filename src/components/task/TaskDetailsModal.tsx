@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar, Clock, CheckCircle, User, Play, X } from 'lucide-react';
 import { Task } from '@/types/task';
 import { getStatusColor, getPriorityColor, getStatusLabel, getPriorityLabel } from '@/utils/taskUtils';
+import { formatDateToBR, formatDateTimeToBR } from '@/utils/dateUtils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface TaskDetailsModalProps {
@@ -168,7 +169,6 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
         </DialogHeader>
         
         <div className="space-y-6">
-          {/* Status e Prioridade */}
           <div className="flex items-center space-x-3">
             <Badge className={`${getStatusColor(task.status)} border`}>
               {getStatusLabel(task.status)}
@@ -178,7 +178,6 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
             </Badge>
           </div>
 
-          {/* Descrição */}
           {task.description && (
             <div>
               <h4 className="text-sm font-medium text-slate-300 mb-2">Descrição</h4>
@@ -186,30 +185,28 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
             </div>
           )}
 
-          {/* Informações de Data */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-3">
               <div className="flex items-center space-x-2 text-sm text-slate-400">
                 <Calendar className="w-4 h-4" />
-                <span>Criado em: {task.created_at.toLocaleDateString('pt-BR')}</span>
+                <span>Criado em: {formatDateToBR(task.created_at)}</span>
               </div>
               
               {task.due_date && (
                 <div className="flex items-center space-x-2 text-sm text-slate-400">
                   <Clock className="w-4 h-4" />
-                  <span>Vence em: {new Date(task.due_date).toLocaleDateString('pt-BR')}</span>
+                  <span>Vence em: {formatDateTimeToBR(task.due_date)}</span>
                 </div>
               )}
               
               {task.completed_at && (
                 <div className="flex items-center space-x-2 text-sm text-slate-400">
                   <CheckCircle className="w-4 h-4" />
-                  <span>Concluído em: {task.completed_at.toLocaleDateString('pt-BR')}</span>
+                  <span>Concluído em: {formatDateToBR(task.completed_at)}</span>
                 </div>
               )}
             </div>
 
-            {/* Usuários Atribuídos */}
             {task.assigned_users && task.assigned_users.length > 0 && (
               <div>
                 <div className="flex items-center space-x-2 text-sm text-slate-300 mb-2">
@@ -223,7 +220,6 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
             )}
           </div>
 
-          {/* Botões de Ação */}
           {renderActionButtons() && (
             <div className="pt-4 border-t border-slate-600">
               <h4 className="text-sm font-medium text-slate-300 mb-3">Ações</h4>
