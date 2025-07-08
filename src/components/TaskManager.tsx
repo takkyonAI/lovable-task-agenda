@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -125,11 +126,12 @@ const TaskManager: React.FC = () => {
     await deleteTask(taskId);
   };
 
+  // Calcular estatísticas baseadas nas tarefas filtradas
   const stats = {
-    total: tasks.length,
-    pendentes: tasks.filter(t => t.status === 'pendente').length,
-    concluidas: tasks.filter(t => t.status === 'concluida').length,
-    performance: tasks.length > 0 ? Math.round((tasks.filter(t => t.status === 'concluida').length / tasks.length) * 100) : 0
+    total: filteredTasks.length,
+    pendentes: filteredTasks.filter(t => t.status === 'pendente').length,
+    concluidas: filteredTasks.filter(t => t.status === 'concluida').length,
+    performance: filteredTasks.length > 0 ? Math.round((filteredTasks.filter(t => t.status === 'concluida').length / filteredTasks.length) * 100) : 0
   };
 
   const navigateDate = (direction: 'prev' | 'next') => {
