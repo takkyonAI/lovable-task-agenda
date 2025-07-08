@@ -34,7 +34,9 @@ const TaskManager: React.FC = () => {
     updatingTask,
     updateTaskStatus,
     canEditTask,
-    createTask
+    createTask,
+    deleteTask,
+    canDeleteTask
   } = useTaskManager();
 
   const handleCreateTask = async () => {
@@ -93,6 +95,10 @@ const TaskManager: React.FC = () => {
       assigned_users: []
     });
     setIsCreateDialogOpen(true);
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    await deleteTask(taskId);
   };
 
   const stats = {
@@ -463,7 +469,9 @@ const TaskManager: React.FC = () => {
         isOpen={isTaskDetailsOpen}
         onClose={handleCloseTaskDetails}
         onUpdateStatus={updateTaskStatus}
+        onDeleteTask={handleDeleteTask}
         canEdit={selectedTask ? canEditTask(selectedTask) : false}
+        canDelete={selectedTask ? canDeleteTask(selectedTask) : false}
         isUpdating={selectedTask ? updatingTask === selectedTask.id : false}
       />
     </div>

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Task } from '@/types/task';
 import { supabase } from '@/integrations/supabase/client';
@@ -307,6 +306,67 @@ export const useTaskManager = () => {
     }
   };
 
+  const deleteTask = async (taskId: string): Promise<boolean> => {
+    if (!currentUser) {
+      toast({
+        title: "Erro",
+        description: "Usuário não autenticado",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    // Verificar se o usuário tem permissão para excluir
+    if (!['admin', 'franqueado', 'coordenador', 'supervisor_adm'].includes(currentUser.role)) {
+      toast({
+        title: "Erro",
+        description: "Você não tem permissão para excluir tarefas",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', taskId);
+
+      if (error) {
+        console.error('Erro ao excluir tarefa:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao excluir tarefa",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Tarefa excluída com sucesso",
+      });
+
+      // Real-time subscription will automatically update the tasks
+      return true;
+    } catch (error) {
+      console.error('Erro ao excluir tarefa:', error);
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao excluir tarefa",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
+  const canDeleteTask = (task: Task): boolean => {
+    if (!currentUser) return false;
+    
+    // Apenas admin, franqueado, coordenador e supervisor_adm podem excluir
+    return ['admin', 'franqueado', 'coordenador', 'supervisor_adm'].includes(currentUser.role);
+  };
+
   return {
     tasks,
     filteredTasks,
@@ -318,6 +378,8 @@ export const useTaskManager = () => {
     updateTaskStatus,
     canEditTask,
     createTask,
-    loadTasks
+    loadTasks,
+    deleteTask,
+    canDeleteTask
   };
 };

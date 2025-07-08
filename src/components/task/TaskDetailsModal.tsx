@@ -3,7 +3,7 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, CheckCircle, User, Play, X } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, User, Play, X, Trash2 } from 'lucide-react';
 import { Task } from '@/types/task';
 import { getStatusColor, getPriorityColor, getStatusLabel, getPriorityLabel } from '@/utils/taskUtils';
 import { formatDateToBR, formatDateTimeToBR } from '@/utils/dateUtils';
@@ -14,7 +14,9 @@ interface TaskDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdateStatus: (taskId: string, status: Task['status']) => void;
+  onDeleteTask?: (taskId: string) => void;
   canEdit: boolean;
+  canDelete?: boolean;
   isUpdating: boolean;
 }
 
@@ -23,19 +25,25 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
   isOpen,
   onClose,
   onUpdateStatus,
+  onDeleteTask,
   canEdit,
+  canDelete = false,
   isUpdating
 }) => {
   if (!task) return null;
 
   const renderActionButtons = () => {
-    if (!canEdit) return null;
+    if (!canEdit && !canDelete) return null;
 
-    switch (task.status) {
-      case 'pendente':
-        return (
-          <div className="flex space-x-2">
+    const statusButtons = [];
+    
+    // Botões de status apenas se pode editar
+    if (canEdit) {
+      switch (task.status) {
+        case 'pendente':
+          statusButtons.push(
             <Button
+              key="start"
               onClick={() => onUpdateStatus(task.id, 'em_andamento')}
               disabled={isUpdating}
               className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -49,7 +57,10 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                 </>
               )}
             </Button>
-            <AlertDialog>
+          );
+          
+          statusButtons.push(
+            <AlertDialog key="cancel">
               <AlertDialogTrigger asChild>
                 <Button
                   variant="outline"
@@ -80,13 +91,12 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-          </div>
-        );
+          );
+          break;
 
-      case 'em_andamento':
-        return (
-          <div className="flex space-x-2">
-            <AlertDialog>
+        case 'em_andamento':
+          statusButtons.push(
+            <AlertDialog key="complete">
               <AlertDialogTrigger asChild>
                 <Button
                   disabled={isUpdating}
@@ -122,7 +132,10 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-            <AlertDialog>
+          );
+          
+          statusButtons.push(
+            <AlertDialog key="cancel2">
               <AlertDialogTrigger asChild>
                 <Button
                   variant="outline"
@@ -153,12 +166,57 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-          </div>
-        );
-
-      default:
-        return null;
+          );
+          break;
+      }
     }
+
+    // Botão de exclusão se pode deletar
+    const deleteButton = canDelete && onDeleteTask ? (
+      <AlertDialog key="delete">
+        <AlertDialogTrigger asChild>
+          <Button
+            variant="outline"
+            disabled={isUpdating}
+            className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Excluir
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent className="bg-slate-800 border-slate-700">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Excluir Tarefa</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-400">
+              Tem certeza que deseja excluir esta tarefa permanentemente? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-slate-700 text-white border-slate-600">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                onDeleteTask(task.id);
+                onClose();
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Excluir Tarefa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    ) : null;
+
+    const allButtons = [...statusButtons];
+    if (deleteButton) allButtons.push(deleteButton);
+
+    return allButtons.length > 0 ? (
+      <div className="flex flex-wrap gap-2">
+        {allButtons}
+      </div>
+    ) : null;
   };
 
   return (
