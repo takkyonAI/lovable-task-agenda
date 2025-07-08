@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -81,7 +80,7 @@ const TaskManager: React.FC = () => {
       description: '',
       status: 'pendente',
       priority: 'media',
-      due_date: `${dateString}T${timeString}:00`,
+      due_date: `${dateString} ${timeString}:00`,
       due_time: timeString,
       assigned_users: []
     });
@@ -102,7 +101,7 @@ const TaskManager: React.FC = () => {
       description: '',
       status: 'pendente',
       priority: 'media',
-      due_date: `${dateString}T09:00:00`,
+      due_date: `${dateString} 09:00:00`,
       due_time: '09:00',
       assigned_users: []
     });
@@ -147,7 +146,8 @@ const TaskManager: React.FC = () => {
   const getTasksForDay = (day: Date) => {
     return tasks.filter(task => {
       if (!task.due_date) return false;
-      return isSameDay(task.due_date, day);
+      const taskDate = new Date(task.due_date);
+      return isSameDay(taskDate, day);
     });
   };
 

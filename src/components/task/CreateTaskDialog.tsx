@@ -114,9 +114,10 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
                   const timeValue = newTask.due_time || '09:00';
                   
                   if (dateValue) {
-                    // Cria a data no formato YYYY-MM-DD HH:MM sem conversão de timezone
-                    const dateTimeString = `${dateValue}T${timeValue}:00`;
-                    onTaskChange({ ...newTask, due_date: dateTimeString });
+                    // Mantém a data local sem conversão de timezone
+                    const localDateTime = `${dateValue} ${timeValue}:00`;
+                    console.log('Data local selecionada:', localDateTime);
+                    onTaskChange({ ...newTask, due_date: localDateTime });
                   } else {
                     onTaskChange({ ...newTask, due_date: '' });
                   }
@@ -133,11 +134,12 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
                 value={newTask.due_time}
                 onChange={(e) => {
                   const timeValue = e.target.value;
-                  const dateValue = newTask.due_date ? newTask.due_date.split('T')[0] : new Date().toISOString().split('T')[0];
+                  const dateValue = newTask.due_date ? newTask.due_date.split(' ')[0] || newTask.due_date.split('T')[0] : new Date().toISOString().split('T')[0];
                   
-                  // Cria a data no formato YYYY-MM-DD HH:MM sem conversão de timezone
-                  const dateTimeString = `${dateValue}T${timeValue}:00`;
-                  onTaskChange({ ...newTask, due_time: timeValue, due_date: dateTimeString });
+                  // Mantém a data local sem conversão de timezone
+                  const localDateTime = `${dateValue} ${timeValue}:00`;
+                  console.log('Horário local selecionado:', localDateTime);
+                  onTaskChange({ ...newTask, due_time: timeValue, due_date: localDateTime });
                 }}
                 className="bg-slate-700/50 border-slate-600 text-white"
               />

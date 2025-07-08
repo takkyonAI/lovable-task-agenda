@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Task } from '@/types/task';
 import { supabase } from '@/integrations/supabase/client';
@@ -275,15 +274,24 @@ export const useTaskManager = () => {
     }
 
     try {
-      // Prepare the due_date - if it's provided, ensure it's properly formatted
+      // Prepare the due_date - mantém como string simples sem conversão de timezone
       let formattedDueDate = null;
       if (newTask.due_date) {
-        // Se a data não contém 'T', adiciona o horário
-        if (!newTask.due_date.includes('T')) {
-          const time = newTask.due_time || '09:00';
-          formattedDueDate = `${newTask.due_date}T${time}:00`;
-        } else {
+        // Se a data está no formato "YYYY-MM-DD HH:MM:SS", mantém assim
+        if (newTask.due_date.includes(' ')) {
           formattedDueDate = newTask.due_date;
+        } else if (newTask.due_date.includes('T')) {
+          // Se está no formato ISO, converte para formato simples
+          const date = new Date(newTask.due_date);
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          const time = newTask.due_time || '09:00';
+          formattedDueDate = `${year}-${month}-${day} ${time}:00`;
+        } else {
+          // Se é só a data, adiciona o horário
+          const time = newTask.due_time || '09:00';
+          formattedDueDate = `${newTask.due_date} ${time}:00`;
         }
         
         console.log('Data formatada para salvar:', formattedDueDate);
