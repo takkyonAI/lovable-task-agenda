@@ -76,7 +76,7 @@ const TaskManager: React.FC = () => {
     const creatorName = getUserName(task.created_by);
     
     if (compact) {
-      // Versão compacta para visualização mensal
+      // Versão compacta para visualização mensal - mostra criador e usuários
       return (
         <div className="text-xs text-slate-300 space-y-1">
           {assignedNames.length > 0 && (
@@ -92,7 +92,7 @@ const TaskManager: React.FC = () => {
         </div>
       );
     } else {
-      // Versão completa para visualizações diária e semanal
+      // Versão para visualizações diária e semanal - apenas usuários atribuídos
       return (
         <div className="text-xs text-slate-300 space-y-1">
           {assignedNames.length > 0 && (
@@ -101,10 +101,6 @@ const TaskManager: React.FC = () => {
               <span className="text-xs">Atribuído: {assignedNames.join(', ')}</span>
             </div>
           )}
-          <div className="flex items-center gap-1">
-            <User className="w-3 h-3" />
-            <span className="text-xs">Criado por: {creatorName}</span>
-          </div>
         </div>
       );
     }

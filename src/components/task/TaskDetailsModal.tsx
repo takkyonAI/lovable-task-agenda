@@ -2,11 +2,12 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, CheckCircle, User, Play, X, Trash2 } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, User, Play, X, Trash2, Users } from 'lucide-react';
 import { Task } from '@/types/task';
 import { getStatusColor, getPriorityColor, getStatusLabel, getPriorityLabel } from '@/utils/taskUtils';
 import { formatDateToBR, formatDateTimeToBR } from '@/utils/dateUtils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useUserProfiles } from '@/hooks/useUserProfiles';
 
 interface TaskDetailsModalProps {
   task: Task | null;
@@ -29,6 +30,8 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
   canDelete = false,
   isUpdating
 }) => {
+  const { getUserName } = useUserProfiles();
+
   if (!task) return null;
 
   const renderActionButtons = () => {
@@ -267,11 +270,23 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
             {task.assigned_users && task.assigned_users.length > 0 && (
               <div>
                 <div className="flex items-center space-x-2 text-sm text-slate-300 mb-2">
-                  <User className="w-4 h-4 flex-shrink-0" />
+                  <Users className="w-4 h-4 flex-shrink-0" />
                   <span>Atribuído a:</span>
                 </div>
                 <p className="text-sm text-slate-400">
-                  {task.assigned_users.length} usuário(s)
+                  {task.assigned_users.map((userId: string) => getUserName(userId)).join(', ')}
+                </p>
+              </div>
+            )}
+            
+            {task.created_by && (
+              <div>
+                <div className="flex items-center space-x-2 text-sm text-slate-300 mb-2">
+                  <User className="w-4 h-4 flex-shrink-0" />
+                  <span>Criado por:</span>
+                </div>
+                <p className="text-sm text-slate-400">
+                  {getUserName(task.created_by)}
                 </p>
               </div>
             )}
