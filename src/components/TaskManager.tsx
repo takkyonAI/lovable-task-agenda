@@ -161,8 +161,6 @@ const TaskManager: React.FC = () => {
     const day = String(date.getDate()).padStart(2, '0');
     const dateString = `${year}-${month}-${day}`;
     
-    console.log('🔍 Duplo clique no dia:', dateString);
-    
     setNewTask({
       title: '',
       description: '',

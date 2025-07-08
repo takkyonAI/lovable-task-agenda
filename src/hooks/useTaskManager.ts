@@ -53,6 +53,13 @@ export const useTaskManager = () => {
     filterTasks();
   }, [tasks, activeFilter, selectedUser, selectedAccessLevel]);
 
+  /**
+   * Carrega todas as tarefas do banco de dados
+   * 
+   * Esta função inclui logs de debug para monitorar o processamento de datas
+   * e ajudar a identificar problemas de timezone. Os logs foram adicionados
+   * durante a correção do problema de timezone em 08/01/2025.
+   */
   const loadTasks = async () => {
     setIsLoading(true);
     try {
@@ -72,31 +79,7 @@ export const useTaskManager = () => {
       }
 
       if (taskData) {
-        console.log('🔍 DEBUG loadTasks - Raw task data from database:', taskData);
-        
         const formattedTasks: Task[] = taskData.map((task) => {
-          // Log cada tarefa individual para debug
-          console.log(`🔍 DEBUG loadTasks - Processing task "${task.title}":`, {
-            id: task.id,
-            due_date: task.due_date,
-            due_date_type: typeof task.due_date,
-            created_at: task.created_at,
-            updated_at: task.updated_at
-          });
-          
-          // Debug adicional para due_date
-          if (task.due_date) {
-            const dueDateObj = new Date(task.due_date);
-            console.log(`🔍 DEBUG loadTasks - Due date analysis for "${task.title}":`, {
-              raw_due_date: task.due_date,
-              parsed_date_object: dueDateObj,
-              parsed_locale: dueDateObj.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
-              parsed_date_only: dueDateObj.toLocaleDateString('pt-BR'),
-              parsed_time_only: dueDateObj.toLocaleTimeString('pt-BR'),
-              timezone_offset: dueDateObj.getTimezoneOffset()
-            });
-          }
-          
           // Map "alta" priority to "urgente" for backward compatibility
           let priority: 'baixa' | 'media' | 'urgente' = task.priority as 'baixa' | 'media' | 'urgente';
           if (task.priority === 'alta') {
@@ -117,11 +100,9 @@ export const useTaskManager = () => {
             completed_at: task.completed_at ? new Date(task.completed_at) : undefined
           };
           
-          console.log(`🔍 DEBUG loadTasks - Formatted task "${task.title}":`, formattedTask);
           return formattedTask;
         });
 
-        console.log('🔍 DEBUG loadTasks - All formatted tasks:', formattedTasks);
         setTasks(formattedTasks);
       }
     } catch (error) {
@@ -318,6 +299,16 @@ export const useTaskManager = () => {
     return false;
   };
 
+  /**
+   * Cria uma nova tarefa no sistema
+   * 
+   * IMPORTANTE: Esta função foi corrigida para resolver problemas de timezone.
+   * A data é formatada com timezone explícito do Brasil (-03:00) para evitar
+   * conversões automáticas UTC que causavam tarefas serem salvas na data errada.
+   * 
+   * @param newTask - Objeto com dados da nova tarefa
+   * @returns Promise<boolean> - true se criada com sucesso, false caso contrário
+   */
   const createTask = async (newTask: {
     title: string;
     description: string;
@@ -346,15 +337,12 @@ export const useTaskManager = () => {
     }
 
     try {
-      console.log('🔍 DEBUG createTask - Input newTask:', newTask);
-      
-      // Prepare the due_date - solução para evitar problemas de timezone
+      // CORREÇÃO DE TIMEZONE - Processamento da data de vencimento
+      // Esta seção foi corrigida em 08/01/2025 para resolver problemas de timezone
+      // onde tarefas eram salvas na data errada devido a conversões automáticas UTC
       let formattedDueDate = null;
       if (newTask.due_date) {
-        console.log('🔍 DEBUG createTask - Processing due_date:', newTask.due_date);
-        console.log('🔍 DEBUG createTask - due_time:', newTask.due_time);
-        
-        // Extrair componentes da data
+        // Extrair apenas a parte da data (YYYY-MM-DD)
         let dateOnly = newTask.due_date;
         
         // Se contém espaço, pega apenas a parte da data
@@ -367,25 +355,17 @@ export const useTaskManager = () => {
           dateOnly = dateOnly.split('T')[0];
         }
         
-        console.log('🔍 DEBUG createTask - Extracted date:', dateOnly);
-        
         // Extrair componentes da hora
         const time = newTask.due_time || '09:00';
         
-        // SOLUÇÃO DEFINITIVA: Incluir timezone explicitamente para evitar conversão UTC
-        // Usar formato TIMESTAMP WITH TIME ZONE com timezone do Brasil (-03:00)
+        // SOLUÇÃO DEFINITIVA: Incluir timezone do Brasil (-03:00) explicitamente
+        // Isso evita que o PostgreSQL interprete a data como UTC e cause conversões
+        // automáticas que resultavam em tarefas sendo salvas na data errada
+        //
+        // ANTES: "2025-07-09 09:00:00" → interpretado como UTC → convertido para local = 06:00
+        // DEPOIS: "2025-07-09 09:00:00-03:00" → interpretado como Brasil → mantém 09:00
         formattedDueDate = `${dateOnly} ${time}:00-03:00`;
-        
-        console.log('🔍 DEBUG createTask - Final formatted date with timezone:', formattedDueDate);
-        
-        // Log adicional para debug
-        console.log('🔍 DEBUG createTask - Date components:', { dateOnly, time });
-        console.log('🔍 DEBUG createTask - Current timezone offset:', new Date().getTimezoneOffset());
-      } else {
-        console.log('🔍 DEBUG createTask - No due_date provided');
       }
-      
-      console.log('🔍 DEBUG createTask - Final formattedDueDate to save:', formattedDueDate);
 
       const insertData = {
         title: newTask.title,

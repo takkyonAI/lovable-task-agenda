@@ -33,7 +33,15 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
   onTaskChange,
   onCreateTask
 }) => {
-  // Função auxiliar para extrair a data no formato correto para o input
+  /**
+   * Extrai a parte da data de uma string para uso em input type="date"
+   * 
+   * Esta função foi otimizada durante a correção de timezone em 08/01/2025
+   * para lidar com diferentes formatos de data que podem vir do banco.
+   * 
+   * @param dateString - String de data em vários formatos possíveis
+   * @returns String no formato YYYY-MM-DD para input type="date"
+   */
   const extractDateForInput = (dateString: string): string => {
     if (!dateString) return '';
     
@@ -51,7 +59,15 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
     return dateString;
   };
 
-  // Função auxiliar para extrair a data base para operações
+  /**
+   * Extrai a parte da data para operações internas
+   * 
+   * Similar ao extractDateForInput, mas também gera data atual se não fornecida.
+   * Usa Date local para evitar problemas de timezone na geração da data atual.
+   * 
+   * @param dateString - String de data ou vazia
+   * @returns String no formato YYYY-MM-DD
+   */
   const extractDatePart = (dateString: string): string => {
     if (!dateString) {
       // Usar Date local em vez de UTC para evitar problemas de fuso horário
@@ -154,12 +170,10 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
                   const dateValue = e.target.value;
                   const timeValue = newTask.due_time || '09:00';
                   
-                  console.log('🔍 DEBUG Date onChange:', { dateValue, timeValue });
-                  
                   if (dateValue) {
-                    // Mantém a data local sem conversão de timezone
+                    // Combina data e hora mantendo formato local
+                    // Formato: "YYYY-MM-DD HH:MM:SS" (será convertido para timezone no useTaskManager)
                     const localDateTime = `${dateValue} ${timeValue}:00`;
-                    console.log('🔍 DEBUG Date onChange - Final:', localDateTime);
                     onTaskChange({ ...newTask, due_date: localDateTime });
                   } else {
                     onTaskChange({ ...newTask, due_date: '' });
@@ -179,11 +193,9 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
                   const timeValue = e.target.value;
                   const dateValue = extractDatePart(newTask.due_date);
                   
-                  console.log('🔍 DEBUG Time onChange:', { timeValue, dateValue });
-                  
-                  // Mantém a data local sem conversão de timezone
+                  // Combina data e hora mantendo formato local
+                  // Formato: "YYYY-MM-DD HH:MM:SS" (será convertido para timezone no useTaskManager)
                   const localDateTime = `${dateValue} ${timeValue}:00`;
-                  console.log('🔍 DEBUG Time onChange - Final:', localDateTime);
                   onTaskChange({ ...newTask, due_time: timeValue, due_date: localDateTime });
                 }}
                 className="bg-slate-700/50 border-slate-600 text-white"
