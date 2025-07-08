@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Task } from '@/types/task';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,8 +29,15 @@ export const useTaskManager = () => {
         },
         (payload) => {
           console.log('Real-time task change:', payload);
-          // Reload tasks immediately when any change occurs
-          loadTasks();
+          
+          // Handle different event types for immediate UI updates
+          if (payload.eventType === 'DELETE') {
+            setTasks(prevTasks => prevTasks.filter(task => task.id !== payload.old.id));
+          } else if (payload.eventType === 'INSERT') {
+            loadTasks();
+          } else if (payload.eventType === 'UPDATE') {
+            loadTasks();
+          }
         }
       )
       .subscribe();
@@ -330,6 +336,9 @@ export const useTaskManager = () => {
     }
 
     try {
+      // Remove task from local state immediately for instant UI feedback
+      setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+
       const { error } = await supabase
         .from('tasks')
         .delete()
@@ -337,6 +346,8 @@ export const useTaskManager = () => {
 
       if (error) {
         console.error('Erro ao excluir tarefa:', error);
+        // Reload tasks to restore the task if deletion failed
+        await loadTasks();
         toast({
           title: "Erro",
           description: "Erro ao excluir tarefa",
@@ -350,10 +361,11 @@ export const useTaskManager = () => {
         description: "Tarefa excluída com sucesso",
       });
 
-      // Real-time subscription will automatically update the tasks
       return true;
     } catch (error) {
       console.error('Erro ao excluir tarefa:', error);
+      // Reload tasks to restore the task if deletion failed
+      await loadTasks();
       toast({
         title: "Erro",
         description: "Erro inesperado ao excluir tarefa",
