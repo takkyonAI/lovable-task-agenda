@@ -3,25 +3,18 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Calendar, Users, LogOut, Settings } from 'lucide-react';
+import { Calendar, Users, LogOut } from 'lucide-react';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
-import { useGoogleSheets } from '@/hooks/useGoogleSheets';
 import UserManagement from '@/components/UserManagement';
 import TaskManager from '@/components/TaskManager';
-import GoogleSheetsConfig from '@/components/GoogleSheetsConfig';
 import UserHeader from '@/components/UserHeader';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('tasks');
   const { currentUser, logout, canAccessUserManagement } = useSupabaseAuth();
-  const { saveConfig, isConfigured } = useGoogleSheets();
 
   const handleLogout = async () => {
     await logout();
-  };
-
-  const handleConfigSave = (config: { spreadsheetId: string; clientId: string }) => {
-    saveConfig(config);
   };
 
   if (!currentUser) {
@@ -55,7 +48,7 @@ const Index = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 bg-slate-800/50 border-slate-700">
+          <TabsList className={`grid w-full ${canAccessUserManagement() ? 'grid-cols-2' : 'grid-cols-1'} bg-slate-800/50 border-slate-700`}>
             <TabsTrigger 
               value="tasks" 
               className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
@@ -72,13 +65,6 @@ const Index = () => {
                 Usuários
               </TabsTrigger>
             )}
-            <TabsTrigger 
-              value="sheets" 
-              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              Planilhas
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="tasks" className="space-y-6">
@@ -100,23 +86,6 @@ const Index = () => {
               </Card>
             </TabsContent>
           )}
-
-          <TabsContent value="sheets" className="space-y-6">
-            <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center">
-                  <Settings className="w-5 h-5 mr-2" />
-                  Configuração do Google Sheets
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <GoogleSheetsConfig 
-                  onConfigSave={handleConfigSave}
-                  isConfigured={isConfigured}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
       </div>
     </div>
