@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -233,7 +232,7 @@ const TaskManager: React.FC = () => {
         </CardHeader>
         
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <Card className="bg-slate-700/30 border-slate-600">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
@@ -304,25 +303,27 @@ const TaskManager: React.FC = () => {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  className="bg-slate-600/50 border-slate-500 hover:bg-slate-500/50 text-white"
+                  className="bg-slate-600/50 border-slate-500 hover:bg-slate-500/50 text-white text-xs sm:text-sm"
                   onClick={() => navigateDate('prev')}
                 >
                   <ChevronLeft className="w-4 h-4 mr-1" />
-                  Anterior
+                  <span className="hidden sm:inline">Anterior</span>
+                  <span className="sm:hidden">Ant</span>
                 </Button>
                 
-                <div className="text-center">
-                  <h3 className="text-lg font-semibold text-white">{getViewTitleBR(currentView, selectedDate)}</h3>
-                  <p className="text-sm text-slate-400">{filteredTasks.length} tarefas</p>
+                <div className="text-center flex-1 px-2">
+                  <h3 className="text-sm sm:text-lg font-semibold text-white truncate">{getViewTitleBR(currentView, selectedDate)}</h3>
+                  <p className="text-xs sm:text-sm text-slate-400">{filteredTasks.length} tarefas</p>
                 </div>
                 
                 <Button 
                   variant="outline" 
                   size="sm"
-                  className="bg-slate-600/50 border-slate-500 hover:bg-slate-500/50 text-white"
+                  className="bg-slate-600/50 border-slate-500 hover:bg-slate-500/50 text-white text-xs sm:text-sm"
                   onClick={() => navigateDate('next')}
                 >
-                  Próximo
+                  <span className="hidden sm:inline">Próximo</span>
+                  <span className="sm:hidden">Prox</span>
                   <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
               </div>
@@ -401,11 +402,12 @@ const TaskManager: React.FC = () => {
                 <CardHeader>
                   <CardTitle className="text-white flex items-center">
                     <CalendarDays className="w-5 h-5 mr-2" />
-                    Visualização Semanal (Segunda a Sábado)
+                    <span className="hidden sm:inline">Visualização Semanal (Segunda a Sábado)</span>
+                    <span className="sm:hidden">Semana</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-6 gap-2">
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                     {weekDays.map((day, index) => {
                       const dayTasks = getTasksForDay(day);
                       const isToday = isSameDay(day, getTodayBR());
@@ -413,40 +415,40 @@ const TaskManager: React.FC = () => {
                       return (
                         <div 
                           key={index} 
-                          className={`border border-slate-600 rounded-lg p-3 min-h-[200px] cursor-pointer hover:bg-slate-600/10 transition-colors ${
+                          className={`border border-slate-600 rounded-lg p-2 sm:p-3 min-h-[150px] sm:min-h-[200px] cursor-pointer hover:bg-slate-600/10 transition-colors ${
                             isToday ? 'bg-blue-500/10 border-blue-500' : 'bg-slate-600/20'
                           }`}
                           onDoubleClick={() => handleDoubleClickDay(day)}
                         >
-                          <div className="text-center mb-3">
+                          <div className="text-center mb-2 sm:mb-3">
                             <div className="text-xs text-slate-400">
                               {day.toLocaleDateString('pt-BR', { weekday: 'short' })}
                             </div>
-                            <div className={`text-lg font-semibold ${isToday ? 'text-blue-400' : 'text-white'}`}>
+                            <div className={`text-sm sm:text-lg font-semibold ${isToday ? 'text-blue-400' : 'text-white'}`}>
                               {day.getDate()}
                             </div>
                           </div>
                           
-                          <div className="space-y-2">
+                          <div className="space-y-1 sm:space-y-2">
                             {dayTasks.map(task => (
                               <div 
                                 key={task.id} 
-                                className="p-2 bg-slate-500/30 rounded text-xs cursor-pointer hover:bg-slate-500/40 transition-colors"
+                                className="p-1 sm:p-2 bg-slate-500/30 rounded text-xs cursor-pointer hover:bg-slate-500/40 transition-colors"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleTaskClick(task);
                                 }}
                               >
-                                <div className="mb-2">
-                                  <span className="text-white font-medium break-words block text-left">{task.title}</span>
+                                <div className="mb-1 sm:mb-2">
+                                  <span className="text-white font-medium break-words block text-left text-xs sm:text-sm line-clamp-2">{task.title}</span>
                                 </div>
                                 {task.due_date && (
-                                  <div className="text-slate-400 mb-2 text-left">
+                                  <div className="text-slate-400 mb-1 sm:mb-2 text-left text-xs">
                                     {formatTimeToBR(task.due_date)}
                                   </div>
                                 )}
                                 {task.description && (
-                                  <div className="text-slate-400 mb-2 text-left text-xs">
+                                  <div className="text-slate-400 mb-1 sm:mb-2 text-left text-xs line-clamp-2">
                                     {task.description}
                                   </div>
                                 )}
@@ -459,7 +461,7 @@ const TaskManager: React.FC = () => {
                                   </Badge>
                                 </div>
                                 {task.assigned_users.length > 0 && (
-                                  <div className="text-xs text-slate-400 text-left">
+                                  <div className="text-xs text-slate-400 text-left truncate">
                                     {getUserName(task.assigned_users[0])}
                                   </div>
                                 )}
@@ -479,13 +481,13 @@ const TaskManager: React.FC = () => {
                 <CardHeader>
                   <CardTitle className="text-white flex items-center">
                     <Calendar className="w-5 h-5 mr-2" />
-                    {getViewTitleBR('month', selectedDate)}
+                    <span className="truncate">{getViewTitleBR('month', selectedDate)}</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-7 gap-1">
                     {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
-                      <div key={day} className="text-center text-xs text-slate-400 py-2 font-medium">
+                      <div key={day} className="text-center text-xs text-slate-400 py-1 sm:py-2 font-medium">
                         {day}
                       </div>
                     ))}
@@ -498,7 +500,7 @@ const TaskManager: React.FC = () => {
                       return (
                         <div 
                           key={index} 
-                          className={`border border-slate-600 rounded p-1 min-h-[100px] text-xs cursor-pointer hover:bg-slate-600/10 transition-colors ${
+                          className={`border border-slate-600 rounded p-1 min-h-[60px] sm:min-h-[100px] text-xs cursor-pointer hover:bg-slate-600/10 transition-colors ${
                             isCurrentMonth 
                               ? isToday 
                                 ? 'bg-blue-500/20 border-blue-500' 
@@ -507,7 +509,7 @@ const TaskManager: React.FC = () => {
                           }`}
                           onDoubleClick={() => handleDoubleClickDay(day)}
                         >
-                          <div className={`text-center mb-1 ${isToday ? 'text-blue-400 font-bold' : 'text-slate-300'}`}>
+                          <div className={`text-center mb-1 text-xs sm:text-sm ${isToday ? 'text-blue-400 font-bold' : 'text-slate-300'}`}>
                             {day.getDate()}
                           </div>
                           

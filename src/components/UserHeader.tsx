@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -53,16 +52,16 @@ const UserHeader: React.FC = () => {
   return (
     <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700 mb-6">
       <CardContent className="p-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg">
               {getRoleIcon(currentUser.role)}
             </div>
-            <div>
-              <h2 className="font-semibold text-white">{currentUser.name}</h2>
-              <p className="text-slate-400 text-sm">{currentUser.email}</p>
+            <div className="min-w-0 flex-1">
+              <h2 className="font-semibold text-white truncate">{currentUser.name}</h2>
+              <p className="text-slate-400 text-sm truncate">{currentUser.email}</p>
             </div>
-            <Badge className={`${getRoleColor(currentUser.role)}`}>
+            <Badge className={`${getRoleColor(currentUser.role)} whitespace-nowrap`}>
               {getRoleLabel(currentUser.role)}
             </Badge>
           </div>
@@ -71,7 +70,7 @@ const UserHeader: React.FC = () => {
             variant="outline"
             size="sm"
             onClick={logout}
-            className="bg-slate-700/50 border-slate-600 hover:bg-slate-600/50 text-white"
+            className="bg-slate-700/50 border-slate-600 hover:bg-slate-600/50 text-white w-full sm:w-auto"
           >
             <LogOut className="w-4 h-4 mr-2" />
             Sair

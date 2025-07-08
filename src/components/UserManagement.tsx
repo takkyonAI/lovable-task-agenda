@@ -216,7 +216,7 @@ const UserManagement: React.FC = () => {
     <div className="space-y-6">
       <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
                 <Users className="w-5 h-5 text-white" />
@@ -227,12 +227,12 @@ const UserManagement: React.FC = () => {
               </div>
             </div>
             
-            <div className="flex space-x-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Button 
                 onClick={loadUsers}
                 disabled={isLoading}
                 variant="outline" 
-                className="bg-slate-700/50 border-slate-600 hover:bg-slate-600/50 text-white"
+                className="bg-slate-700/50 border-slate-600 hover:bg-slate-600/50 text-white w-full sm:w-auto"
               >
                 {isLoading ? (
                   <>
@@ -249,12 +249,12 @@ const UserManagement: React.FC = () => {
 
               <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+                  <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 w-full sm:w-auto">
                     <Plus className="w-4 h-4 mr-2" />
                     Novo Usuário
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-slate-800 border-slate-700">
+                <DialogContent className="bg-slate-800 border-slate-700 max-w-md max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle className="text-white">Criar Novo Usuário</DialogTitle>
                   </DialogHeader>
@@ -333,7 +333,7 @@ const UserManagement: React.FC = () => {
         <CardContent>
           <div className="space-y-3">
             {confirmedUsers.map(user => (
-              <div key={user.id} className={`flex items-center justify-between p-3 rounded-lg border ${
+              <div key={user.id} className={`flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 rounded-lg border gap-4 ${
                 user.is_active === false 
                   ? 'bg-red-500/10 border-red-500/30' 
                   : 'bg-slate-700/30 border-slate-600'
@@ -344,9 +344,9 @@ const UserManagement: React.FC = () => {
                   }`}>
                     {getRoleIcon(user.role)}
                   </div>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center space-x-2">
-                      <h4 className={`font-medium ${
+                      <h4 className={`font-medium truncate ${
                         user.is_active === false ? 'text-red-300 line-through' : 'text-white'
                       }`}>
                         {user.name}
@@ -355,27 +355,27 @@ const UserManagement: React.FC = () => {
                         <Badge className="bg-red-500/20 text-red-400">Inativo</Badge>
                       )}
                     </div>
-                    <p className="text-sm text-slate-400">{user.email}</p>
+                    <p className="text-sm text-slate-400 truncate">{user.email}</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-2">
-                  <Badge className={`${getRoleColor(user.role)}`}>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                  <Badge className={`${getRoleColor(user.role)} whitespace-nowrap`}>
                     {getRoleLabel(user.role)}
                   </Badge>
                   
                   {user.id !== currentUser?.id && (
-                    <>
+                    <div className="flex flex-wrap gap-2">
                       <PasswordManagement userId={user.id} userName={user.name} />
                       
                       <Button
                         onClick={() => handleToggleUserStatus(user.id, user.name, user.is_active !== false)}
                         variant="outline"
                         size="sm"
-                        className={user.is_active === false 
+                        className={`text-xs ${user.is_active === false 
                           ? "bg-green-500/20 border-green-500/30 hover:bg-green-500/30 text-green-400"
                           : "bg-yellow-500/20 border-yellow-500/30 hover:bg-yellow-500/30 text-yellow-400"
-                        }
+                        }`}
                       >
                         <UserMinus className="w-4 h-4 mr-2" />
                         {user.is_active === false ? 'Ativar' : 'Desativar'}
@@ -385,12 +385,12 @@ const UserManagement: React.FC = () => {
                         onClick={() => handleDeleteUser(user.id, user.name)}
                         variant="outline"
                         size="sm"
-                        className="bg-red-500/20 border-red-500/30 hover:bg-red-500/30 text-red-400"
+                        className="bg-red-500/20 border-red-500/30 hover:bg-red-500/30 text-red-400 text-xs"
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
                         Excluir
                       </Button>
-                    </>
+                    </div>
                   )}
                   
                   {user.last_login && (

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -221,13 +220,13 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-slate-800 border-slate-700 max-w-2xl">
+      <DialogContent className="bg-slate-800 border-slate-700 max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-white text-xl">{task.title}</DialogTitle>
+          <DialogTitle className="text-white text-lg sm:text-xl pr-8 break-words">{task.title}</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-6">
-          <div className="flex items-center space-x-3">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge className={`${getStatusColor(task.status)} border`}>
               {getStatusLabel(task.status)}
             </Badge>
@@ -239,27 +238,27 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
           {task.description && (
             <div>
               <h4 className="text-sm font-medium text-slate-300 mb-2">Descrição</h4>
-              <p className="text-slate-400">{task.description}</p>
+              <p className="text-slate-400 break-words">{task.description}</p>
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <div className="space-y-3">
               <div className="flex items-center space-x-2 text-sm text-slate-400">
-                <Calendar className="w-4 h-4" />
+                <Calendar className="w-4 h-4 flex-shrink-0" />
                 <span>Criado em: {formatDateToBR(task.created_at)}</span>
               </div>
               
               {task.due_date && (
                 <div className="flex items-center space-x-2 text-sm text-slate-400">
-                  <Clock className="w-4 h-4" />
+                  <Clock className="w-4 h-4 flex-shrink-0" />
                   <span>Vence em: {formatDateTimeToBR(task.due_date)}</span>
                 </div>
               )}
               
               {task.completed_at && (
                 <div className="flex items-center space-x-2 text-sm text-slate-400">
-                  <CheckCircle className="w-4 h-4" />
+                  <CheckCircle className="w-4 h-4 flex-shrink-0" />
                   <span>Concluído em: {formatDateToBR(task.completed_at)}</span>
                 </div>
               )}
@@ -268,7 +267,7 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
             {task.assigned_users && task.assigned_users.length > 0 && (
               <div>
                 <div className="flex items-center space-x-2 text-sm text-slate-300 mb-2">
-                  <User className="w-4 h-4" />
+                  <User className="w-4 h-4 flex-shrink-0" />
                   <span>Atribuído a:</span>
                 </div>
                 <p className="text-sm text-slate-400">

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -27,19 +26,19 @@ const Index = () => {
         <UserHeader />
         
         <div className="mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-white mb-2">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
                 Gerenciador de Tarefas Rockfeller Navegantes
               </h1>
-              <p className="text-slate-300">
+              <p className="text-slate-300 text-sm sm:text-base">
                 Bem-vindo, {currentUser.name}! Seu papel: {currentUser.role}
               </p>
             </div>
             <Button 
               onClick={handleLogout}
               variant="outline"
-              className="bg-slate-800/50 text-white border-slate-600 hover:bg-slate-700/50"
+              className="bg-slate-800/50 text-white border-slate-600 hover:bg-slate-700/50 w-full sm:w-auto"
             >
               <LogOut className="w-4 h-4 mr-2" />
               Sair
@@ -54,7 +53,8 @@ const Index = () => {
               className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
             >
               <Calendar className="w-4 h-4 mr-2" />
-              Tarefas
+              <span className="hidden sm:inline">Tarefas</span>
+              <span className="sm:hidden">Tasks</span>
             </TabsTrigger>
             {canAccessUserManagement() && (
               <TabsTrigger 
@@ -62,7 +62,8 @@ const Index = () => {
                 className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
               >
                 <Users className="w-4 h-4 mr-2" />
-                Usuários
+                <span className="hidden sm:inline">Usuários</span>
+                <span className="sm:hidden">Users</span>
               </TabsTrigger>
             )}
           </TabsList>
