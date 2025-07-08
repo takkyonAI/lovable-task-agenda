@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Task } from '@/types/task';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,6 +17,27 @@ export const useTaskManager = () => {
 
   useEffect(() => {
     loadTasks();
+    
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks'
+        },
+        (payload) => {
+          console.log('Real-time task change:', payload);
+          loadTasks(); // Reload tasks when any change occurs
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {
@@ -272,7 +294,7 @@ export const useTaskManager = () => {
         description: "Tarefa criada com sucesso",
       });
 
-      await loadTasks();
+      // Real-time subscription will automatically update the tasks
       return true;
     } catch (error) {
       console.error('Erro ao criar tarefa:', error);
