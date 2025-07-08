@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Calendar, Users, LogOut } from 'lucide-react';
+import { Calendar, Users, LogOut, Bell } from 'lucide-react';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import UserManagement from '@/components/UserManagement';
 import TaskManager from '@/components/TaskManager';
 import UserHeader from '@/components/UserHeader';
+import NotificationTestPanel from '@/components/NotificationTestPanel';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('tasks');
@@ -47,7 +48,7 @@ const Index = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className={`grid w-full ${canAccessUserManagement() ? 'grid-cols-2' : 'grid-cols-1'} bg-slate-800/50 border-slate-700`}>
+          <TabsList className={`grid w-full ${canAccessUserManagement() ? 'grid-cols-3' : 'grid-cols-2'} bg-slate-800/50 border-slate-700`}>
             <TabsTrigger 
               value="tasks" 
               className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
@@ -55,6 +56,14 @@ const Index = () => {
               <Calendar className="w-4 h-4 mr-2" />
               <span className="hidden sm:inline">Tarefas</span>
               <span className="sm:hidden">Tasks</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="notifications" 
+              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+            >
+              <Bell className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">Notificações</span>
+              <span className="sm:hidden">Notif</span>
             </TabsTrigger>
             {canAccessUserManagement() && (
               <TabsTrigger 
@@ -70,6 +79,10 @@ const Index = () => {
 
           <TabsContent value="tasks" className="space-y-6">
             <TaskManager />
+          </TabsContent>
+
+          <TabsContent value="notifications" className="space-y-6">
+            <NotificationTestPanel />
           </TabsContent>
 
           {canAccessUserManagement() && (

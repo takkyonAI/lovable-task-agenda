@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { LogOut, Crown, Shield, User, GraduationCap, UserCheck, FileText, UserCog } from 'lucide-react';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
+import NotificationCenter from './NotificationCenter';
 
 const UserHeader: React.FC = () => {
   const { currentUser, logout } = useSupabaseAuth();
@@ -66,15 +67,19 @@ const UserHeader: React.FC = () => {
             </Badge>
           </div>
           
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={logout}
-            className="bg-slate-700/50 border-slate-600 hover:bg-slate-600/50 text-white w-full sm:w-auto"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Sair
-          </Button>
+          <div className="flex items-center space-x-2">
+            <NotificationCenter />
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={logout}
+              className="bg-slate-700/50 border-slate-600 hover:bg-slate-600/50 text-white w-full sm:w-auto"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sair
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
