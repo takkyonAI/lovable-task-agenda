@@ -110,10 +110,16 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
                 type="date"
                 value={newTask.due_date ? newTask.due_date.split('T')[0] : ''}
                 onChange={(e) => {
-                  const date = e.target.value;
-                  const time = newTask.due_time || '09:00';
-                  const dateTime = date ? `${date}T${time}:00.000Z` : '';
-                  onTaskChange({ ...newTask, due_date: dateTime });
+                  const dateValue = e.target.value;
+                  const timeValue = newTask.due_time || '09:00';
+                  
+                  if (dateValue) {
+                    // Cria a data no formato YYYY-MM-DD HH:MM sem conversão de timezone
+                    const dateTimeString = `${dateValue}T${timeValue}:00`;
+                    onTaskChange({ ...newTask, due_date: dateTimeString });
+                  } else {
+                    onTaskChange({ ...newTask, due_date: '' });
+                  }
                 }}
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -126,10 +132,12 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
                 type="time"
                 value={newTask.due_time}
                 onChange={(e) => {
-                  const time = e.target.value;
-                  const date = newTask.due_date ? newTask.due_date.split('T')[0] : new Date().toISOString().split('T')[0];
-                  const dateTime = `${date}T${time}:00.000Z`;
-                  onTaskChange({ ...newTask, due_time: time, due_date: dateTime });
+                  const timeValue = e.target.value;
+                  const dateValue = newTask.due_date ? newTask.due_date.split('T')[0] : new Date().toISOString().split('T')[0];
+                  
+                  // Cria a data no formato YYYY-MM-DD HH:MM sem conversão de timezone
+                  const dateTimeString = `${dateValue}T${timeValue}:00`;
+                  onTaskChange({ ...newTask, due_time: timeValue, due_date: dateTimeString });
                 }}
                 className="bg-slate-700/50 border-slate-600 text-white"
               />

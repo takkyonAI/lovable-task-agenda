@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Task } from '@/types/task';
 import { supabase } from '@/integrations/supabase/client';
@@ -274,6 +275,20 @@ export const useTaskManager = () => {
     }
 
     try {
+      // Prepare the due_date - if it's provided, ensure it's properly formatted
+      let formattedDueDate = null;
+      if (newTask.due_date) {
+        // Se a data não contém 'T', adiciona o horário
+        if (!newTask.due_date.includes('T')) {
+          const time = newTask.due_time || '09:00';
+          formattedDueDate = `${newTask.due_date}T${time}:00`;
+        } else {
+          formattedDueDate = newTask.due_date;
+        }
+        
+        console.log('Data formatada para salvar:', formattedDueDate);
+      }
+
       const { error } = await supabase
         .from('tasks')
         .insert({
@@ -281,7 +296,7 @@ export const useTaskManager = () => {
           description: newTask.description || null,
           status: newTask.status,
           priority: newTask.priority,
-          due_date: newTask.due_date || null,
+          due_date: formattedDueDate,
           assigned_users: newTask.assigned_users,
           created_by: currentUser.user_id
         });

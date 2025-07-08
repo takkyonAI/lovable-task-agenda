@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -66,31 +67,42 @@ const TaskManager: React.FC = () => {
   };
 
   const handleDoubleClickHour = (hour: number, date: Date) => {
-    const taskDate = new Date(date);
-    taskDate.setHours(hour, 0, 0, 0);
+    // Formatar a data no formato YYYY-MM-DD
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
+    const timeString = `${hour.toString().padStart(2, '0')}:00`;
+    
+    console.log('Duplo clique na hora:', { dateString, timeString, originalDate: date });
     
     setNewTask({
       title: '',
       description: '',
       status: 'pendente',
       priority: 'media',
-      due_date: taskDate.toISOString(),
-      due_time: `${hour.toString().padStart(2, '0')}:00`,
+      due_date: `${dateString}T${timeString}:00`,
+      due_time: timeString,
       assigned_users: []
     });
     setIsCreateDialogOpen(true);
   };
 
   const handleDoubleClickDay = (date: Date) => {
-    const taskDate = new Date(date);
-    taskDate.setHours(9, 0, 0, 0);
+    // Formatar a data no formato YYYY-MM-DD
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
+    
+    console.log('Duplo clique no dia:', { dateString, originalDate: date });
     
     setNewTask({
       title: '',
       description: '',
       status: 'pendente',
       priority: 'media',
-      due_date: taskDate.toISOString(),
+      due_date: `${dateString}T09:00:00`,
       due_time: '09:00',
       assigned_users: []
     });
