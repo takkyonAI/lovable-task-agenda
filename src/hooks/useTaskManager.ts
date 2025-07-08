@@ -72,14 +72,25 @@ export const useTaskManager = () => {
       }
 
       if (taskData) {
+        console.log('🔍 DEBUG loadTasks - Raw task data from database:', taskData);
+        
         const formattedTasks: Task[] = taskData.map((task) => {
+          // Log cada tarefa individual para debug
+          console.log(`🔍 DEBUG loadTasks - Processing task "${task.title}":`, {
+            id: task.id,
+            due_date: task.due_date,
+            due_date_type: typeof task.due_date,
+            created_at: task.created_at,
+            updated_at: task.updated_at
+          });
+          
           // Map "alta" priority to "urgente" for backward compatibility
           let priority: 'baixa' | 'media' | 'urgente' = task.priority as 'baixa' | 'media' | 'urgente';
           if (task.priority === 'alta') {
             priority = 'urgente';
           }
 
-          return {
+          const formattedTask = {
             id: task.id,
             title: task.title,
             description: task.description || '',
@@ -92,8 +103,12 @@ export const useTaskManager = () => {
             updated_at: new Date(task.updated_at),
             completed_at: task.completed_at ? new Date(task.completed_at) : undefined
           };
+          
+          console.log(`🔍 DEBUG loadTasks - Formatted task "${task.title}":`, formattedTask);
+          return formattedTask;
         });
 
+        console.log('🔍 DEBUG loadTasks - All formatted tasks:', formattedTasks);
         setTasks(formattedTasks);
       }
     } catch (error) {
@@ -318,48 +333,70 @@ export const useTaskManager = () => {
     }
 
     try {
-      // Prepare the due_date - evita conversões de timezone mantendo data local
+      console.log('🔍 DEBUG createTask - Input newTask:', newTask);
+      
+      // Prepare the due_date - solução para evitar problemas de timezone
       let formattedDueDate = null;
       if (newTask.due_date) {
-        // Se a data já está no formato "YYYY-MM-DD HH:MM:SS", mantém assim
-        if (newTask.due_date.includes(' ') && newTask.due_date.includes(':')) {
-          formattedDueDate = newTask.due_date;
-        } else {
-          // Para qualquer outro formato, extrai apenas a parte da data e adiciona o horário
-          let dateOnly = newTask.due_date;
-          
-          // Se contém espaço, pega apenas a parte da data
-          if (dateOnly.includes(' ')) {
-            dateOnly = dateOnly.split(' ')[0];
-          }
-          
-          // Se contém T (ISO), pega apenas a parte da data
-          if (dateOnly.includes('T')) {
-            dateOnly = dateOnly.split('T')[0];
-          }
-          
-          // Adiciona o horário
-          const time = newTask.due_time || '09:00';
-          formattedDueDate = `${dateOnly} ${time}:00`;
+        console.log('🔍 DEBUG createTask - Processing due_date:', newTask.due_date);
+        console.log('🔍 DEBUG createTask - due_time:', newTask.due_time);
+        
+        // Extrair componentes da data
+        let dateOnly = newTask.due_date;
+        
+        // Se contém espaço, pega apenas a parte da data
+        if (dateOnly.includes(' ')) {
+          dateOnly = dateOnly.split(' ')[0];
         }
         
-        console.log('Data formatada para salvar:', formattedDueDate);
+        // Se contém T (ISO), pega apenas a parte da data
+        if (dateOnly.includes('T')) {
+          dateOnly = dateOnly.split('T')[0];
+        }
+        
+        console.log('🔍 DEBUG createTask - Extracted date:', dateOnly);
+        
+        // Extrair componentes da hora
+        const time = newTask.due_time || '09:00';
+        const [hours, minutes] = time.split(':');
+        
+        // Criar objeto Date usando componentes individuais para evitar problemas de timezone
+        const [year, month, day] = dateOnly.split('-').map(Number);
+        const localDate = new Date(year, month - 1, day, Number(hours), Number(minutes), 0);
+        
+        console.log('🔍 DEBUG createTask - Local date object:', localDate);
+        console.log('🔍 DEBUG createTask - Local date ISO:', localDate.toISOString());
+        
+        // Enviar a data no formato TIMESTAMP WITH TIME ZONE do PostgreSQL
+        // Isso garante que a data seja interpretada corretamente no banco
+        formattedDueDate = localDate.toISOString();
+        
+        console.log('🔍 DEBUG createTask - Final formatted date (ISO):', formattedDueDate);
+      } else {
+        console.log('🔍 DEBUG createTask - No due_date provided');
       }
+      
+      console.log('🔍 DEBUG createTask - Final formattedDueDate to save:', formattedDueDate);
 
-      const { error } = await supabase
+      const insertData = {
+        title: newTask.title,
+        description: newTask.description || null,
+        status: newTask.status,
+        priority: newTask.priority,
+        due_date: formattedDueDate,
+        assigned_users: newTask.assigned_users,
+        created_by: currentUser.user_id
+      };
+      
+      console.log('🔍 DEBUG createTask - Data to insert:', insertData);
+      
+      const { data, error } = await supabase
         .from('tasks')
-        .insert({
-          title: newTask.title,
-          description: newTask.description || null,
-          status: newTask.status,
-          priority: newTask.priority,
-          due_date: formattedDueDate,
-          assigned_users: newTask.assigned_users,
-          created_by: currentUser.user_id
-        });
+        .insert(insertData)
+        .select('*');
 
       if (error) {
-        console.error('Erro ao criar tarefa:', error);
+        console.error('🔍 DEBUG createTask - Database error:', error);
         toast({
           title: "Erro",
           description: "Erro ao criar tarefa",
@@ -368,6 +405,8 @@ export const useTaskManager = () => {
         return false;
       }
 
+      console.log('🔍 DEBUG createTask - Task created successfully:', data);
+      
       toast({
         title: "Sucesso",
         description: "Tarefa criada com sucesso",

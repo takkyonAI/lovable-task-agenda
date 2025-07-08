@@ -11,13 +11,13 @@
 -- SELECT column_name, data_type, is_nullable FROM information_schema.columns 
 -- WHERE table_name = 'tasks' AND column_name = 'due_date';
 
--- Step 2: Change the due_date column type from DATE to TIMESTAMP
--- This allows storing both date and time correctly without timezone conversion issues
+-- Step 2: Change the due_date column type from DATE to TIMESTAMP WITH TIME ZONE
+-- This allows storing both date and time correctly with proper timezone handling
 ALTER TABLE public.tasks 
-ALTER COLUMN due_date TYPE TIMESTAMP USING 
+ALTER COLUMN due_date TYPE TIMESTAMP WITH TIME ZONE USING 
   CASE 
     WHEN due_date IS NULL THEN NULL
-    ELSE due_date::TIMESTAMP
+    ELSE due_date::TIMESTAMP WITH TIME ZONE
   END;
 
 -- Step 3: Ensure the column allows NULL values (if not already)
@@ -32,4 +32,4 @@ COMMENT ON COLUMN public.tasks.due_date IS
 -- SELECT column_name, data_type, is_nullable FROM information_schema.columns 
 -- WHERE table_name = 'tasks' AND column_name = 'due_date';
 
--- Expected result: data_type should be 'timestamp without time zone' 
+-- Expected result: data_type should be 'timestamp with time zone' 

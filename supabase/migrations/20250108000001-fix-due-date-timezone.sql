@@ -2,13 +2,13 @@
 -- This changes the due_date column from DATE to TIMESTAMP to properly store date and time
 -- Date: 2025-01-08
 
--- Change the due_date column type from DATE to TIMESTAMP
--- This allows storing both date and time correctly without timezone conversion issues
+-- Change the due_date column type from DATE to TIMESTAMP WITH TIME ZONE
+-- This allows storing both date and time correctly with proper timezone handling
 ALTER TABLE public.tasks 
-ALTER COLUMN due_date TYPE TIMESTAMP USING 
+ALTER COLUMN due_date TYPE TIMESTAMP WITH TIME ZONE USING 
   CASE 
     WHEN due_date IS NULL THEN NULL
-    ELSE due_date::TIMESTAMP
+    ELSE due_date::TIMESTAMP WITH TIME ZONE
   END;
 
 -- Update the column to allow NULL values (if not already)
