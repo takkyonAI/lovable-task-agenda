@@ -53,7 +53,14 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
 
   // Função auxiliar para extrair a data base para operações
   const extractDatePart = (dateString: string): string => {
-    if (!dateString) return new Date().toISOString().split('T')[0];
+    if (!dateString) {
+      // Usar Date local em vez de UTC para evitar problemas de fuso horário
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
     
     // Se contém espaço (formato: "YYYY-MM-DD HH:MM:SS")
     if (dateString.includes(' ')) {
