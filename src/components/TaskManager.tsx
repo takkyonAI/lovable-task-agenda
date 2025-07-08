@@ -135,19 +135,57 @@ const TaskManager: React.FC = () => {
     setSelectedDate(newDate);
   };
 
+  // Função corrigida para comparar datas sem conversão de timezone
   const getTasksForHour = (hour: number) => {
     return tasks.filter(task => {
       if (!task.due_date) return false;
-      const taskDate = new Date(task.due_date);
-      return isSameDay(taskDate, selectedDate) && taskDate.getHours() === hour;
+      
+      // Parse da data da tarefa sem conversão de timezone
+      const taskDateStr = task.due_date.toString();
+      const taskDateParts = taskDateStr.split(' ')[0].split('-'); // YYYY-MM-DD
+      const taskTimeParts = taskDateStr.split(' ')[1]?.split(':') || ['0', '0']; // HH:MM:SS
+      
+      const taskYear = parseInt(taskDateParts[0]);
+      const taskMonth = parseInt(taskDateParts[1]) - 1; // JS months are 0-based
+      const taskDay = parseInt(taskDateParts[2]);
+      const taskHour = parseInt(taskTimeParts[0]);
+      
+      // Data selecionada
+      const selectedYear = selectedDate.getFullYear();
+      const selectedMonth = selectedDate.getMonth();
+      const selectedDay = selectedDate.getDate();
+      
+      console.log('Comparando datas:', {
+        task: { year: taskYear, month: taskMonth, day: taskDay, hour: taskHour },
+        selected: { year: selectedYear, month: selectedMonth, day: selectedDay, hour }
+      });
+      
+      return taskYear === selectedYear && 
+             taskMonth === selectedMonth && 
+             taskDay === selectedDay && 
+             taskHour === hour;
     });
   };
 
+  // Função corrigida para comparar datas sem conversão de timezone
   const getTasksForDay = (day: Date) => {
     return tasks.filter(task => {
       if (!task.due_date) return false;
-      const taskDate = new Date(task.due_date);
-      return isSameDay(taskDate, day);
+      
+      // Parse da data da tarefa sem conversão de timezone
+      const taskDateStr = task.due_date.toString();
+      const taskDateParts = taskDateStr.split(' ')[0].split('-'); // YYYY-MM-DD
+      
+      const taskYear = parseInt(taskDateParts[0]);
+      const taskMonth = parseInt(taskDateParts[1]) - 1; // JS months are 0-based
+      const taskDay = parseInt(taskDateParts[2]);
+      
+      // Data do dia comparado
+      const dayYear = day.getFullYear();
+      const dayMonth = day.getMonth();
+      const dayDay = day.getDate();
+      
+      return taskYear === dayYear && taskMonth === dayMonth && taskDay === dayDay;
     });
   };
 
