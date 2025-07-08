@@ -70,19 +70,27 @@ export const useTaskManager = () => {
       }
 
       if (taskData) {
-        const formattedTasks: Task[] = taskData.map((task) => ({
-          id: task.id,
-          title: task.title,
-          description: task.description || '',
-          status: task.status as 'pendente' | 'em_andamento' | 'concluida' | 'cancelada',
-          priority: task.priority as 'baixa' | 'media' | 'alta' | 'urgente',
-          due_date: task.due_date || undefined,
-          assigned_users: task.assigned_users || [],
-          created_by: task.created_by,
-          created_at: new Date(task.created_at),
-          updated_at: new Date(task.updated_at),
-          completed_at: task.completed_at ? new Date(task.completed_at) : undefined
-        }));
+        const formattedTasks: Task[] = taskData.map((task) => {
+          // Map "alta" priority to "urgente" for backward compatibility
+          let priority: 'baixa' | 'media' | 'urgente' = task.priority as 'baixa' | 'media' | 'urgente';
+          if (task.priority === 'alta') {
+            priority = 'urgente';
+          }
+
+          return {
+            id: task.id,
+            title: task.title,
+            description: task.description || '',
+            status: task.status as 'pendente' | 'em_andamento' | 'concluida' | 'cancelada',
+            priority: priority,
+            due_date: task.due_date || undefined,
+            assigned_users: task.assigned_users || [],
+            created_by: task.created_by,
+            created_at: new Date(task.created_at),
+            updated_at: new Date(task.updated_at),
+            completed_at: task.completed_at ? new Date(task.completed_at) : undefined
+          };
+        });
 
         setTasks(formattedTasks);
       }
@@ -250,7 +258,7 @@ export const useTaskManager = () => {
     title: string;
     description: string;
     status: 'pendente' | 'em_andamento' | 'concluida' | 'cancelada';
-    priority: 'baixa' | 'media' | 'alta' | 'urgente';
+    priority: 'baixa' | 'media' | 'urgente';
     due_date: string;
     due_time: string;
     assigned_users: string[];

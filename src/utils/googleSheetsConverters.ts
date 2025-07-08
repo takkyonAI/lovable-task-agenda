@@ -1,4 +1,3 @@
-
 import { Task } from '../types/task';
 import { User } from '../types/user';
 
@@ -11,10 +10,11 @@ export const rowToTask = (row: any[]): Task => {
   };
 
   const priorityMap: { [key: string]: Task['priority'] } = {
-    'high': 'alta',
+    'high': 'urgente',
     'medium': 'media',
     'low': 'baixa',
-    'urgent': 'urgente'
+    'urgent': 'urgente',
+    'alta': 'urgente' // Map old "alta" to "urgente"
   };
 
   return {

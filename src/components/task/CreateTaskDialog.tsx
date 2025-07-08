@@ -13,7 +13,7 @@ interface NewTask {
   title: string;
   description: string;
   status: 'pendente' | 'em_andamento' | 'concluida' | 'cancelada';
-  priority: 'baixa' | 'media' | 'alta' | 'urgente';
+  priority: 'baixa' | 'media' | 'urgente';
   due_date: string;
   due_time: string;
   assigned_users: string[];
@@ -95,7 +95,6 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
                 <SelectContent className="bg-slate-800 border-slate-700">
                   <SelectItem value="baixa">Baixa</SelectItem>
                   <SelectItem value="media">Média</SelectItem>
-                  <SelectItem value="alta">Alta</SelectItem>
                   <SelectItem value="urgente">Urgente</SelectItem>
                 </SelectContent>
               </Select>
