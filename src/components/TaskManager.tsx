@@ -348,7 +348,17 @@ const TaskManager: React.FC = () => {
                 <CardHeader>
                   <CardTitle className="text-white flex items-center">
                     <Clock className="w-5 h-5 mr-2" />
-                    Agenda do Dia - {formatDateToBR(selectedDate)}
+                    <div className="flex-1">
+                      <div className="hidden sm:block">
+                        Agenda do Dia - {formatDateToBR(selectedDate)}
+                      </div>
+                      <div className="block sm:hidden">
+                        <div>Agenda do Dia</div>
+                        <div className="text-sm text-slate-400 font-normal">
+                          {formatDateToBR(selectedDate)}
+                        </div>
+                      </div>
+                    </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
