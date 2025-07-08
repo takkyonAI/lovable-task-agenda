@@ -33,6 +33,42 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
   onTaskChange,
   onCreateTask
 }) => {
+  // Função auxiliar para extrair a data no formato correto para o input
+  const extractDateForInput = (dateString: string): string => {
+    if (!dateString) return '';
+    
+    // Se contém espaço (formato: "YYYY-MM-DD HH:MM:SS")
+    if (dateString.includes(' ')) {
+      return dateString.split(' ')[0];
+    }
+    
+    // Se contém T (formato ISO: "YYYY-MM-DDTHH:MM:SS")
+    if (dateString.includes('T')) {
+      return dateString.split('T')[0];
+    }
+    
+    // Se já está no formato de data (YYYY-MM-DD)
+    return dateString;
+  };
+
+  // Função auxiliar para extrair a data base para operações
+  const extractDatePart = (dateString: string): string => {
+    if (!dateString) return new Date().toISOString().split('T')[0];
+    
+    // Se contém espaço (formato: "YYYY-MM-DD HH:MM:SS")
+    if (dateString.includes(' ')) {
+      return dateString.split(' ')[0];
+    }
+    
+    // Se contém T (formato ISO: "YYYY-MM-DDTHH:MM:SS")
+    if (dateString.includes('T')) {
+      return dateString.split('T')[0];
+    }
+    
+    // Se já está no formato de data (YYYY-MM-DD)
+    return dateString;
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
@@ -106,7 +142,7 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
               <Input
                 id="taskDueDate"
                 type="date"
-                value={newTask.due_date ? newTask.due_date.split('T')[0] : ''}
+                value={extractDateForInput(newTask.due_date)}
                 onChange={(e) => {
                   const dateValue = e.target.value;
                   const timeValue = newTask.due_time || '09:00';
@@ -132,7 +168,7 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
                 value={newTask.due_time}
                 onChange={(e) => {
                   const timeValue = e.target.value;
-                  const dateValue = newTask.due_date ? newTask.due_date.split(' ')[0] || newTask.due_date.split('T')[0] : new Date().toISOString().split('T')[0];
+                  const dateValue = extractDatePart(newTask.due_date);
                   
                   // Mantém a data local sem conversão de timezone
                   const localDateTime = `${dateValue} ${timeValue}:00`;
