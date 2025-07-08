@@ -318,24 +318,29 @@ export const useTaskManager = () => {
     }
 
     try {
-      // Prepare the due_date - mantém como string simples sem conversão de timezone
+      // Prepare the due_date - evita conversões de timezone mantendo data local
       let formattedDueDate = null;
       if (newTask.due_date) {
-        // Se a data está no formato "YYYY-MM-DD HH:MM:SS", mantém assim
-        if (newTask.due_date.includes(' ')) {
+        // Se a data já está no formato "YYYY-MM-DD HH:MM:SS", mantém assim
+        if (newTask.due_date.includes(' ') && newTask.due_date.includes(':')) {
           formattedDueDate = newTask.due_date;
-        } else if (newTask.due_date.includes('T')) {
-          // Se está no formato ISO, converte para formato simples
-          const date = new Date(newTask.due_date);
-          const year = date.getFullYear();
-          const month = String(date.getMonth() + 1).padStart(2, '0');
-          const day = String(date.getDate()).padStart(2, '0');
-          const time = newTask.due_time || '09:00';
-          formattedDueDate = `${year}-${month}-${day} ${time}:00`;
         } else {
-          // Se é só a data, adiciona o horário
+          // Para qualquer outro formato, extrai apenas a parte da data e adiciona o horário
+          let dateOnly = newTask.due_date;
+          
+          // Se contém espaço, pega apenas a parte da data
+          if (dateOnly.includes(' ')) {
+            dateOnly = dateOnly.split(' ')[0];
+          }
+          
+          // Se contém T (ISO), pega apenas a parte da data
+          if (dateOnly.includes('T')) {
+            dateOnly = dateOnly.split('T')[0];
+          }
+          
+          // Adiciona o horário
           const time = newTask.due_time || '09:00';
-          formattedDueDate = `${newTask.due_date} ${time}:00`;
+          formattedDueDate = `${dateOnly} ${time}:00`;
         }
         
         console.log('Data formatada para salvar:', formattedDueDate);
