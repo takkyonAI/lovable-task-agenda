@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   user_id: string;
@@ -9,6 +8,7 @@ export interface User {
   password_hash?: string;
   created_at: Date;
   last_login?: Date;
+  first_login_completed?: boolean;
 }
 
 export interface AuthUser {

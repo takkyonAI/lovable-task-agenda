@@ -1,9 +1,35 @@
+/**
+ * 📧 SISTEMA DE AUTENTICAÇÃO COM EMAILJS
+ * 
+ * Este hook gerencia toda a autenticação do sistema, incluindo:
+ * - Login e logout de usuários
+ * - Criação de novos usuários pelos administradores
+ * - Envio automático de emails via EmailJS
+ * - Proteção de sessão durante operações administrativas
+ * - Gerenciamento de permissões e papéis
+ *
+ * PRINCIPAIS FUNCIONALIDADES:
+ * ✅ Criação segura de usuários sem afetar sessão do admin
+ * ✅ Envio automático de credenciais via EmailJS
+ * ✅ Tratamento de conflitos de usuários órfãos
+ * ✅ Validação rigorosa de dados de entrada
+ * ✅ Logs detalhados para debugging
+ * ✅ Fallback em caso de falha no envio de email
+ * 
+ * @author Rockfeller Navegantes - 2025
+ */
+
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@/types/user';
 import { useToast } from '@/hooks/use-toast';
 import { validateEmail, validatePassword, validateName, sanitizeInput, generateSecurePassword } from '@/utils/inputValidation';
+import emailjs from '@emailjs/browser';
+import { EMAILJS_CONFIG, APP_NAME } from '../constants/app';
+
+// 🔧 INICIALIZAÇÃO: Configurar EmailJS na importação do módulo
+emailjs.init(EMAILJS_CONFIG.PUBLIC_KEY);
 
 interface AuthContextType {
   currentUser: User | null;
@@ -21,6 +47,8 @@ interface AuthContextType {
   changePassword: (userId: string, newPassword: string) => Promise<boolean>;
   deleteUser: (userId: string) => Promise<boolean>;
   toggleUserStatus: (userId: string) => Promise<boolean>;
+  needsPasswordChange: boolean;
+  firstTimePasswordChange: (newPassword: string) => Promise<boolean>;
   loading: boolean;
 }
 
@@ -42,21 +70,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [authUser, setAuthUser] = useState<SupabaseUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [needsPasswordChange, setNeedsPasswordChange] = useState(false);
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Configurar listener de autenticação
+    /**
+     * 🎧 LISTENER DE AUTENTICAÇÃO 
+     * 
+     * Este listener monitora mudanças no estado de autenticação do Supabase.
+     * É fundamental para manter a sessão do administrador durante criação de usuários.
+     * 
+     * PROTEÇÃO IMPLEMENTADA:
+     * - Ignora mudanças quando isCreatingUser = true
+     * - Evita logout acidental do administrador
+     * - Mantém contexto correto durante operações
+     */
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state change:', event, 'Creating user:', isCreatingUser);
+        
+        // 🔒 PROTEÇÃO: Ignorar mudanças de estado durante criação de usuário
+        if (isCreatingUser) {
+          console.log('Ignorando mudança de estado durante criação de usuário');
+          return;
+        }
+        
+        // ✅ NORMAL: Processar mudanças de autenticação normalmente
         setSession(session);
         setAuthUser(session?.user ?? null);
         
         if (session?.user) {
-          // Buscar perfil do usuário com delay para evitar problemas de timing
+          // 👤 PERFIL: Buscar dados do usuário com delay para evitar race conditions
           setTimeout(() => {
             fetchUserProfile(session.user.id);
           }, 100);
         } else {
+          // 🚪 LOGOUT: Limpar dados do usuário
           setCurrentUser(null);
         }
         
@@ -64,23 +114,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // Verificar sessão existente
+    // 🔄 INICIALIZAÇÃO: Verificar se já existe sessão ativa
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setAuthUser(session?.user ?? null);
-      
-      if (session?.user) {
-        fetchUserProfile(session.user.id);
-      } else {
-        setLoading(false);
+      if (!isCreatingUser) {
+        setSession(session);
+        setAuthUser(session?.user ?? null);
+        
+        if (session?.user) {
+          fetchUserProfile(session.user.id);
+        } else {
+          setLoading(false);
+        }
       }
     });
 
+    // 🧹 CLEANUP: Remover listener quando componente for desmontado
     return () => subscription.unsubscribe();
-  }, []);
+  }, [isCreatingUser]); // 🎯 DEPENDÊNCIA: Recriar listener quando flag de criação mudar
 
+  /**
+   * 👤 BUSCAR PERFIL DO USUÁRIO
+   * 
+   * Função responsável por buscar os dados do perfil do usuário no banco.
+   * Inclui proteção para evitar interferência durante criação de novos usuários.
+   * 
+   * @param userId - ID do usuário para buscar o perfil
+   */
   const fetchUserProfile = async (userId: string) => {
     try {
+      console.log('🔍 fetchUserProfile called for userId:', userId, 'isCreatingUser:', isCreatingUser);
+      
+      // 🔒 PROTEÇÃO: Não buscar perfil durante criação de usuário
+      if (isCreatingUser) {
+        console.log('⚠️ Ignorando fetchUserProfile durante criação de usuário');
+        return;
+      }
+      
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
@@ -88,6 +157,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .single();
 
       if (error) {
+        console.log('❌ Erro ao buscar perfil:', error);
         // Se o perfil não existir, tentar criar um básico
         if (error.code === 'PGRST116') {
           const { data: authData } = await supabase.auth.getUser();
@@ -99,7 +169,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 name: authData.user.user_metadata?.full_name || authData.user.email || 'Usuário',
                 email: authData.user.email || '',
                 role: 'vendedor',
-                is_active: true
+                is_active: true,
+                first_login_completed: true // Usuários criados manualmente já passaram pelo primeiro login
               });
             
             if (!insertError) {
@@ -112,6 +183,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (data) {
+        console.log('✅ Perfil encontrado:', data.name, 'first_login_completed:', (data as any).first_login_completed);
+        
         const userProfile: User = {
           id: data.id as string,
           user_id: data.user_id as string,
@@ -121,10 +194,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           is_active: data.is_active as boolean,
           password_hash: data.password_hash as string,
           created_at: new Date(data.created_at as string),
-          last_login: data.last_login ? new Date(data.last_login as string) : undefined
+          last_login: data.last_login ? new Date(data.last_login as string) : undefined,
+          first_login_completed: (data as any).first_login_completed as boolean
         };
         
         setCurrentUser(userProfile);
+        const needsChange = !(data as any).first_login_completed;
+        console.log('🔐 Setting needsPasswordChange to:', needsChange);
+        setNeedsPasswordChange(needsChange);
         
         // Atualizar último login
         await supabase
@@ -257,9 +334,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setSession(null);
   };
 
+  /**
+   * ✨ FUNÇÃO PRINCIPAL - CRIAR USUÁRIO
+   * 
+   * Esta função implementa o fluxo completo de criação de usuários:
+   * 1. Valida os dados de entrada
+   * 2. Gera senha temporária segura
+   * 3. Cria usuário no Supabase Auth
+   * 4. Preserva a sessão do administrador
+   * 5. Cria/atualiza perfil no banco
+   * 6. Envia email via EmailJS
+   * 
+   * @param userData - Dados do usuário (nome, email, papel)
+   * @returns Promise<boolean> - true se criado com sucesso
+   */
   const createUser = async (userData: { name: string; email: string; role: User['role'] }): Promise<boolean> => {
     try {
-      // Validate inputs
+      // 🔒 PROTEÇÃO: Sinalizar que estamos criando usuário para evitar interferência na sessão
+      setIsCreatingUser(true);
+      
+      // ✅ VALIDAÇÕES: Verificar se dados de entrada são válidos
       if (!validateEmail(userData.email)) {
         toast({
           title: "Erro",
@@ -278,9 +372,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
 
+      // 🔐 SEGURANÇA: Gerar senha temporária de 16 caracteres
       const securePassword = generateSecurePassword();
 
-      // Primeiro tentar criar o usuário no auth.users
+      // 💾 BACKUP: Salvar sessão atual do administrador antes de criar novo usuário
+      const currentSession = session;
+      const currentUserData = currentUser;
+
+      // 🚀 CRIAÇÃO: Criar usuário no Supabase Auth com senha temporária
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: sanitizeInput(userData.email),
         password: securePassword,
@@ -291,6 +390,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         }
       });
+
+      // 🔄 RESTAURAÇÃO: Imediatamente restaurar sessão do administrador para evitar logout
+      if (currentSession && currentSession.user) {
+        // Restaurar tokens de autenticação
+        await supabase.auth.setSession({
+          access_token: currentSession.access_token,
+          refresh_token: currentSession.refresh_token
+        });
+        
+        // Garantir que estados locais permanecem inalterados
+        setCurrentUser(currentUserData);
+        setNeedsPasswordChange(currentUserData ? !currentUserData.first_login_completed : false);
+        setSession(currentSession);
+        setAuthUser(currentSession.user);
+      }
 
       if (authError) {
         toast({
@@ -310,47 +424,170 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
 
-      // Aguardar um pouco para o trigger criar o perfil
+      // ⏳ TIMING: Aguardar para evitar problemas de timing com triggers do banco
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Atualizar o perfil com o papel correto
-      const { error: profileError } = await supabase
+      // 🔍 VERIFICAÇÃO: Checar se já existe perfil para evitar conflitos de chave duplicada
+      const { data: existingProfile } = await supabase
         .from('user_profiles')
-        .update({ 
-          role: userData.role,
-          name: sanitizeInput(userData.name)
-        })
-        .eq('user_id', authData.user.id);
+        .select('*')
+        .eq('user_id', authData.user.id)
+        .single();
 
-      if (profileError) {
-        // Tentar criar o perfil manualmente se a atualização falhar
-        const { error: insertError } = await supabase
+      let profileError = null;
+
+      if (existingProfile) {
+        // 🔄 ATUALIZAÇÃO: Perfil já existe, apenas atualizar dados
+        console.log('🔄 Atualizando perfil existente para user_id:', authData.user.id);
+        const { error } = await supabase
+          .from('user_profiles')
+          .update({
+            name: sanitizeInput(userData.name),
+            email: sanitizeInput(userData.email),
+            role: userData.role,
+            is_active: true,
+            first_login_completed: false // Forçar mudança de senha no primeiro login
+          } as any)
+          .eq('user_id', authData.user.id);
+        
+        profileError = error;
+      } else {
+        // ✨ CRIAÇÃO: Novo perfil, inserir todos os dados
+        console.log('✨ Criando novo perfil para user_id:', authData.user.id);
+        const { error } = await supabase
           .from('user_profiles')
           .insert({
             user_id: authData.user.id,
             name: sanitizeInput(userData.name),
             email: sanitizeInput(userData.email),
             role: userData.role,
-            is_active: true
-          });
-
-        if (insertError) {
-          toast({
-            title: "Erro",
-            description: "Falha ao criar perfil do usuário",
-            variant: "destructive"
-          });
-          return false;
-        }
+            is_active: true,
+            first_login_completed: false // Usuário deve trocar senha no primeiro acesso
+          } as any);
+        
+        profileError = error;
       }
 
-      toast({
-        title: "Usuário Criado",
-        description: `${userData.name} foi criado com sucesso! Senha temporária: ${securePassword}`,
-      });
+      if (profileError) {
+        console.error('Erro ao criar/atualizar perfil:', profileError);
+        toast({
+          title: "Erro",
+          description: "Falha ao criar perfil do usuário",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      // 📧 EMAIL: Enviar credenciais via EmailJS para o novo usuário
+      try {
+        console.log('🚀 Iniciando processo de envio de email...');
+        
+        // 🔍 DIAGNÓSTICO: Verificar se EmailJS está disponível e funcionando
+        console.log('📧 Verificando EmailJS...', {
+          emailjs: typeof emailjs,
+          init: typeof emailjs.init,
+          send: typeof emailjs.send
+        });
+        
+        // ⚙️ CONFIGURAÇÕES: Verificar se todas as credenciais estão presentes
+        console.log('📧 Configurações do EmailJS:', {
+          SERVICE_ID: EMAILJS_CONFIG.SERVICE_ID,
+          TEMPLATE_ID: EMAILJS_CONFIG.TEMPLATE_ID,
+          PUBLIC_KEY: EMAILJS_CONFIG.PUBLIC_KEY ? '***' + EMAILJS_CONFIG.PUBLIC_KEY.slice(-4) : 'UNDEFINED'
+        });
+
+        // ✅ VALIDAÇÃO: Garantir que nenhuma configuração está vazia
+        if (!EMAILJS_CONFIG.SERVICE_ID || !EMAILJS_CONFIG.TEMPLATE_ID || !EMAILJS_CONFIG.PUBLIC_KEY) {
+          throw new Error('Configurações do EmailJS incompletas');
+        }
+
+        // 🔄 SEGURANÇA: Reinicializar EmailJS para garantir configuração correta
+        console.log('🔄 Reinicializando EmailJS...');
+        emailjs.init(EMAILJS_CONFIG.PUBLIC_KEY);
+        
+        // 📝 PARÂMETROS: Preparar dados para o template de email
+        const templateParams = {
+          app_name: APP_NAME,               // Nome da aplicação
+          user_name: userData.name,         // Nome do novo usuário
+          user_email: userData.email,       // Email do destinatário  
+          email: userData.email,            // Duplicado para compatibilidade com template
+          temp_password: securePassword,    // Senha temporária gerada
+          user_role: userData.role,         // Papel/função do usuário
+          app_url: window.location.origin   // URL para acessar o sistema
+        };
+
+        console.log('📝 Parâmetros do template:', {
+          app_name: templateParams.app_name,
+          user_name: templateParams.user_name,
+          user_email: templateParams.user_email,
+          temp_password: '***' + templateParams.temp_password.slice(-4),
+          user_role: templateParams.user_role,
+          app_url: templateParams.app_url
+        });
+
+        console.log('📤 Iniciando envio do email...');
+        
+        // 🚀 ENVIO: Executar chamada para EmailJS com timeout para evitar travamentos
+        const emailPromise = emailjs.send(
+          EMAILJS_CONFIG.SERVICE_ID,
+          EMAILJS_CONFIG.TEMPLATE_ID,
+          templateParams,
+          EMAILJS_CONFIG.PUBLIC_KEY
+        );
+
+        // ⏱️ TIMEOUT: Cancelar após 30 segundos se não houver resposta
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Timeout ao enviar email')), 30000);
+        });
+
+        // 🏃 CORRIDA: Primeira resposta (email ou timeout) vence
+        const response = await Promise.race([emailPromise, timeoutPromise]);
+
+        // ✅ SUCESSO: Log detalhado da resposta do EmailJS
+        console.log('✅ Email enviado com sucesso!', response);
+        console.log('📊 Status da resposta:', (response as any).status);
+        console.log('📝 Texto da resposta:', (response as any).text);
+        
+        // 🎉 FEEDBACK: Notificar administrador do sucesso
+        toast({
+          title: "Usuário Criado com Sucesso!",
+          description: `${userData.name} foi criado e um email com as credenciais foi enviado para ${userData.email}`,
+        });
+      } catch (emailError: any) {
+        // ❌ ERRO EMAIL: Capturar e analisar falhas no envio de email
+        console.error('❌ Erro ao enviar email:', emailError);
+        console.error('🔍 Detalhes completos do erro:', {
+          message: emailError?.message || 'Erro desconhecido',
+          text: emailError?.text || 'Texto não disponível',
+          status: emailError?.status || 'Status não disponível',
+          name: emailError?.name || 'Nome não disponível',
+          stack: emailError?.stack || 'Stack não disponível',
+          type: typeof emailError,
+          constructor: emailError?.constructor?.name
+        });
+        
+        // 🔍 DIAGNÓSTICO: Tentar identificar tipo específico de problema
+        if (emailError?.message?.includes('network')) {
+          console.error('🌐 Problema de rede detectado');
+        } else if (emailError?.message?.includes('timeout')) {
+          console.error('⏱️ Timeout detectado');
+        } else if (emailError?.status === 422) {
+          console.error('📧 Problema com parâmetros do template');
+        } else if (emailError?.status === 400) {
+          console.error('🔑 Problema com credenciais ou configuração');
+        }
+        
+        // 🚨 FALLBACK: Usuário foi criado mas email falhou - mostrar senha no toast
+        toast({
+          title: "Usuário Criado - Email Falhou",
+          description: `${userData.name} foi criado com sucesso! ⚠️ Erro no email: ${emailError?.message || 'Desconhecido'} - Senha temporária: ${securePassword}`,
+          variant: "default"
+        });
+      }
 
       return true;
     } catch (error) {
+      // ❌ ERRO GERAL: Capturar falhas em qualquer parte do processo
       console.error('Erro geral ao criar usuário:', error);
       toast({
         title: "Erro",
@@ -358,6 +595,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         variant: "destructive"
       });
       return false;
+    } finally {
+      // 🧹 LIMPEZA: Sempre remover flag de proteção, independente do resultado
+      setIsCreatingUser(false);
     }
   };
 
@@ -548,6 +788,76 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return hasPermission('franqueado');
   };
 
+  const firstTimePasswordChange = async (newPassword: string): Promise<boolean> => {
+    try {
+      if (!currentUser) {
+        toast({
+          title: "Erro",
+          description: "Usuário não autenticado",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      const passwordValidation = validatePassword(newPassword);
+      if (!passwordValidation.isValid) {
+        toast({
+          title: "Erro",
+          description: passwordValidation.message,
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      // Atualizar senha no Supabase Auth
+      const { error: authError } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (authError) {
+        toast({
+          title: "Erro",
+          description: authError.message || "Erro ao alterar senha",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      // Marcar first_login_completed como true
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .update({ first_login_completed: true } as any)
+        .eq('user_id', currentUser.user_id);
+
+      if (profileError) {
+        toast({
+          title: "Erro",
+          description: "Erro ao atualizar perfil",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      setNeedsPasswordChange(false);
+      await refreshProfile();
+
+      toast({
+        title: "Sucesso!",
+        description: "Senha alterada com sucesso!",
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Erro ao alterar senha no primeiro login:', error);
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao alterar senha",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
   return (
     <AuthContext.Provider value={{
       currentUser,
@@ -565,6 +875,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       changePassword,
       deleteUser,
       toggleUserStatus,
+      needsPasswordChange,
+      firstTimePasswordChange,
       loading
     }}>
       {children}
