@@ -7,6 +7,7 @@ import { Target, Clock, CheckCircle, TrendingUp, CalendarDays, Calendar, Chevron
 import CreateTaskDialog from './task/CreateTaskDialog';
 import TaskDetailsModal from './task/TaskDetailsModal';
 import { useTaskManager } from '@/hooks/useTaskManager';
+import { useUserProfiles } from '@/hooks/useUserProfiles';
 import { getStatusColor, getPriorityColor, getStatusLabel, getPriorityLabel } from '@/utils/taskUtils';
 import { formatDateToBR, formatTimeToBR, isSameDay, getTodayBR, getWeekDaysBR, getMonthDaysBR, getViewTitleBR } from '@/utils/dateUtils';
 import { NewTask, Task } from '@/types/task';
@@ -38,6 +39,8 @@ const TaskManager: React.FC = () => {
     deleteTask,
     canDeleteTask
   } = useTaskManager();
+
+  const { getUserName } = useUserProfiles();
 
   const handleCreateTask = async () => {
     const success = await createTask(newTask);
@@ -346,9 +349,16 @@ const TaskManager: React.FC = () => {
                               {task.description && (
                                 <p className="text-slate-400 text-xs mb-2 text-left">{task.description}</p>
                               )}
-                              <Badge className={`text-xs self-start ${getPriorityColor(task.priority)}`}>
-                                {getPriorityLabel(task.priority)}
-                              </Badge>
+                              <div className="flex items-center justify-between">
+                                <Badge className={`text-xs ${getPriorityColor(task.priority)}`}>
+                                  {getPriorityLabel(task.priority)}
+                                </Badge>
+                                {task.assigned_users.length > 0 && (
+                                  <span className="text-xs text-slate-400">
+                                    {getUserName(task.assigned_users[0])}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -413,7 +423,7 @@ const TaskManager: React.FC = () => {
                                     {task.description}
                                   </div>
                                 )}
-                                <div className="flex justify-between items-center">
+                                <div className="flex justify-between items-center mb-1">
                                   <Badge className={`text-xs ${getStatusColor(task.status)}`}>
                                     {getStatusLabel(task.status).charAt(0).toUpperCase()}
                                   </Badge>
@@ -421,6 +431,11 @@ const TaskManager: React.FC = () => {
                                     {getPriorityLabel(task.priority).charAt(0).toUpperCase()}
                                   </Badge>
                                 </div>
+                                {task.assigned_users.length > 0 && (
+                                  <div className="text-xs text-slate-400 text-left">
+                                    {getUserName(task.assigned_users[0])}
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>
@@ -483,9 +498,8 @@ const TaskManager: React.FC = () => {
                                   <span className="text-white font-medium truncate text-xs flex-1 text-left">{task.title}</span>
                                   <div className={`w-2 h-2 rounded-full ml-1 ${
                                     task.priority === 'urgente' ? 'bg-red-500' :
-                                    task.priority === 'alta' ? 'bg-orange-500' :
-                                    task.priority === 'media' ? 'bg-yellow-500' :
-                                    'bg-green-500'
+                                    task.priority === 'media' ? 'bg-orange-500' :
+                                    'bg-blue-500'
                                   }`}></div>
                                 </div>
                               </div>

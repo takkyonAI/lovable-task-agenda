@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, CheckCircle } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, User } from 'lucide-react';
 import { Task } from '@/types/task';
 
 interface TaskCardProps {
@@ -11,6 +11,7 @@ interface TaskCardProps {
   getPriorityColor: (priority: string) => string;
   getStatusLabel: (status: string) => string;
   getPriorityLabel: (priority: string) => string;
+  getUserName: (userId: string) => string;
 }
 
 const TaskCard: React.FC<TaskCardProps> = ({
@@ -19,7 +20,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
   getStatusColor,
   getPriorityColor,
   getStatusLabel,
-  getPriorityLabel
+  getPriorityLabel,
+  getUserName
 }) => {
   return (
     <div className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30 border border-slate-600 hover:bg-slate-700/40 transition-colors">
@@ -59,9 +61,13 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
         {task.assigned_users && task.assigned_users.length > 0 && (
           <div className="mt-2">
-            <span className="text-xs text-slate-400">
-              Atribuído a: {task.assigned_users.length} usuário(s)
-            </span>
+            <div className="flex items-center space-x-1 text-xs text-slate-400">
+              <User className="w-3 h-3" />
+              <span>Atribuído a:</span>
+              <span className="text-slate-300">
+                {task.assigned_users.map(userId => getUserName(userId)).join(', ')}
+              </span>
+            </div>
           </div>
         )}
       </div>
