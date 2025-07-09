@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Key } from 'lucide-react';
+import { Plus, Key, Loader2 } from 'lucide-react';
 import UserSelector from '../UserSelector';
 
 interface NewTask {
@@ -25,7 +25,8 @@ interface CreateTaskDialogProps {
   onOpenChange: (open: boolean) => void;
   newTask: NewTask;
   onTaskChange: (task: NewTask) => void;
-  onCreateTask: () => void;
+  onCreateTask: () => Promise<void>;
+  isCreating?: boolean;
 }
 
 const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
@@ -33,7 +34,8 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
   onOpenChange,
   newTask,
   onTaskChange,
-  onCreateTask
+  onCreateTask,
+  isCreating = false
 }) => {
   /**
    * Extrai a parte da data de uma string para uso em input type="date"
@@ -233,9 +235,14 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
           <Button 
             onClick={onCreateTask}
             className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
+            disabled={isCreating}
           >
-            <Plus className="w-4 h-4 mr-2" />
-            Criar Tarefa
+            {isCreating ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Plus className="w-4 h-4 mr-2" />
+            )}
+            {isCreating ? 'Criando...' : 'Criar Tarefa'}
           </Button>
         </div>
       </DialogContent>

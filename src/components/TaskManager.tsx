@@ -20,6 +20,7 @@ const TaskManager: React.FC = () => {
   const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('week');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isTaskDetailsOpen, setIsTaskDetailsOpen] = useState(false);
+  const [isCreatingTask, setIsCreatingTask] = useState(false);
   const [newTask, setNewTask] = useState<NewTask>({
     title: '',
     description: '',
@@ -27,7 +28,8 @@ const TaskManager: React.FC = () => {
     priority: 'media',
     due_date: '',
     due_time: '09:00',
-    assigned_users: []
+    assigned_users: [],
+    is_private: false
   });
 
   const {
@@ -107,18 +109,28 @@ const TaskManager: React.FC = () => {
   };
 
   const handleCreateTask = async () => {
-    const success = await createTask(newTask);
-    if (success) {
-      setNewTask({
-        title: '',
-        description: '',
-        status: 'pendente',
-        priority: 'media',
-        due_date: '',
-        due_time: '09:00',
-        assigned_users: []
-      });
-      setIsCreateDialogOpen(false);
+    if (isCreatingTask) return; // Prevent multiple simultaneous calls
+    
+    setIsCreatingTask(true);
+    try {
+      const success = await createTask(newTask);
+      if (success) {
+        setNewTask({
+          title: '',
+          description: '',
+          status: 'pendente',
+          priority: 'media',
+          due_date: '',
+          due_time: '09:00',
+          assigned_users: [],
+          is_private: false
+        });
+        setIsCreateDialogOpen(false);
+      }
+    } catch (error) {
+      console.error('Error creating task:', error);
+    } finally {
+      setIsCreatingTask(false);
     }
   };
 
@@ -149,7 +161,8 @@ const TaskManager: React.FC = () => {
       priority: 'media',
       due_date: `${dateString} ${timeString}:00`,
       due_time: timeString,
-      assigned_users: []
+      assigned_users: [],
+      is_private: false
     });
     setIsCreateDialogOpen(true);
   };
@@ -168,7 +181,8 @@ const TaskManager: React.FC = () => {
       priority: 'media',
       due_date: `${dateString} 09:00:00`,
       due_time: '09:00',
-      assigned_users: []
+      assigned_users: [],
+      is_private: false
     });
     setIsCreateDialogOpen(true);
   };
@@ -273,6 +287,7 @@ const TaskManager: React.FC = () => {
               newTask={newTask}
               onTaskChange={setNewTask}
               onCreateTask={handleCreateTask}
+              isCreating={isCreatingTask}
             />
           </div>
         </CardHeader>

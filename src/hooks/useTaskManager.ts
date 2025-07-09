@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Task } from '@/types/task';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
@@ -15,11 +15,28 @@ export const useTaskManager = () => {
 
   const { currentUser } = useSupabaseAuth();
   const { toast } = useToast();
+  
+  // Refs para evitar race conditions
+  const isLoadingRef = useRef(false);
+  const loadTasksTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Função debounced para carregar tarefas
+  const debouncedLoadTasks = useCallback(() => {
+    if (loadTasksTimeoutRef.current) {
+      clearTimeout(loadTasksTimeoutRef.current);
+    }
+    
+    loadTasksTimeoutRef.current = setTimeout(() => {
+      if (!isLoadingRef.current) {
+        loadTasks();
+      }
+    }, 300);
+  }, []);
 
   useEffect(() => {
     loadTasks();
     
-    // Set up real-time subscription
+    // Set up real-time subscription com melhor processamento
     const channel = supabase
       .channel('tasks-changes')
       .on(
@@ -32,13 +49,64 @@ export const useTaskManager = () => {
         (payload) => {
           console.log('Real-time task change:', payload);
           
-          // Handle different event types for immediate UI updates
+          // Handle different event types with optimized state updates
           if (payload.eventType === 'DELETE') {
+            // Immediate UI update for deletions
             setTasks(prevTasks => prevTasks.filter(task => task.id !== payload.old.id));
           } else if (payload.eventType === 'INSERT') {
-            loadTasks();
+            // For inserts, add task immediately instead of full reload
+            const newTask = payload.new;
+            if (newTask && newTask.id) {
+              setTasks(prevTasks => {
+                // Check if task already exists to prevent duplicates
+                const existingTask = prevTasks.find(task => task.id === newTask.id);
+                if (existingTask) {
+                  console.log('Task already exists, skipping duplicate:', newTask.id);
+                  return prevTasks;
+                }
+                
+                // Format the new task
+                const formattedTask: Task = {
+                  id: newTask.id,
+                  title: newTask.title,
+                  description: newTask.description || '',
+                  status: newTask.status as 'pendente' | 'em_andamento' | 'concluida' | 'cancelada',
+                  priority: newTask.priority === 'alta' ? 'urgente' : newTask.priority as 'baixa' | 'media' | 'urgente',
+                  due_date: newTask.due_date || undefined,
+                  assigned_users: newTask.assigned_users || [],
+                  created_by: newTask.created_by,
+                  created_at: new Date(newTask.created_at),
+                  updated_at: new Date(newTask.updated_at),
+                  completed_at: newTask.completed_at ? new Date(newTask.completed_at) : undefined,
+                  is_private: newTask.is_private || false
+                };
+                
+                // Add to the beginning of the array (newest first)
+                return [formattedTask, ...prevTasks];
+              });
+            }
           } else if (payload.eventType === 'UPDATE') {
-            loadTasks();
+            // For updates, update specific task instead of full reload
+            const updatedTask = payload.new;
+            if (updatedTask && updatedTask.id) {
+              setTasks(prevTasks => prevTasks.map(task => {
+                if (task.id === updatedTask.id) {
+                  return {
+                    ...task,
+                    title: updatedTask.title,
+                    description: updatedTask.description || '',
+                    status: updatedTask.status as 'pendente' | 'em_andamento' | 'concluida' | 'cancelada',
+                    priority: updatedTask.priority === 'alta' ? 'urgente' : updatedTask.priority as 'baixa' | 'media' | 'urgente',
+                    due_date: updatedTask.due_date || undefined,
+                    assigned_users: updatedTask.assigned_users || [],
+                    updated_at: new Date(updatedTask.updated_at),
+                    completed_at: updatedTask.completed_at ? new Date(updatedTask.completed_at) : undefined,
+                    is_private: updatedTask.is_private || false
+                  };
+                }
+                return task;
+              }));
+            }
           }
         }
       )
@@ -46,6 +114,9 @@ export const useTaskManager = () => {
 
     return () => {
       supabase.removeChannel(channel);
+      if (loadTasksTimeoutRef.current) {
+        clearTimeout(loadTasksTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -57,7 +128,14 @@ export const useTaskManager = () => {
    * Carrega todas as tarefas do banco de dados
    */
   const loadTasks = async () => {
+    if (isLoadingRef.current) {
+      console.log('loadTasks already in progress, skipping...');
+      return;
+    }
+    
     setIsLoading(true);
+    isLoadingRef.current = true;
+    
     try {
       console.log('🔍 loadTasks - Starting to load tasks...');
       
@@ -130,6 +208,7 @@ export const useTaskManager = () => {
       });
     } finally {
       setIsLoading(false);
+      isLoadingRef.current = false;
     }
   };
 
@@ -432,8 +511,7 @@ export const useTaskManager = () => {
         variant: "success"
       });
 
-      // Force immediate reload of tasks to ensure UI is updated
-      await loadTasks();
+      // Real-time subscription will handle the UI update automatically
       return true;
     } catch (error) {
       console.error('Erro ao criar tarefa:', error);
