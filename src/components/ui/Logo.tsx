@@ -2,7 +2,7 @@ import React from 'react';
 
 interface LogoProps {
   className?: string;
-  size?: 'xs' | 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   variant?: 'full' | 'icon' | 'text';
 }
 
@@ -11,30 +11,32 @@ const Logo: React.FC<LogoProps> = ({
   size = 'md', 
   variant = 'full' 
 }) => {
-  // Tamanhos aumentados em 200% + novo tamanho xs
+  // Tamanhos aumentados em 200% + novo tamanho xs + novo tamanho xl (300% maior)
   const sizeClasses = {
     xs: 'w-12 h-12 text-xs',    // novo tamanho extra pequeno
     sm: 'w-16 h-16 text-sm',    // era w-8 h-8
     md: 'w-24 h-24 text-base',  // era w-12 h-12
-    lg: 'w-32 h-32 text-lg'     // era w-16 h-16
+    lg: 'w-32 h-32 text-lg',    // era w-16 h-16
+    xl: 'w-64 h-64 text-2xl'    // novo tamanho extra grande (300% maior)
   };
 
   const textSizeClasses = {
     xs: 'text-xs',   // novo tamanho extra pequeno
     sm: 'text-sm',   // era text-xs
     md: 'text-lg',   // era text-sm
-    lg: 'text-xl'    // era text-base
+    lg: 'text-xl',   // era text-base
+    xl: 'text-4xl'   // novo tamanho extra grande
   };
 
   // Usando logo da pasta public (mais confiável)
   const rockfellerLogoUrl = '/rockfeller-logo.png';
-  console.log('🏢 Logo da Rockfeller URL (200% maior):', rockfellerLogoUrl);
+  console.log('🏢 Logo da Rockfeller URL (300% maior):', rockfellerLogoUrl);
   console.log('🔄 Componente Logo carregado em:', new Date().toLocaleTimeString());
 
-  // ✅ LOGO REAL DA ROCKFELLER IMPLEMENTADA! [200% MAIOR]
+  // ✅ LOGO REAL DA ROCKFELLER IMPLEMENTADA! [300% MAIOR]
   if (variant === 'icon' || variant === 'full') {
     return (
-      <div className={`${sizeClasses[size]} ${className}`} data-logo="rockfeller-public-200">
+      <div className={`${sizeClasses[size]} ${className}`} data-logo="rockfeller-public-300">
         <img 
           src={rockfellerLogoUrl} 
           alt="Rockfeller Logo" 
@@ -54,7 +56,7 @@ const Logo: React.FC<LogoProps> = ({
             `;
           }}
           onLoad={() => {
-            console.log('✅ Logo da Rockfeller carregada com sucesso! (200% maior)');
+            console.log('✅ Logo da Rockfeller carregada com sucesso! (300% maior)');
           }}
         />
       </div>
