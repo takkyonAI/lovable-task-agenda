@@ -59,28 +59,10 @@ export const useTaskManager = () => {
   const loadTasks = async () => {
     setIsLoading(true);
     try {
-      // 🔍 DEBUG: Verificar estado da autenticação
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      console.log('🔍 FRONTEND DEBUG - AUTH SESSION:', session?.user?.id || 'NO SESSION');
-      console.log('🔍 FRONTEND DEBUG - SESSION ERROR:', sessionError);
-      console.log('🔍 FRONTEND DEBUG - CURRENT USER:', currentUser?.user_id || 'NO CURRENT USER');
-      console.log('🔍 FRONTEND DEBUG - CURRENT USER ROLE:', currentUser?.role || 'NO ROLE');
-
-      // 🔍 DEBUG: Testar se conseguimos acessar a tabela user_profiles
-      const { data: profileTest, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('user_id, role')
-        .eq('user_id', session?.user?.id || '');
-      console.log('🔍 FRONTEND DEBUG - PROFILE TEST:', profileTest);
-      console.log('🔍 FRONTEND DEBUG - PROFILE ERROR:', profileError);
-
       const { data: taskData, error: taskError } = await supabase
         .from('tasks')
         .select('*')
         .order('created_at', { ascending: false });
-
-      console.log('🔍 FRONTEND DEBUG - loadTasks - taskData from DB:', taskData?.length || 0);
-      console.log('🔍 FRONTEND DEBUG - QUERY ERROR:', taskError);
 
       if (taskError) {
         console.error('Erro ao carregar tarefas:', taskError);
@@ -117,7 +99,6 @@ export const useTaskManager = () => {
           return formattedTask;
         });
 
-        console.log('🔍 FRONTEND DEBUG - loadTasks - formattedTasks:', formattedTasks.length);
         setTasks(formattedTasks);
       }
     } catch (error) {
@@ -133,12 +114,6 @@ export const useTaskManager = () => {
   };
 
   const filterTasks = async () => {
-    console.log('🔍 FRONTEND DEBUG - filterTasks iniciado');
-    console.log('🔍 FRONTEND DEBUG - tasks.length (antes dos filtros):', tasks.length);
-    console.log('🔍 FRONTEND DEBUG - activeFilter:', activeFilter);
-    console.log('🔍 FRONTEND DEBUG - selectedUser:', selectedUser);
-    console.log('🔍 FRONTEND DEBUG - selectedAccessLevel:', selectedAccessLevel);
-    
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const weekStart = new Date(today);
@@ -146,7 +121,6 @@ export const useTaskManager = () => {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
     let filtered = tasks;
-    console.log('🔍 FRONTEND DEBUG - filtered inicial:', filtered.length);
 
     // Filtro temporal
     switch (activeFilter) {
@@ -177,8 +151,6 @@ export const useTaskManager = () => {
         break;
     }
 
-    console.log('🔍 FRONTEND DEBUG - após filtro temporal:', filtered.length);
-
     // Filtro por usuário
     if (selectedUser !== 'all') {
       filtered = filtered.filter(task => 
@@ -186,8 +158,6 @@ export const useTaskManager = () => {
         task.assigned_users.includes(selectedUser)
       );
     }
-
-    console.log('🔍 FRONTEND DEBUG - após filtro por usuário:', filtered.length);
 
     // Filtro por nível de acesso
     if (selectedAccessLevel !== 'all') {
@@ -208,9 +178,6 @@ export const useTaskManager = () => {
         console.error('Erro ao filtrar por nível de acesso:', error);
       }
     }
-
-    console.log('🔍 FRONTEND DEBUG - após filtro por nível de acesso:', filtered.length);
-    console.log('🔍 FRONTEND DEBUG - filtered final:', filtered.length);
 
     setFilteredTasks(filtered);
   };
