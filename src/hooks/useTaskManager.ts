@@ -80,7 +80,7 @@ export const useTaskManager = () => {
                   created_at: new Date(newTask.created_at),
                   updated_at: new Date(newTask.updated_at),
                   completed_at: newTask.completed_at ? new Date(newTask.completed_at) : undefined,
-                  is_private: newTask.is_private || false
+                  is_private: newTask.is_private ?? false
                 };
                 
                 // Add to the beginning of the array (newest first)
@@ -103,7 +103,7 @@ export const useTaskManager = () => {
                     assigned_users: updatedTask.assigned_users || [],
                     updated_at: new Date(updatedTask.updated_at),
                     completed_at: updatedTask.completed_at ? new Date(updatedTask.completed_at) : undefined,
-                    is_private: updatedTask.is_private || false
+                    is_private: updatedTask.is_private ?? false
                   };
                 }
                 return task;
@@ -185,7 +185,7 @@ export const useTaskManager = () => {
             created_at: new Date(task.created_at),
             updated_at: new Date(task.updated_at),
             completed_at: task.completed_at ? new Date(task.completed_at) : undefined,
-            is_private: task.is_private || false
+            is_private: task.is_private ?? false
           };
           
           return formattedTask;
@@ -444,17 +444,7 @@ export const useTaskManager = () => {
     assigned_users: string[];
     is_private: boolean;
   }) => {
-    // 🔍 DEBUG: Log inicial para debugging de Vanessa (assessora_adm)
-    console.log('🔍 DEBUG createTask - Starting task creation for user:', {
-      user_id: currentUser?.user_id,
-      user_name: currentUser?.name,
-      user_role: currentUser?.role,
-      user_email: currentUser?.email,
-      task_title: newTask.title
-    });
-
     if (!newTask.title.trim()) {
-      console.log('🔍 DEBUG createTask - Title validation failed');
       toast({
         title: "Título obrigatório",
         description: "O título da tarefa é obrigatório para criar uma nova tarefa.",
@@ -464,7 +454,6 @@ export const useTaskManager = () => {
     }
 
     if (!currentUser) {
-      console.log('🔍 DEBUG createTask - User not authenticated');
       toast({
         title: "Usuário não autenticado",
         description: "Você precisa estar logado para criar tarefas.",
@@ -515,50 +504,13 @@ export const useTaskManager = () => {
         is_private: newTask.is_private
       };
       
-      // 🔍 DEBUG: Log dos dados que serão inseridos
-      console.log('🔍 DEBUG createTask - Insert data:', {
-        title: insertData.title,
-        status: insertData.status,
-        priority: insertData.priority,
-        due_date: insertData.due_date,
-        assigned_users: insertData.assigned_users,
-        created_by: insertData.created_by,
-        is_private: insertData.is_private,
-        current_user_role: currentUser.role
-      });
-
-      // 🔍 DEBUG: Verificar sessão do Supabase
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      console.log('🔍 DEBUG createTask - Current session:', {
-        session_user_id: sessionData?.session?.user?.id,
-        session_email: sessionData?.session?.user?.email,
-        session_error: sessionError
-      });
-      
       const { data, error } = await supabase
         .from('tasks')
         .insert(insertData)
         .select('*');
 
       if (error) {
-        console.error('🔍 DEBUG createTask - Database error:', {
-          error_message: error.message,
-          error_details: error.details,
-          error_hint: error.hint,
-          error_code: error.code,
-          user_role: currentUser.role,
-          user_id: currentUser.user_id
-        });
-        
-        // 🔍 DEBUG: Erro específico para política RLS
-        if (error.code === '42501' || error.message.includes('policy')) {
-          console.error('🔍 DEBUG createTask - RLS Policy error detected for user:', {
-            user_role: currentUser.role,
-            user_id: currentUser.user_id,
-            error_message: error.message
-          });
-        }
-        
+        console.error('Erro ao criar tarefa:', error);
         toast({
           title: "Erro ao criar tarefa",
           description: "Não foi possível criar a tarefa. Tente novamente.",
@@ -566,14 +518,6 @@ export const useTaskManager = () => {
         });
         return false;
       }
-
-      // 🔍 DEBUG: Log de sucesso
-      console.log('🔍 DEBUG createTask - Task created successfully:', {
-        task_id: data?.[0]?.id,
-        task_title: data?.[0]?.title,
-        user_role: currentUser.role,
-        user_id: currentUser.user_id
-      });
 
       toast({
         title: "Tarefa criada com sucesso!",
@@ -584,11 +528,7 @@ export const useTaskManager = () => {
       // Real-time subscription will handle the UI update automatically
       return true;
     } catch (error) {
-      console.error('🔍 DEBUG createTask - Unexpected error:', {
-        error,
-        user_role: currentUser.role,
-        user_id: currentUser.user_id
-      });
+      console.error('Erro ao criar tarefa:', error);
       toast({
         title: "Erro inesperado",
         description: "Erro inesperado ao criar tarefa. Tente novamente.",
