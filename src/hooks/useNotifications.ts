@@ -152,7 +152,7 @@ export const useNotifications = () => {
         const daysOverdue = Math.floor((Date.now() - dueDateObj.getTime()) / (1000 * 60 * 60 * 24));
         
         addNotification({
-          title: '⚠️ Tarefa Vencida!',
+          title: 'Tarefa Vencida!',
           message: `"${task.title}" venceu há ${daysOverdue} dia(s)`,
           type: 'task_overdue',
           taskId: task.id
@@ -190,7 +190,7 @@ export const useNotifications = () => {
         const hoursUntilDue = Math.floor((dueDateObj.getTime() - Date.now()) / (1000 * 60 * 60));
         
         addNotification({
-          title: '🕒 Tarefa Próxima do Vencimento',
+          title: 'Tarefa Próxima do Vencimento',
           message: `"${task.title}" vence em ${hoursUntilDue}h`,
           type: 'task_pending',
           taskId: task.id
@@ -223,7 +223,7 @@ export const useNotifications = () => {
             // Se é uma nova tarefa atribuída
             if (payload.eventType === 'INSERT') {
               addNotification({
-                title: '🎯 Nova Tarefa Atribuída!',
+                title: 'Nova Tarefa Atribuída!',
                 message: `Você foi atribuído à tarefa: "${task.title}"`,
                 type: 'task_assigned',
                 taskId: task.id
@@ -237,7 +237,7 @@ export const useNotifications = () => {
               
               if (!wasAssigned && isNowAssigned) {
                 addNotification({
-                  title: '🎯 Nova Tarefa Atribuída!',
+                  title: 'Nova Tarefa Atribuída!',
                   message: `Você foi atribuído à tarefa: "${task.title}"`,
                   type: 'task_assigned',
                   taskId: task.id

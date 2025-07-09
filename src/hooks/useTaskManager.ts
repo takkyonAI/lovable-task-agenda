@@ -76,7 +76,7 @@ export const useTaskManager = () => {
       if (taskError) {
         console.error('Erro ao carregar tarefas:', taskError);
         toast({
-          title: "❌ Erro ao carregar tarefas",
+          title: "Erro ao carregar tarefas",
           description: "Não foi possível carregar as tarefas. Tente novamente.",
           variant: "destructive"
         });
@@ -250,7 +250,7 @@ export const useTaskManager = () => {
   const updateTaskStatus = async (taskId: string, newStatus: Task['status']) => {
     if (!currentUser) {
       toast({
-        title: "❌ Usuário não autenticado",
+        title: "Usuário não autenticado",
         description: "Você precisa estar logado para atualizar tarefas.",
         variant: "destructive"
       });
@@ -280,7 +280,7 @@ export const useTaskManager = () => {
       if (error) {
         console.error('Erro ao atualizar status da tarefa:', error);
         toast({
-          title: "❌ Erro ao atualizar status",
+          title: "Erro ao atualizar status",
           description: "Não foi possível atualizar o status da tarefa. Tente novamente.",
           variant: "destructive"
         });
@@ -290,15 +290,15 @@ export const useTaskManager = () => {
       const getStatusMessage = (status: Task['status']) => {
         switch (status) {
           case 'pendente':
-            return { title: "📋 Status atualizado", description: `"${task?.title}" foi marcada como pendente.`, variant: "default" };
+            return { title: "Status atualizado", description: `"${task?.title}" foi marcada como pendente.`, variant: "default" };
           case 'em_andamento':
-            return { title: "🔄 Em andamento", description: `"${task?.title}" está em andamento.`, variant: "info" };
+            return { title: "Em andamento", description: `"${task?.title}" está em andamento.`, variant: "info" };
           case 'concluida':
-            return { title: "🎉 Tarefa concluída!", description: `"${task?.title}" foi concluída com sucesso.`, variant: "success" };
+            return { title: "Tarefa concluída!", description: `"${task?.title}" foi concluída com sucesso.`, variant: "success" };
           case 'cancelada':
-            return { title: "❌ Tarefa cancelada", description: `"${task?.title}" foi cancelada.`, variant: "destructive" };
+            return { title: "Tarefa cancelada", description: `"${task?.title}" foi cancelada.`, variant: "destructive" };
           default:
-            return { title: "✅ Status atualizado", description: "Status da tarefa atualizado com sucesso.", variant: "default" };
+            return { title: "Status atualizado", description: "Status da tarefa atualizado com sucesso.", variant: "default" };
         }
       };
 
@@ -313,7 +313,7 @@ export const useTaskManager = () => {
     } catch (error) {
       console.error('Erro ao atualizar status da tarefa:', error);
       toast({
-        title: "❌ Erro inesperado",
+        title: "Erro inesperado",
         description: "Erro inesperado ao atualizar tarefa. Tente novamente.",
         variant: "destructive"
       });
@@ -353,7 +353,7 @@ export const useTaskManager = () => {
   }) => {
     if (!newTask.title.trim()) {
       toast({
-        title: "❌ Título obrigatório",
+        title: "Título obrigatório",
         description: "O título da tarefa é obrigatório para criar uma nova tarefa.",
         variant: "destructive"
       });
@@ -362,7 +362,7 @@ export const useTaskManager = () => {
 
     if (!currentUser) {
       toast({
-        title: "❌ Usuário não autenticado",
+        title: "Usuário não autenticado",
         description: "Você precisa estar logado para criar tarefas.",
         variant: "destructive"
       });
@@ -418,7 +418,7 @@ export const useTaskManager = () => {
       if (error) {
         console.error('🔍 DEBUG createTask - Database error:', error);
         toast({
-          title: "❌ Erro ao criar tarefa",
+          title: "Erro ao criar tarefa",
           description: "Não foi possível criar a tarefa. Tente novamente.",
           variant: "destructive"
         });
@@ -426,7 +426,7 @@ export const useTaskManager = () => {
       }
 
       toast({
-        title: "✅ Tarefa criada com sucesso!",
+        title: "Tarefa criada com sucesso!",
         description: `"${newTask.title}" foi criada e está pronta para uso.`,
         variant: "success"
       });
@@ -437,8 +437,8 @@ export const useTaskManager = () => {
     } catch (error) {
       console.error('Erro ao criar tarefa:', error);
       toast({
-        title: "Erro",
-        description: "Erro inesperado ao criar tarefa",
+        title: "Erro inesperado",
+        description: "Erro inesperado ao criar tarefa. Tente novamente.",
         variant: "destructive"
       });
       return false;
@@ -448,7 +448,7 @@ export const useTaskManager = () => {
   const deleteTask = async (taskId: string): Promise<boolean> => {
     if (!currentUser) {
       toast({
-        title: "❌ Usuário não autenticado",
+        title: "Usuário não autenticado",
         description: "Você precisa estar logado para excluir tarefas.",
         variant: "destructive"
       });
@@ -458,7 +458,7 @@ export const useTaskManager = () => {
     // Verificar se o usuário tem permissão para excluir
     if (!['admin', 'franqueado', 'coordenador', 'supervisor_adm'].includes(currentUser.role)) {
       toast({
-        title: "❌ Permissão negada",
+        title: "Permissão negada",
         description: "Você não tem permissão para excluir tarefas.",
         variant: "destructive"
       });
@@ -480,7 +480,7 @@ export const useTaskManager = () => {
         // Reload tasks to restore the task if deletion failed
         await loadTasks();
         toast({
-          title: "❌ Erro ao excluir tarefa",
+          title: "Erro ao excluir tarefa",
           description: "Não foi possível excluir a tarefa. Tente novamente.",
           variant: "destructive"
         });
@@ -488,7 +488,7 @@ export const useTaskManager = () => {
       }
 
       toast({
-        title: "🗑️ Tarefa excluída",
+        title: "Tarefa excluída",
         description: `"${taskToDelete?.title}" foi removida com sucesso.`,
         variant: "default"
       });
@@ -499,7 +499,7 @@ export const useTaskManager = () => {
       // Reload tasks to restore the task if deletion failed
       await loadTasks();
       toast({
-        title: "❌ Erro inesperado",
+        title: "Erro inesperado",
         description: "Erro inesperado ao excluir tarefa. Tente novamente.",
         variant: "destructive"
       });
