@@ -61,6 +61,9 @@ export const useTaskManager = () => {
     try {
       console.log('🔍 loadTasks - Starting to load tasks...');
       
+      // Clear any potential Supabase cache
+      await supabase.auth.getSession();
+      
       const { data: taskData, error: taskError } = await supabase
         .from('tasks')
         .select('*')
@@ -127,6 +130,12 @@ export const useTaskManager = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Force refresh function for debugging
+  const forceRefresh = async () => {
+    console.log('🔄 Forcing complete refresh...');
+    await loadTasks();
   };
 
   const filterTasks = async () => {
@@ -508,6 +517,7 @@ export const useTaskManager = () => {
     createTask,
     loadTasks,
     deleteTask,
-    canDeleteTask
+    canDeleteTask,
+    forceRefresh
   };
 };
