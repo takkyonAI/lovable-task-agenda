@@ -1,43 +1,28 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Target, Clock, CheckCircle, TrendingUp, CalendarDays, Calendar, ChevronLeft, ChevronRight, User, Users } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Search, Filter, Calendar, Clock, Users, ShieldCheck, RefreshCw, Wifi, WifiOff, User } from 'lucide-react';
 import CreateTaskDialog from './task/CreateTaskDialog';
-import TaskDetailsModal from './task/TaskDetailsModal';
-import TaskFilters from './task/TaskFilters';
+import EditTaskDialog from './task/EditTaskDialog';
+import TaskCard from './task/TaskCard';
 import AdvancedTaskFilters from './task/AdvancedTaskFilters';
 import { useTaskManager } from '@/hooks/useTaskManager';
-import { useUserProfiles } from '@/hooks/useUserProfiles';
+import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { getStatusColor, getPriorityColor, getStatusLabel, getPriorityLabel } from '@/utils/taskUtils';
 import { formatDateToBR, formatTimeToBR, isSameDay, getTodayBR, getWeekDaysBR, getMonthDaysBR, getViewTitleBR } from '@/utils/dateUtils';
-import { NewTask, Task } from '@/types/task';
+import { NewTask, Task, EditTask } from '@/types/task';
+import { useUserProfiles } from '@/hooks/useUserProfiles';
 
-const TaskManager: React.FC = () => {
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(getTodayBR());
-  const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('week');
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [isTaskDetailsOpen, setIsTaskDetailsOpen] = useState(false);
-  const [isCreatingTask, setIsCreatingTask] = useState(false);
-  const [newTask, setNewTask] = useState<NewTask>({
-    title: '',
-    description: '',
-    status: 'pendente',
-    priority: 'media',
-    due_date: '',
-    due_time: '09:00',
-    assigned_users: [],
-    is_private: false
-  });
-
-  const {
-    tasks,
-    filteredTasks,
-    isLoading,
-    updatingTask,
-    activeFilter,
+const TaskManager = () => {
+  const { 
+    tasks, 
+    filteredTasks, 
+    isLoading, 
+    activeFilter, 
     setActiveFilter,
     selectedUser,
     setSelectedUser,
@@ -51,12 +36,122 @@ const TaskManager: React.FC = () => {
     getFilterCount,
     updateTaskStatus,
     canEditTask,
+    canEditTaskFull,
+    updateTask,
     createTask,
     deleteTask,
-    canDeleteTask
+    canDeleteTask,
+    forceRefresh,
+    // 🚀 MELHORIAS REAL-TIME: Novos estados do sistema melhorado
+    newTasksCount,
+    isRealTimeConnected,
+    lastUpdateTime
   } = useTaskManager();
 
-  const { getUserName, userProfiles } = useUserProfiles();
+  const { currentUser } = useSupabaseAuth();
+  const { getUserName } = useUserProfiles();
+  
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isCreatingTask, setIsCreatingTask] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
+  // 🔄 Estado para controle de refresh manual
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Estados para edição de tarefas
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isEditingTask, setIsEditingTask] = useState(false);
+  const [editTask, setEditTask] = useState<EditTask>({
+    id: '',
+    title: '',
+    description: '',
+    status: 'pendente',
+    priority: 'media',
+    due_date: '',
+    due_time: '09:00',
+    assigned_users: [],
+    is_private: false
+  });
+
+  // 🔧 Estados faltantes que foram referenciados no código
+  const [newTask, setNewTask] = useState<NewTask>({
+    title: '',
+    description: '',
+    status: 'pendente',
+    priority: 'media',
+    due_date: '',
+    due_time: '09:00',
+    assigned_users: [],
+    is_private: false
+  });
+
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isTaskDetailsOpen, setIsTaskDetailsOpen] = useState(false);
+  const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('day');
+
+  // 🔧 Função helper para obter nome do usuário
+  const getUserNameFallback = (userId: string) => {
+    return getUserName(userId) || userId.substring(0, 8) + '...';
+  };
+
+  // 🔔 MELHORIA: Componente para mostrar status da conexão real-time
+  const RealTimeStatusIndicator = () => {
+    const [timeAgo, setTimeAgo] = useState('');
+    
+    useEffect(() => {
+      const updateTimeAgo = () => {
+        if (lastUpdateTime) {
+          const diffInSeconds = Math.floor((Date.now() - lastUpdateTime) / 1000);
+          if (diffInSeconds < 60) {
+            setTimeAgo(`${diffInSeconds}s atrás`);
+          } else if (diffInSeconds < 3600) {
+            setTimeAgo(`${Math.floor(diffInSeconds / 60)}m atrás`);
+          } else {
+            setTimeAgo(`${Math.floor(diffInSeconds / 3600)}h atrás`);
+          }
+        }
+      };
+      
+      updateTimeAgo();
+      const interval = setInterval(updateTimeAgo, 1000);
+      return () => clearInterval(interval);
+    }, [lastUpdateTime]);
+
+    return (
+      <div className="flex items-center gap-2 text-sm text-gray-500">
+        {isRealTimeConnected ? (
+          <div className="flex items-center gap-1">
+            <Wifi className="w-4 h-4 text-green-500" />
+            <span className="text-green-600">Conectado</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1">
+            <WifiOff className="w-4 h-4 text-red-500" />
+            <span className="text-red-600">Desconectado</span>
+          </div>
+        )}
+        <span>•</span>
+        <span>Última atualização: {timeAgo}</span>
+        {newTasksCount > 0 && (
+          <>
+            <span>•</span>
+            <Badge variant="secondary" className="bg-blue-500 text-white animate-pulse">
+              {newTasksCount} nova{newTasksCount !== 1 ? 's' : ''}
+            </Badge>
+          </>
+        )}
+      </div>
+    );
+  };
+
+  // 🔄 MELHORIA: Função para refresh manual com feedback visual
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    await forceRefresh();
+    setTimeout(() => setIsRefreshing(false), 1000);
+  };
 
   // Handler para clique nos cards de estatísticas
   const handleStatsClick = (status: 'all' | 'pendente' | 'concluida') => {
@@ -87,8 +182,8 @@ const TaskManager: React.FC = () => {
 
   // Função para renderizar informações dos usuários de forma compacta
   const renderUserInfo = (task: Task, compact: boolean = false) => {
-    const assignedNames = task.assigned_users.map(id => getUserName(id));
-    const creatorName = getUserName(task.created_by);
+    const assignedNames = task.assigned_users.map(id => getUserNameFallback(id));
+    const creatorName = getUserNameFallback(task.created_by);
     
     if (compact) {
       // Versão compacta para visualização mensal - mostra criador e usuários
@@ -145,6 +240,81 @@ const TaskManager: React.FC = () => {
     } finally {
       setIsCreatingTask(false);
     }
+  };
+
+  const handleEditTask = async () => {
+    if (isEditingTask) return; // Prevent multiple simultaneous calls
+    
+    setIsEditingTask(true);
+    try {
+      const success = await updateTask(editTask.id, {
+        title: editTask.title,
+        description: editTask.description,
+        status: editTask.status,
+        priority: editTask.priority,
+        due_date: editTask.due_date,
+        assigned_users: editTask.assigned_users,
+        is_private: editTask.is_private
+      });
+      if (success) {
+        setEditTask({
+          id: '',
+          title: '',
+          description: '',
+          status: 'pendente',
+          priority: 'media',
+          due_date: '',
+          due_time: '09:00',
+          assigned_users: [],
+          is_private: false
+        });
+        setIsEditDialogOpen(false);
+      }
+    } catch (error) {
+      console.error('Error editing task:', error);
+    } finally {
+      setIsEditingTask(false);
+    }
+  };
+
+  const handleOpenEditDialog = (task: Task) => {
+    // Converter task para editTask format
+    const extractTimeForInput = (dateString: string): string => {
+      if (!dateString) return '09:00';
+      
+      let timePart = '';
+      
+      // Se contém espaço (formato: "YYYY-MM-DD HH:MM:SS")
+      if (dateString.includes(' ')) {
+        timePart = dateString.split(' ')[1];
+      }
+      
+      // Se contém T (formato ISO: "YYYY-MM-DDTHH:MM:SS")
+      if (dateString.includes('T')) {
+        timePart = dateString.split('T')[1];
+      }
+      
+      // Extrair apenas HH:MM
+      if (timePart && timePart.includes(':')) {
+        const timeParts = timePart.split(':');
+        return `${timeParts[0]}:${timeParts[1]}`;
+      }
+      
+      return '09:00';
+    };
+
+    setEditTask({
+      id: task.id,
+      title: task.title,
+      description: task.description || '',
+      status: task.status,
+      priority: task.priority,
+      due_date: task.due_date || '',
+      due_time: extractTimeForInput(task.due_date || ''),
+      assigned_users: task.assigned_users,
+      is_private: task.is_private
+    });
+    setIsEditDialogOpen(true);
   };
 
   const handleTaskClick = (task: Task) => {
@@ -280,385 +450,164 @@ const TaskManager: React.FC = () => {
   const monthDays = getMonthDaysBR(selectedDate);
 
   return (
-    <div className="space-y-6">
-      <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg">
-                <Calendar className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <CardTitle className="text-white text-lg">Gerenciar Tarefas</CardTitle>
-                <p className="text-slate-400 text-sm">Crie e gerencie tarefas com visualização de calendário</p>
-              </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4">
+      <div className="max-w-7xl mx-auto">
+        {/* 🚀 MELHORIA: Header com status real-time */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-800">
+                Gerenciador de Tarefas
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Gerencie suas tarefas de forma eficiente
+              </p>
             </div>
-            
-            <CreateTaskDialog
-              isOpen={isCreateDialogOpen}
-              onOpenChange={setIsCreateDialogOpen}
-              newTask={newTask}
-              onTaskChange={setNewTask}
-              onCreateTask={handleCreateTask}
-              isCreating={isCreatingTask}
-            />
+            <div className="flex items-center gap-3">
+              <RealTimeStatusIndicator />
+              <Button
+                onClick={handleManualRefresh}
+                disabled={isRefreshing}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                Atualizar
+              </Button>
+            </div>
           </div>
-        </CardHeader>
-        
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <Card 
-              className={`bg-slate-700/30 border-slate-600 cursor-pointer hover:bg-slate-600/50 transition-colors ${
-                selectedStatus === 'all' ? 'ring-2 ring-blue-500 border-blue-500' : ''
-              }`}
-              onClick={() => handleStatsClick('all')}
+          
+          {/* Filtros e controles existentes */}
+          <div className="flex flex-wrap gap-3 items-center">
+            <Button
+              onClick={() => setIsCreateDialogOpen(true)}
+              disabled={isCreatingTask}
+              className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-lg"
             >
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-slate-400 text-sm">Total</p>
-                    <p className="text-2xl font-bold text-white">{stats.total}</p>
-                  </div>
-                  <Target className="w-8 h-8 text-blue-500" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card 
-              className={`bg-slate-700/30 border-slate-600 cursor-pointer hover:bg-slate-600/50 transition-colors ${
-                selectedStatus === 'pendente' ? 'ring-2 ring-yellow-500 border-yellow-500' : ''
-              }`}
-              onClick={() => handleStatsClick('pendente')}
+              <Plus className="w-4 h-4 mr-2" />
+              {isCreatingTask ? 'Criando...' : 'Nova Tarefa'}
+            </Button>
+
+            <div className="flex items-center gap-2 flex-1 max-w-md">
+              <Search className="w-4 h-4 text-gray-400" />
+              <Input
+                placeholder="Buscar tarefas..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-1"
+              />
+            </div>
+
+            <Button
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              variant="outline"
+              className="flex items-center gap-2"
             >
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-slate-400 text-sm">Pendentes</p>
-                    <p className="text-2xl font-bold text-yellow-400">{stats.pendentes}</p>
-                  </div>
-                  <Clock className="w-8 h-8 text-yellow-500" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card 
-              className={`bg-slate-700/30 border-slate-600 cursor-pointer hover:bg-slate-600/50 transition-colors ${
-                selectedStatus === 'concluida' ? 'ring-2 ring-green-500 border-green-500' : ''
-              }`}
-              onClick={() => handleStatsClick('concluida')}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-slate-400 text-sm">Concluídas</p>
-                    <p className="text-2xl font-bold text-green-400">{stats.concluidas}</p>
-                  </div>
-                  <CheckCircle className="w-8 h-8 text-green-500" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-slate-700/30 border-slate-600">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-slate-400 text-sm">Performance</p>
-                    <p className="text-2xl font-bold text-blue-400">{stats.performance}%</p>
-                  </div>
-                  <TrendingUp className="w-8 h-8 text-blue-500" />
-                </div>
-              </CardContent>
-            </Card>
+              <Filter className="w-4 h-4" />
+              Filtros
+            </Button>
           </div>
+        </div>
 
-          <div className="space-y-4">
-            <TaskFilters
-              activeFilter={activeFilter}
-              onFilterChange={setActiveFilter}
-              getFilterCount={getFilterCount}
-            />
-            
-            <AdvancedTaskFilters
-              selectedUser={selectedUser}
-              onUserChange={setSelectedUser}
-              selectedAccessLevel={selectedAccessLevel}
-              onAccessLevelChange={setSelectedAccessLevel}
-              selectedPriority={selectedPriority}
-              onPriorityChange={setSelectedPriority}
-              onClearFilters={clearAdvancedFilters}
-              userProfiles={userProfiles}
-            />
-          </div>
+        {/* Filtros avançados */}
+        {showAdvancedFilters && (
+          <AdvancedTaskFilters
+            selectedUser={selectedUser}
+            setSelectedUser={setSelectedUser}
+            selectedAccessLevel={selectedAccessLevel}
+            setSelectedAccessLevel={setSelectedAccessLevel}
+            selectedPriority={selectedPriority}
+            setSelectedPriority={setSelectedPriority}
+            selectedStatus={selectedStatus}
+            setSelectedStatus={setSelectedStatus}
+            clearAdvancedFilters={clearAdvancedFilters}
+          />
+        )}
 
-          <Card className="bg-slate-700/30 border-slate-600 mb-6">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="bg-slate-600/50 border-slate-500 hover:bg-slate-500/50 text-white text-xs sm:text-sm"
-                  onClick={() => navigateDate('prev')}
-                >
-                  <ChevronLeft className="w-4 h-4 mr-1" />
-                  <span className="hidden sm:inline">Anterior</span>
-                  <span className="sm:hidden">Ant</span>
-                </Button>
-                
-                <div className="text-center flex-1 px-2">
-                  <h3 className="text-sm sm:text-lg font-semibold text-white truncate">{getViewTitleBR(currentView, selectedDate)}</h3>
-                  <p className="text-xs sm:text-sm text-slate-400">{filteredTasks.length} tarefas</p>
-                </div>
-                
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="bg-slate-600/50 border-slate-500 hover:bg-slate-500/50 text-white text-xs sm:text-sm"
-                  onClick={() => navigateDate('next')}
-                >
-                  <span className="hidden sm:inline">Próximo</span>
-                  <span className="sm:hidden">Prox</span>
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Tabs de filtros temporais */}
+        <Tabs value={activeFilter} onValueChange={(value) => setActiveFilter(value as any)} className="mb-6">
+          <TabsList className="grid w-full grid-cols-4 lg:w-1/2">
+            <TabsTrigger value="all" className="flex items-center gap-2">
+              <Badge variant="secondary">{getFilterCount('all')}</Badge>
+              Todas
+            </TabsTrigger>
+            <TabsTrigger value="today" className="flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              <Badge variant="secondary">{getFilterCount('today')}</Badge>
+              Hoje
+            </TabsTrigger>
+            <TabsTrigger value="week" className="flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              <Badge variant="secondary">{getFilterCount('week')}</Badge>
+              Esta Semana
+            </TabsTrigger>
+            <TabsTrigger value="month" className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              <Badge variant="secondary">{getFilterCount('month')}</Badge>
+              Este Mês
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
-          <Tabs value={currentView} onValueChange={(value) => setCurrentView(value as 'day' | 'week' | 'month')}>
-            <TabsList className="grid w-full grid-cols-3 bg-slate-700/50 border-slate-600">
-              <TabsTrigger value="day" className="data-[state=active]:bg-blue-600">
-                Dia
-              </TabsTrigger>
-              <TabsTrigger value="week" className="data-[state=active]:bg-blue-600">
-                Semana
-              </TabsTrigger>
-              <TabsTrigger value="month" className="data-[state=active]:bg-blue-600">
-                Mês
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="day">
-              <Card className="bg-slate-700/30 border-slate-600">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center">
-                    <Clock className="w-5 h-5 mr-2" />
-                    <div className="flex-1">
-                      <div className="hidden sm:block">
-                        Agenda do Dia - {formatDateToBR(selectedDate)}
-                      </div>
-                      <div className="block sm:hidden">
-                        <div>Agenda do Dia</div>
-                        <div className="text-sm text-slate-400 font-normal">
-                          {formatDateToBR(selectedDate)}
-                        </div>
-                      </div>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-1 max-h-96 overflow-y-auto">
-                    {Array.from({ length: 24 }, (_, hour) => (
-                      <div key={hour} className="flex border-b border-slate-600/50">
-                        <div className="w-16 text-sm text-slate-400 py-3 pr-4">
-                          {hour.toString().padStart(2, '0')}:00
-                        </div>
-                        <div 
-                          className="flex-1 min-h-[60px] py-2 cursor-pointer hover:bg-slate-600/20 transition-colors" 
-                          onDoubleClick={() => handleDoubleClickHour(hour, selectedDate)}
-                        >
-                          {getTasksForHour(hour).map(task => (
-                            <div 
-                              key={task.id} 
-                              className="flex flex-col p-3 bg-slate-600/30 rounded border-l-4 border-blue-500 mb-2 cursor-pointer hover:bg-slate-600/40 transition-colors"
-                              onClick={() => handleTaskClick(task)}
-                            >
-                              <div className="flex items-start justify-between mb-2">
-                                <h4 className="font-medium text-white text-sm break-words flex-1 text-left">{task.title}</h4>
-                                <Badge className={`text-xs ml-2 ${getStatusColor(task.status)}`}>
-                                  {getStatusLabel(task.status)}
-                                </Badge>
-                              </div>
-                              {task.description && (
-                                <p className="text-slate-400 text-xs mb-2 text-left">{task.description}</p>
-                              )}
-                              <div className="flex items-center justify-between mb-2">
-                                <Badge className={`text-xs ${getPriorityColor(task.priority)}`}>
-                                  {getPriorityLabel(task.priority)}
-                                </Badge>
-                              </div>
-                              {renderUserInfo(task)}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="week">
-              <Card className="bg-slate-700/30 border-slate-600">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center">
-                    <CalendarDays className="w-5 h-5 mr-2" />
-                    <span className="hidden sm:inline">Visualização Semanal (Segunda a Sábado)</span>
-                    <span className="sm:hidden">Semana</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                    {weekDays.map((day, index) => {
-                      const dayTasks = getTasksForDay(day);
-                      const isToday = isSameDay(day, getTodayBR());
-                      const dynamicHeight = calculateDynamicHeight(dayTasks.length, 'week');
-                      
-                      return (
-                        <div 
-                          key={index} 
-                          className={`border border-slate-600 rounded-lg p-2 sm:p-3 ${dynamicHeight} cursor-pointer hover:bg-slate-600/10 transition-colors ${
-                            isToday ? 'bg-blue-500/10 border-blue-500' : 'bg-slate-600/20'
-                          }`}
-                          onDoubleClick={() => handleDoubleClickDay(day)}
-                          style={{ minHeight: `${150 + (dayTasks.length * 80)}px` }}
-                        >
-                          <div className="text-center mb-2 sm:mb-3">
-                            <div className="text-xs text-slate-400">
-                              {day.toLocaleDateString('pt-BR', { weekday: 'short' })}
-                            </div>
-                            <div className={`text-sm sm:text-lg font-semibold ${isToday ? 'text-blue-400' : 'text-white'}`}>
-                              {day.getDate()}
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-1 sm:space-y-2">
-                            {dayTasks.map(task => (
-                              <div 
-                                key={task.id} 
-                                className="p-2 bg-slate-500/30 rounded text-xs cursor-pointer hover:bg-slate-500/40 transition-colors"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleTaskClick(task);
-                                }}
-                              >
-                                <div className="mb-1 sm:mb-2">
-                                  <span className="text-white font-medium break-words block text-left text-xs sm:text-sm line-clamp-2">{task.title}</span>
-                                </div>
-                                {task.due_date && (
-                                  <div className="text-slate-400 mb-1 sm:mb-2 text-left text-xs">
-                                    {formatTimeToBR(task.due_date)}
-                                  </div>
-                                )}
-                                {task.description && (
-                                  <div className="text-slate-400 mb-1 sm:mb-2 text-left text-xs line-clamp-2">
-                                    {task.description}
-                                  </div>
-                                )}
-                                <div className="flex flex-wrap gap-1 mb-2">
-                                  <Badge className={`text-xs ${getStatusColor(task.status)}`}>
-                                    {getStatusLabel(task.status)}
-                                  </Badge>
-                                  <Badge className={`text-xs ${getPriorityColor(task.priority)}`}>
-                                    {getPriorityLabel(task.priority)}
-                                  </Badge>
-                                </div>
-                                {renderUserInfo(task)}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="month">
-              <Card className="bg-slate-700/30 border-slate-600">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center">
-                    <Calendar className="w-5 h-5 mr-2" />
-                    <span className="truncate">{getViewTitleBR('month', selectedDate)}</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-7 gap-1">
-                    {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
-                      <div key={day} className="text-center text-xs text-slate-400 py-1 sm:py-2 font-medium">
-                        {day}
-                      </div>
-                    ))}
-                    
-                    {monthDays.map((day, index) => {
-                      const dayTasks = getTasksForDay(day);
-                      const isCurrentMonth = day.getMonth() === selectedDate.getMonth();
-                      const isToday = isSameDay(day, getTodayBR());
-                      
-                      return (
-                        <div 
-                          key={index} 
-                          className={`border border-slate-600 rounded p-1 text-xs cursor-pointer hover:bg-slate-600/10 transition-colors ${
-                            isCurrentMonth 
-                              ? isToday 
-                                ? 'bg-blue-500/20 border-blue-500' 
-                                : 'bg-slate-600/20' 
-                              : 'bg-slate-800/20 text-slate-500'
-                          }`}
-                          onDoubleClick={() => handleDoubleClickDay(day)}
-                          style={{ minHeight: `${60 + (dayTasks.length * 30)}px` }}
-                        >
-                          <div className={`text-center mb-1 text-xs sm:text-sm ${isToday ? 'text-blue-400 font-bold' : 'text-slate-300'}`}>
-                            {day.getDate()}
-                          </div>
-                          
-                          <div className="space-y-1">
-                            {dayTasks.map(task => (
-                              <div 
-                                key={task.id} 
-                                className="p-1 bg-slate-500/30 rounded text-xs cursor-pointer hover:bg-slate-500/40 transition-colors"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleTaskClick(task);
-                                }}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <span className="text-white font-medium truncate text-xs flex-1 text-left">{task.title}</span>
-                                  <div className={`w-2 h-2 rounded-full ml-1 flex-shrink-0 ${
-                                    task.priority === 'urgente' ? 'bg-red-500' :
-                                    task.priority === 'media' ? 'bg-orange-500' :
-                                    'bg-blue-500'
-                                  }`}></div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-
-          {isLoading && (
+        {/* Lista de tarefas */}
+        <div className="space-y-4">
+          {isLoading ? (
             <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-              <p className="text-slate-400 mt-2">Carregando tarefas...</p>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="text-gray-600 mt-4">Carregando tarefas...</p>
             </div>
+          ) : filteredTasks.length === 0 ? (
+            <Card>
+              <CardContent className="text-center py-8">
+                <p className="text-gray-500">Nenhuma tarefa encontrada</p>
+                <p className="text-sm text-gray-400 mt-2">
+                  {searchTerm ? 'Tente ajustar sua pesquisa' : 'Comece criando uma nova tarefa'}
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            filteredTasks
+              .filter(task => 
+                task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                task.description.toLowerCase().includes(searchTerm.toLowerCase())
+              )
+              .map((task) => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  actionButtons={<div />}
+                  getStatusColor={getStatusColor}
+                  getPriorityColor={getPriorityColor}
+                  getStatusLabel={getStatusLabel}
+                  getPriorityLabel={getPriorityLabel}
+                  getUserName={getUserNameFallback}
+                  canEditTask={canEditTaskFull}
+                  onEditTask={handleOpenEditDialog}
+                />
+              ))
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <TaskDetailsModal
-        task={selectedTask}
-        isOpen={isTaskDetailsOpen}
-        onClose={handleCloseTaskDetails}
-        onUpdateStatus={updateTaskStatus}
-        onDeleteTask={handleDeleteTask}
-        canEdit={selectedTask ? canEditTask(selectedTask) : false}
-        canDelete={selectedTask ? canDeleteTask(selectedTask) : false}
-        isUpdating={selectedTask ? updatingTask === selectedTask.id : false}
+      {/* Dialog de criação de tarefa */}
+      <CreateTaskDialog
+        isOpen={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        newTask={newTask}
+        onTaskChange={setNewTask}
+        onCreateTask={handleCreateTask}
+        isCreating={isCreatingTask}
+      />
+
+      {/* Dialog de edição de tarefa */}
+      <EditTaskDialog
+        isOpen={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        editTask={editTask}
+        onTaskChange={setEditTask}
+        onSaveTask={handleEditTask}
+        isSaving={isEditingTask}
       />
     </div>
   );

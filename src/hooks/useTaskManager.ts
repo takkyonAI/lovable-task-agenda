@@ -14,6 +14,11 @@ export const useTaskManager = () => {
   const [selectedAccessLevel, setSelectedAccessLevel] = useState<string>('all');
   const [selectedPriority, setSelectedPriority] = useState<'all' | 'baixa' | 'media' | 'urgente'>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'pendente' | 'em_andamento' | 'concluida' | 'cancelada'>('all');
+  
+  // 🚀 MELHORIAS REAL-TIME: Novos estados para controle de sincronização
+  const [newTasksCount, setNewTasksCount] = useState(0);
+  const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
+  const [isRealTimeConnected, setIsRealTimeConnected] = useState(false);
 
   const { currentUser } = useSupabaseAuth();
   const { toast } = useToast();
@@ -21,6 +26,8 @@ export const useTaskManager = () => {
   // Refs para evitar race conditions
   const isLoadingRef = useRef(false);
   const loadTasksTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const autoRefreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const heartbeatTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Função debounced para carregar tarefas
   const debouncedLoadTasks = useCallback(() => {
@@ -35,10 +42,64 @@ export const useTaskManager = () => {
     }, 300);
   }, []);
 
+  // 🔄 MELHORIA: Auto-refresh periódico como fallback
+  const setupAutoRefresh = useCallback(() => {
+    if (autoRefreshTimeoutRef.current) {
+      clearTimeout(autoRefreshTimeoutRef.current);
+    }
+    
+    autoRefreshTimeoutRef.current = setTimeout(() => {
+      console.log('🔄 Auto-refresh: Verificando atualizações...');
+      loadTasks();
+      setupAutoRefresh(); // Reagenda para 2 minutos
+    }, 120000); // 2 minutos
+  }, []);
+
+  // 💓 MELHORIA: Heartbeat para verificar conectividade real-time
+  const setupHeartbeat = useCallback(() => {
+    if (heartbeatTimeoutRef.current) {
+      clearTimeout(heartbeatTimeoutRef.current);
+    }
+    
+    heartbeatTimeoutRef.current = setTimeout(() => {
+      const timeSinceLastUpdate = Date.now() - lastUpdateTime;
+      if (timeSinceLastUpdate > 300000) { // 5 minutos sem updates
+        console.log('⚠️ Heartbeat: Sem atualizações há 5 minutos, forçando refresh...');
+        loadTasks();
+      }
+      setupHeartbeat(); // Reagenda para 1 minuto
+    }, 60000); // 1 minuto
+  }, [lastUpdateTime]);
+
+  // 🔔 MELHORIA: Função para mostrar notificação de nova tarefa
+  const showNewTaskNotification = useCallback((task: Task, isCreatedByCurrentUser: boolean) => {
+    if (!isCreatedByCurrentUser && currentUser) {
+      // Só mostra notificação se a tarefa não foi criada pelo usuário atual
+      const creatorName = task.created_by || 'Usuário';
+      
+      toast({
+        title: "📋 Nova Tarefa Criada!",
+        description: `"${task.title}" foi criada por ${creatorName}`,
+        duration: 5000,
+        variant: "default"
+      });
+      
+      // Incrementar contador de novas tarefas
+      setNewTasksCount(prev => prev + 1);
+      
+      // Resetar contador após 10 segundos
+      setTimeout(() => {
+        setNewTasksCount(prev => Math.max(0, prev - 1));
+      }, 10000);
+    }
+  }, [currentUser, toast]);
+
   useEffect(() => {
     loadTasks();
+    setupAutoRefresh();
+    setupHeartbeat();
     
-    // Set up real-time subscription com melhor processamento
+    // 🚀 MELHORIA: Real-time subscription com melhor processamento e notificações
     const channel = supabase
       .channel('tasks-changes')
       .on(
@@ -49,12 +110,22 @@ export const useTaskManager = () => {
           table: 'tasks'
         },
         (payload) => {
-          console.log('Real-time task change:', payload);
+          console.log('🔄 Real-time task change:', payload);
+          setIsRealTimeConnected(true);
+          setLastUpdateTime(Date.now());
           
           // Handle different event types with optimized state updates
           if (payload.eventType === 'DELETE') {
             // Immediate UI update for deletions
             setTasks(prevTasks => prevTasks.filter(task => task.id !== payload.old.id));
+            
+            toast({
+              title: "🗑️ Tarefa Removida",
+              description: "Uma tarefa foi removida do sistema",
+              duration: 3000,
+              variant: "destructive"
+            });
+            
           } else if (payload.eventType === 'INSERT') {
             // For inserts, add task immediately instead of full reload
             const newTask = payload.new;
@@ -83,6 +154,10 @@ export const useTaskManager = () => {
                   is_private: newTask.is_private ?? false
                 };
                 
+                // 🔔 MELHORIA: Mostrar notificação para nova tarefa
+                const isCreatedByCurrentUser = currentUser?.user_id === newTask.created_by;
+                showNewTaskNotification(formattedTask, isCreatedByCurrentUser);
+                
                 // Add to the beginning of the array (newest first)
                 return [formattedTask, ...prevTasks];
               });
@@ -93,6 +168,19 @@ export const useTaskManager = () => {
             if (updatedTask && updatedTask.id) {
               setTasks(prevTasks => prevTasks.map(task => {
                 if (task.id === updatedTask.id) {
+                  const wasCompleted = task.status === 'concluida';
+                  const isNowCompleted = updatedTask.status === 'concluida';
+                  
+                  // 🔔 MELHORIA: Notificação para tarefa concluída
+                  if (!wasCompleted && isNowCompleted && currentUser?.user_id !== updatedTask.created_by) {
+                    toast({
+                      title: "✅ Tarefa Concluída!",
+                      description: `"${updatedTask.title}" foi marcada como concluída`,
+                      duration: 4000,
+                      variant: "success"
+                    });
+                  }
+                  
                   return {
                     ...task,
                     title: updatedTask.title,
@@ -112,15 +200,24 @@ export const useTaskManager = () => {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('🔗 Real-time connection status:', status);
+        setIsRealTimeConnected(status === 'SUBSCRIBED');
+      });
 
     return () => {
       supabase.removeChannel(channel);
       if (loadTasksTimeoutRef.current) {
         clearTimeout(loadTasksTimeoutRef.current);
       }
+      if (autoRefreshTimeoutRef.current) {
+        clearTimeout(autoRefreshTimeoutRef.current);
+      }
+      if (heartbeatTimeoutRef.current) {
+        clearTimeout(heartbeatTimeoutRef.current);
+      }
     };
-  }, []);
+  }, [currentUser, showNewTaskNotification]);
 
   useEffect(() => {
     filterTasks();
@@ -166,14 +263,14 @@ export const useTaskManager = () => {
       if (taskData) {
         console.log('🔍 loadTasks - Processing tasks...');
         
-        const formattedTasks: Task[] = taskData.map((task) => {
+        const formattedTasks: Task[] = taskData.map((task: any) => {
           // Map "alta" priority to "urgente" for backward compatibility
           let priority: 'baixa' | 'media' | 'urgente' = task.priority as 'baixa' | 'media' | 'urgente';
           if (task.priority === 'alta') {
             priority = 'urgente';
           }
 
-          const formattedTask = {
+          const formattedTask: Task = {
             id: task.id,
             title: task.title,
             description: task.description || '',
@@ -185,7 +282,9 @@ export const useTaskManager = () => {
             created_at: new Date(task.created_at),
             updated_at: new Date(task.updated_at),
             completed_at: task.completed_at ? new Date(task.completed_at) : undefined,
-            is_private: task.is_private ?? false
+            is_private: task.is_private ?? false,
+            edited_by: task.edited_by || undefined,
+            edited_at: task.edited_at ? new Date(task.edited_at) : undefined
           };
           
           return formattedTask;
@@ -425,6 +524,142 @@ export const useTaskManager = () => {
   };
 
   /**
+   * Verifica se o usuário pode editar completamente uma tarefa
+   * (admin, franqueado e supervisor têm permissão completa para editar)
+   */
+  const canEditTaskFull = (task: Task): boolean => {
+    if (!currentUser) return false;
+    
+    // Admin, franqueado e supervisor podem editar qualquer tarefa
+    if (['admin', 'franqueado', 'supervisor_adm'].includes(currentUser.role)) return true;
+    
+    // Outros usuários só podem editar suas próprias tarefas ou tarefas atribuídas
+    if (task.created_by === currentUser.user_id) return true;
+    if (task.assigned_users.includes(currentUser.user_id)) return true;
+    
+    return false;
+  };
+
+  /**
+   * Atualiza uma tarefa existente
+   * 
+   * @param taskId - ID da tarefa a ser atualizada
+   * @param updatedTask - Dados atualizados da tarefa
+   * @returns Promise<boolean> - true se atualizada com sucesso, false caso contrário
+   */
+  const updateTask = async (taskId: string, updatedTask: {
+    title: string;
+    description: string;
+    status: 'pendente' | 'em_andamento' | 'concluida' | 'cancelada';
+    priority: 'baixa' | 'media' | 'urgente';
+    due_date: string;
+    assigned_users: string[];
+    is_private: boolean;
+  }) => {
+    if (!updatedTask.title.trim()) {
+      toast({
+        title: "Título obrigatório",
+        description: "O título da tarefa é obrigatório.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (!currentUser) {
+      toast({
+        title: "Usuário não autenticado",
+        description: "Você precisa estar logado para editar tarefas.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    // Verificar se o usuário tem permissão para editar
+    const taskToEdit = tasks.find(task => task.id === taskId);
+    if (!taskToEdit || !canEditTaskFull(taskToEdit)) {
+      toast({
+        title: "Permissão negada",
+        description: "Você não tem permissão para editar esta tarefa.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    try {
+      // Processar data de vencimento com timezone do Brasil
+      let formattedDueDate = null;
+      if (updatedTask.due_date) {
+        let dateOnly = updatedTask.due_date;
+        
+        // Se contém espaço, pega apenas a parte da data
+        if (dateOnly.includes(' ')) {
+          dateOnly = dateOnly.split(' ')[0];
+        }
+        
+        // Se contém T (ISO), pega apenas a parte da data
+        if (dateOnly.includes('T')) {
+          dateOnly = dateOnly.split('T')[0];
+        }
+        
+        // Extrair componentes da hora da string original
+        let time = '09:00';
+        if (updatedTask.due_date.includes(' ')) {
+          const timePart = updatedTask.due_date.split(' ')[1];
+          if (timePart) {
+            time = timePart.substring(0, 5); // HH:MM
+          }
+        }
+        
+        // Incluir timezone do Brasil (-03:00) explicitamente
+        formattedDueDate = `${dateOnly} ${time}:00-03:00`;
+      }
+
+      const updateData = {
+        title: updatedTask.title,
+        description: updatedTask.description || null,
+        status: updatedTask.status,
+        priority: updatedTask.priority,
+        due_date: formattedDueDate,
+        assigned_users: updatedTask.assigned_users,
+        is_private: updatedTask.is_private
+      };
+      
+      const { error } = await supabase
+        .from('tasks')
+        .update(updateData)
+        .eq('id', taskId);
+
+      if (error) {
+        console.error('Erro ao atualizar tarefa:', error);
+        toast({
+          title: "Erro ao atualizar tarefa",
+          description: "Não foi possível atualizar a tarefa. Tente novamente.",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      toast({
+        title: "Tarefa atualizada com sucesso!",
+        description: `"${updatedTask.title}" foi atualizada.`,
+        variant: "success"
+      });
+
+      // Recarregar tarefas para mostrar as mudanças
+      await loadTasks();
+      return true;
+    } catch (error) {
+      console.error('Erro ao atualizar tarefa:', error);
+      toast({
+        title: "Erro inesperado",
+        description: "Erro inesperado ao atualizar tarefa. Tente novamente.",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
+  /**
    * Cria uma nova tarefa no sistema
    * 
    * IMPORTANTE: Esta função foi corrigida para resolver problemas de timezone.
@@ -626,10 +861,16 @@ export const useTaskManager = () => {
     getFilterCount,
     updateTaskStatus,
     canEditTask,
+    canEditTaskFull,
+    updateTask,
     createTask,
     loadTasks,
     deleteTask,
     canDeleteTask,
-    forceRefresh
+    forceRefresh,
+    // 🚀 MELHORIAS REAL-TIME: Novos estados exportados
+    newTasksCount,
+    isRealTimeConnected,
+    lastUpdateTime
   };
 };

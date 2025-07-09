@@ -3,16 +3,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Mail, Lock } from 'lucide-react';
+import { Mail, Lock, HelpCircle } from 'lucide-react';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { sanitizeInput } from '@/utils/inputValidation';
 import { APP_NAME } from '@/constants/app';
 import Logo from '@/components/ui/Logo';
+import ForgotPasswordDialog from './ForgotPasswordDialog';
 
 const LoginForm: React.FC = () => {
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [loginAttempts, setLoginAttempts] = useState(0);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const { login } = useSupabaseAuth();
 
   // Debug: Confirmar que o LoginForm está usando o componente Logo
@@ -97,9 +99,28 @@ const LoginForm: React.FC = () => {
             >
               {isLoading ? 'Entrando...' : 'Entrar'}
             </Button>
+            
+            {/* 🔑 BOTÃO ESQUECI MINHA SENHA */}
+            <div className="text-center mt-3">
+              <Button
+                type="button"
+                variant="link"
+                onClick={() => setShowForgotPassword(true)}
+                className="text-slate-400 hover:text-white text-sm h-auto p-0"
+              >
+                <HelpCircle className="w-4 h-4 mr-1" />
+                Esqueci minha senha
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
+
+      {/* 🔑 DIALOG DE RECUPERAÇÃO DE SENHA */}
+      <ForgotPasswordDialog
+        isOpen={showForgotPassword}
+        onClose={() => setShowForgotPassword(false)}
+      />
     </div>
   );
 };
