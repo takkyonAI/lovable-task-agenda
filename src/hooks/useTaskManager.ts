@@ -64,6 +64,8 @@ export const useTaskManager = () => {
         .select('*')
         .order('created_at', { ascending: false });
 
+      console.log('🔍 FRONTEND DEBUG - loadTasks - taskData from DB:', taskData?.length || 0);
+
       if (taskError) {
         console.error('Erro ao carregar tarefas:', taskError);
         toast({
@@ -99,6 +101,7 @@ export const useTaskManager = () => {
           return formattedTask;
         });
 
+        console.log('🔍 FRONTEND DEBUG - loadTasks - formattedTasks:', formattedTasks.length);
         setTasks(formattedTasks);
       }
     } catch (error) {
@@ -114,6 +117,12 @@ export const useTaskManager = () => {
   };
 
   const filterTasks = async () => {
+    console.log('🔍 FRONTEND DEBUG - filterTasks iniciado');
+    console.log('🔍 FRONTEND DEBUG - tasks.length (antes dos filtros):', tasks.length);
+    console.log('🔍 FRONTEND DEBUG - activeFilter:', activeFilter);
+    console.log('🔍 FRONTEND DEBUG - selectedUser:', selectedUser);
+    console.log('🔍 FRONTEND DEBUG - selectedAccessLevel:', selectedAccessLevel);
+    
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const weekStart = new Date(today);
@@ -121,6 +130,7 @@ export const useTaskManager = () => {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
     let filtered = tasks;
+    console.log('🔍 FRONTEND DEBUG - filtered inicial:', filtered.length);
 
     // Filtro temporal
     switch (activeFilter) {
@@ -151,6 +161,8 @@ export const useTaskManager = () => {
         break;
     }
 
+    console.log('🔍 FRONTEND DEBUG - após filtro temporal:', filtered.length);
+
     // Filtro por usuário
     if (selectedUser !== 'all') {
       filtered = filtered.filter(task => 
@@ -158,6 +170,8 @@ export const useTaskManager = () => {
         task.assigned_users.includes(selectedUser)
       );
     }
+
+    console.log('🔍 FRONTEND DEBUG - após filtro por usuário:', filtered.length);
 
     // Filtro por nível de acesso
     if (selectedAccessLevel !== 'all') {
@@ -178,6 +192,9 @@ export const useTaskManager = () => {
         console.error('Erro ao filtrar por nível de acesso:', error);
       }
     }
+
+    console.log('🔍 FRONTEND DEBUG - após filtro por nível de acesso:', filtered.length);
+    console.log('🔍 FRONTEND DEBUG - filtered final:', filtered.length);
 
     setFilteredTasks(filtered);
   };
