@@ -639,25 +639,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       console.log('🔍 DEBUG getVisibleUsers - Current user role:', currentUser.role);
 
-      // Remover restrições de hierarquia - todos os usuários podem ver todos os usuários ativos
+      // Usar a função do banco de dados que retorna todos os usuários ativos
       // Isso permite que qualquer usuário possa atribuir tarefas a qualquer outro usuário
       const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('is_active', true)
-        .order('name', { ascending: true });
+        .rpc('get_visible_users_for_role' as any, { user_role: currentUser.role });
 
       if (error) {
         console.error('Erro ao buscar usuários visíveis:', error);
-        return [];
-      }
-
-      console.log('🔍 DEBUG getVisibleUsers - Raw data from DB:', data);
-      console.log('🔍 DEBUG getVisibleUsers - Number of users found:', data?.length || 0);
-
-      // Retornar todos os usuários ativos sem filtrar por hierarquia
-      const users = (data || [])
-        .map((user: any) => ({
+        // Fallback para query direta se a função falhar
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('is_active', true)
+          .order('name', { ascending: true });
+        
+        if (fallbackError) {
+          console.error('Erro no fallback:', fallbackError);
+          return [];
+        }
+        
+        console.log('🔍 DEBUG getVisibleUsers - Using fallback query');
+        const fallbackUsers = (fallbackData || []).map((user: any) => ({
           id: user.id as string,
           user_id: user.user_id as string,
           name: user.name as string,
@@ -667,6 +669,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           password_hash: user.password_hash as string,
           created_at: new Date(user.created_at as string),
           last_login: user.last_login ? new Date(user.last_login as string) : undefined
+        }));
+        
+        console.log('🔍 DEBUG getVisibleUsers - Fallback users:', fallbackUsers);
+        return fallbackUsers;
+      }
+
+      console.log('🔍 DEBUG getVisibleUsers - Raw data from DB function:', data);
+      console.log('🔍 DEBUG getVisibleUsers - Number of users found:', data?.length || 0);
+
+      // Processar dados da função do banco
+      const users = (Array.isArray(data) ? data : [])
+        .map((user: any) => ({
+          id: user.user_id as string, // Função retorna user_id como id
+          user_id: user.user_id as string,
+          name: user.name as string,
+          email: user.email as string,
+          role: user.role as User['role'],
+          is_active: true, // Função já filtra por is_active
+          password_hash: '', // Não retornado pela função
+          created_at: new Date(), // Não retornado pela função
+          last_login: undefined // Não retornado pela função
         }));
 
       console.log('🔍 DEBUG getVisibleUsers - Processed users:', users);
