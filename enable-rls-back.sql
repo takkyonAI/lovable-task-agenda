@@ -1,21 +1,18 @@
--- Script para reabilitar RLS na tabela tasks após testes
--- Execute este script após testar com RLS desabilitado
+-- Script para re-habilitar RLS após teste
+-- Use este script após testar com disable-rls-test.sql
 
--- Reabilitar RLS na tabela tasks
+-- Step 1: Re-habilitar RLS na tabela
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 
--- Verificar se RLS foi reabilitado
-SELECT 'RLS STATUS AFTER ENABLE:' as info;
-SELECT tablename, rowsecurity as rls_enabled
+-- Step 2: Verificar status
+SELECT 'RLS STATUS APÓS RE-ENABLE:' as info;
+SELECT schemaname, tablename, rowsecurity 
 FROM pg_tables 
-WHERE schemaname = 'public' AND tablename = 'tasks';
+WHERE tablename = 'tasks';
 
--- Verificar se as políticas ainda existem
-SELECT 'RLS POLICIES ACTIVE:' as info;
-SELECT policyname, permissive, roles, cmd
-FROM pg_policies 
-WHERE tablename = 'tasks' 
-ORDER BY policyname;
+-- Step 3: Verificar políticas (devem estar vazias)
+SELECT 'POLÍTICAS ATUAIS:' as info;
+SELECT policyname, cmd FROM pg_policies WHERE tablename = 'tasks';
 
--- Mensagem de sucesso
-SELECT 'SUCCESS: RLS re-enabled. Security policies are now active again.' as result; 
+SELECT '✅ RLS re-enabled! Now you need to create proper policies.' as status;
+SELECT '🔧 Run fix-rls-policies-final-corrected.sql to restore proper policies.' as next_step; 
