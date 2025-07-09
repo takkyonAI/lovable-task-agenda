@@ -5,11 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, Filter, Calendar, Clock, Users, ShieldCheck, RefreshCw, Wifi, WifiOff, User } from 'lucide-react';
+import { Plus, Search, Filter, Calendar, Clock, Users, ShieldCheck, RefreshCw, Wifi, WifiOff, User, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
 import CreateTaskDialog from './task/CreateTaskDialog';
 import EditTaskDialog from './task/EditTaskDialog';
 import TaskCard from './task/TaskCard';
 import AdvancedTaskFilters from './task/AdvancedTaskFilters';
+import TaskDetailsModal from './task/TaskDetailsModal';
 import { useTaskManager } from '@/hooks/useTaskManager';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { getStatusColor, getPriorityColor, getStatusLabel, getPriorityLabel } from '@/utils/taskUtils';
@@ -22,6 +23,7 @@ const TaskManager = () => {
     tasks, 
     filteredTasks, 
     isLoading, 
+    updatingTask,
     activeFilter, 
     setActiveFilter,
     selectedUser,
@@ -49,7 +51,7 @@ const TaskManager = () => {
   } = useTaskManager();
 
   const { currentUser } = useSupabaseAuth();
-  const { getUserName } = useUserProfiles();
+  const { getUserName, userProfiles } = useUserProfiles();
   
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
@@ -74,7 +76,13 @@ const TaskManager = () => {
     is_private: false
   });
 
-  // 🔧 Estados faltantes que foram referenciados no código
+  // Estados para navegação de data e visualização
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isTaskDetailsOpen, setIsTaskDetailsOpen] = useState(false);
+  const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('week');
+
+  // Estado para nova tarefa
   const [newTask, setNewTask] = useState<NewTask>({
     title: '',
     description: '',
@@ -85,11 +93,6 @@ const TaskManager = () => {
     assigned_users: [],
     is_private: false
   });
-
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [isTaskDetailsOpen, setIsTaskDetailsOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'day' | 'week' | 'month'>('day');
 
   // 🔧 Função helper para obter nome do usuário
   const getUserNameFallback = (userId: string) => {
@@ -217,7 +220,7 @@ const TaskManager = () => {
   };
 
   const handleCreateTask = async () => {
-    if (isCreatingTask) return; // Prevent multiple simultaneous calls
+    if (isCreatingTask) return;
     
     setIsCreatingTask(true);
     try {
@@ -243,7 +246,7 @@ const TaskManager = () => {
   };
 
   const handleEditTask = async () => {
-    if (isEditingTask) return; // Prevent multiple simultaneous calls
+    if (isEditingTask) return;
     
     setIsEditingTask(true);
     try {
@@ -278,23 +281,19 @@ const TaskManager = () => {
   };
 
   const handleOpenEditDialog = (task: Task) => {
-    // Converter task para editTask format
     const extractTimeForInput = (dateString: string): string => {
       if (!dateString) return '09:00';
       
       let timePart = '';
       
-      // Se contém espaço (formato: "YYYY-MM-DD HH:MM:SS")
       if (dateString.includes(' ')) {
         timePart = dateString.split(' ')[1];
       }
       
-      // Se contém T (formato ISO: "YYYY-MM-DDTHH:MM:SS")
       if (dateString.includes('T')) {
         timePart = dateString.split('T')[1];
       }
       
-      // Extrair apenas HH:MM
       if (timePart && timePart.includes(':')) {
         const timeParts = timePart.split(':');
         return `${timeParts[0]}:${timeParts[1]}`;
@@ -328,14 +327,11 @@ const TaskManager = () => {
   };
 
   const handleDoubleClickHour = (hour: number, date: Date) => {
-    // Formatar a data no formato YYYY-MM-DD
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     const dateString = `${year}-${month}-${day}`;
     const timeString = `${hour.toString().padStart(2, '0')}:00`;
-    
-    console.log('Duplo clique na hora:', { dateString, timeString, originalDate: date });
     
     setNewTask({
       title: '',
@@ -351,7 +347,6 @@ const TaskManager = () => {
   };
 
   const handleDoubleClickDay = (date: Date) => {
-    // Formatar a data no formato YYYY-MM-DD
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
@@ -374,14 +369,6 @@ const TaskManager = () => {
     await deleteTask(taskId);
   };
 
-  // Calcular estatísticas baseadas nas tarefas filtradas
-  const stats = {
-    total: filteredTasks.length,
-    pendentes: filteredTasks.filter(t => t.status === 'pendente').length,
-    concluidas: filteredTasks.filter(t => t.status === 'concluida').length,
-    performance: filteredTasks.length > 0 ? Math.round((filteredTasks.filter(t => t.status === 'concluida').length / filteredTasks.length) * 100) : 0
-  };
-
   const navigateDate = (direction: 'prev' | 'next') => {
     const newDate = new Date(selectedDate);
     switch (currentView) {
@@ -398,21 +385,17 @@ const TaskManager = () => {
     setSelectedDate(newDate);
   };
 
-  // Função corrigida para comparar datas sem conversão de timezone
   const getTasksForHour = (hour: number) => {
     return filteredTasks.filter(task => {
       if (!task.due_date) return false;
       
-      // Usar a mesma lógica que formatTimeToBR - converter para Date e extrair a hora local
       const taskDate = new Date(task.due_date);
       const taskHour = taskDate.getHours();
       
-      // Data selecionada
       const selectedYear = selectedDate.getFullYear();
       const selectedMonth = selectedDate.getMonth();
       const selectedDay = selectedDate.getDate();
       
-      // Data da tarefa
       const taskYear = taskDate.getFullYear();
       const taskMonth = taskDate.getMonth();
       const taskDay = taskDate.getDate();
@@ -424,20 +407,16 @@ const TaskManager = () => {
     });
   };
 
-  // Função corrigida para comparar datas sem conversão de timezone
   const getTasksForDay = (day: Date) => {
     return filteredTasks.filter(task => {
       if (!task.due_date) return false;
       
-      // Usar a mesma lógica que formatTimeToBR - converter para Date e extrair a data local
       const taskDate = new Date(task.due_date);
       
-      // Data da tarefa
       const taskYear = taskDate.getFullYear();
       const taskMonth = taskDate.getMonth();
       const taskDay = taskDate.getDate();
       
-      // Data do dia comparado
       const dayYear = day.getFullYear();
       const dayMonth = day.getMonth();
       const dayDay = day.getDate();
@@ -449,17 +428,166 @@ const TaskManager = () => {
   const weekDays = getWeekDaysBR(selectedDate);
   const monthDays = getMonthDaysBR(selectedDate);
 
+  // Renderização da visualização semanal
+  const renderWeekView = () => (
+    <div className="grid grid-cols-6 gap-2">
+      {weekDays.map((day, index) => {
+        const dayTasks = getTasksForDay(day);
+        const isToday = isSameDay(day, getTodayBR());
+        const dayLabel = day.toLocaleDateString('pt-BR', { weekday: 'short' });
+        
+        return (
+          <div
+            key={index}
+            className={`bg-slate-800/30 backdrop-blur-sm rounded-lg p-3 border border-slate-700/50 ${
+              isToday ? 'ring-2 ring-blue-500/50' : ''
+            }`}
+            onDoubleClick={() => handleDoubleClickDay(day)}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm font-medium text-slate-300">
+                {dayLabel}
+              </div>
+              <div className="text-xs text-slate-400">
+                {day.getDate()}
+              </div>
+            </div>
+            
+            <div className="space-y-1">
+              {dayTasks.map((task) => (
+                <div
+                  key={task.id}
+                  className="cursor-pointer"
+                  onClick={() => handleTaskClick(task)}
+                >
+                  <TaskCard
+                    task={task}
+                    actionButtons={<div />}
+                    getStatusColor={getStatusColor}
+                    getPriorityColor={getPriorityColor}
+                    getStatusLabel={getStatusLabel}
+                    getPriorityLabel={getPriorityLabel}
+                    getUserName={getUserNameFallback}
+                    canEditTask={() => canEditTaskFull(task)}
+                    onEditTask={handleOpenEditDialog}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  // Renderização da visualização mensal
+  const renderMonthView = () => (
+    <div className="grid grid-cols-7 gap-1">
+      {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day) => (
+        <div key={day} className="text-center text-sm font-medium text-slate-400 p-2">
+          {day}
+        </div>
+      ))}
+      {monthDays.map((day, index) => {
+        const dayTasks = getTasksForDay(day);
+        const isToday = isSameDay(day, getTodayBR());
+        const isCurrentMonth = day.getMonth() === selectedDate.getMonth();
+        
+        return (
+          <div
+            key={index}
+            className={`bg-slate-800/20 backdrop-blur-sm rounded border border-slate-700/30 p-1 min-h-[80px] ${
+              isToday ? 'ring-1 ring-blue-500/50' : ''
+            } ${!isCurrentMonth ? 'opacity-50' : ''}`}
+            onDoubleClick={() => handleDoubleClickDay(day)}
+          >
+            <div className="text-xs text-slate-400 mb-1">
+              {day.getDate()}
+            </div>
+            
+            <div className="space-y-0.5">
+              {dayTasks.slice(0, 3).map((task) => (
+                <div
+                  key={task.id}
+                  className={`text-xs p-1 rounded cursor-pointer ${getStatusColor(task.status)} ${getPriorityColor(task.priority)}`}
+                  onClick={() => handleTaskClick(task)}
+                >
+                  <div className="truncate">{task.title}</div>
+                  {task.due_date && (
+                    <div className="text-xs opacity-70">
+                      {formatTimeToBR(task.due_date)}
+                    </div>
+                  )}
+                </div>
+              ))}
+              {dayTasks.length > 3 && (
+                <div className="text-xs text-slate-400 text-center">
+                  +{dayTasks.length - 3} mais
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  // Renderização da visualização diária
+  const renderDayView = () => (
+    <div className="space-y-2">
+      {Array.from({ length: 24 }, (_, hour) => {
+        const hourTasks = getTasksForHour(hour);
+        const timeLabel = `${hour.toString().padStart(2, '0')}:00`;
+        
+        return (
+          <div
+            key={hour}
+            className="bg-slate-800/20 backdrop-blur-sm rounded-lg p-3 border border-slate-700/30"
+            onDoubleClick={() => handleDoubleClickHour(hour, selectedDate)}
+          >
+            <div className="flex items-center gap-4">
+              <div className="text-sm font-medium text-slate-300 w-16">
+                {timeLabel}
+              </div>
+              <div className="flex-1 space-y-2">
+                {hourTasks.map((task) => (
+                  <div
+                    key={task.id}
+                    className="cursor-pointer"
+                    onClick={() => handleTaskClick(task)}
+                  >
+                    <TaskCard
+                      task={task}
+                      actionButtons={<div />}
+                      getStatusColor={getStatusColor}
+                      getPriorityColor={getPriorityColor}
+                      getStatusLabel={getStatusLabel}
+                      getPriorityLabel={getPriorityLabel}
+                      getUserName={getUserNameFallback}
+                      canEditTask={() => canEditTaskFull(task)}
+                      onEditTask={handleOpenEditDialog}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4">
-      <div className="max-w-7xl mx-auto">
-        {/* 🚀 MELHORIA: Header com status real-time */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="max-w-7xl mx-auto p-4">
+        {/* Header */}
+        <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-lg p-6 mb-6 border border-slate-700/50">
           <div className="flex justify-between items-center mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-800">
+              <h1 className="text-3xl font-bold text-white">
                 Gerenciador de Tarefas
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className="text-slate-400 mt-1">
                 Gerencie suas tarefas de forma eficiente
               </p>
             </div>
@@ -470,7 +598,7 @@ const TaskManager = () => {
                 disabled={isRefreshing}
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 border-slate-600 hover:border-slate-500"
               >
                 <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                 Atualizar
@@ -478,7 +606,6 @@ const TaskManager = () => {
             </div>
           </div>
           
-          {/* Filtros e controles existentes */}
           <div className="flex flex-wrap gap-3 items-center">
             <Button
               onClick={() => setIsCreateDialogOpen(true)}
@@ -490,19 +617,19 @@ const TaskManager = () => {
             </Button>
 
             <div className="flex items-center gap-2 flex-1 max-w-md">
-              <Search className="w-4 h-4 text-gray-400" />
+              <Search className="w-4 h-4 text-slate-400" />
               <Input
                 placeholder="Buscar tarefas..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1"
+                className="flex-1 bg-slate-700/50 border-slate-600 text-white placeholder-slate-400"
               />
             </div>
 
             <Button
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
               variant="outline"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 border-slate-600 hover:border-slate-500"
             >
               <Filter className="w-4 h-4" />
               Filtros
@@ -514,83 +641,182 @@ const TaskManager = () => {
         {showAdvancedFilters && (
           <AdvancedTaskFilters
             selectedUser={selectedUser}
-            setSelectedUser={setSelectedUser}
+            onUserChange={setSelectedUser}
             selectedAccessLevel={selectedAccessLevel}
-            setSelectedAccessLevel={setSelectedAccessLevel}
+            onAccessLevelChange={setSelectedAccessLevel}
             selectedPriority={selectedPriority}
-            setSelectedPriority={setSelectedPriority}
-            selectedStatus={selectedStatus}
-            setSelectedStatus={setSelectedStatus}
-            clearAdvancedFilters={clearAdvancedFilters}
+            onPriorityChange={setSelectedPriority}
+            userProfiles={userProfiles}
+            onClearFilters={clearAdvancedFilters}
           />
         )}
 
-        {/* Tabs de filtros temporais */}
-        <Tabs value={activeFilter} onValueChange={(value) => setActiveFilter(value as any)} className="mb-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-1/2">
-            <TabsTrigger value="all" className="flex items-center gap-2">
-              <Badge variant="secondary">{getFilterCount('all')}</Badge>
-              Todas
-            </TabsTrigger>
-            <TabsTrigger value="today" className="flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              <Badge variant="secondary">{getFilterCount('today')}</Badge>
-              Hoje
-            </TabsTrigger>
-            <TabsTrigger value="week" className="flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              <Badge variant="secondary">{getFilterCount('week')}</Badge>
-              Esta Semana
-            </TabsTrigger>
-            <TabsTrigger value="month" className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              <Badge variant="secondary">{getFilterCount('month')}</Badge>
-              Este Mês
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {/* Cards de Estatísticas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <Card 
+            className="bg-slate-800/50 border-slate-700/50 cursor-pointer hover:bg-slate-800/70 transition-colors"
+            onClick={() => handleStatsClick('all')}
+          >
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-slate-400 text-sm font-medium">Total</p>
+                  <p className="text-3xl font-bold text-white">{filteredTasks.length}</p>
+                </div>
+                <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center">
+                  <ShieldCheck className="w-6 h-6 text-blue-400" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Lista de tarefas */}
-        <div className="space-y-4">
+          <Card 
+            className="bg-slate-800/50 border-slate-700/50 cursor-pointer hover:bg-slate-800/70 transition-colors"
+            onClick={() => handleStatsClick('pendente')}
+          >
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-slate-400 text-sm font-medium">Pendentes</p>
+                  <p className="text-3xl font-bold text-yellow-400">{filteredTasks.filter(t => t.status === 'pendente').length}</p>
+                </div>
+                <div className="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center">
+                  <Clock className="w-6 h-6 text-yellow-400" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className="bg-slate-800/50 border-slate-700/50 cursor-pointer hover:bg-slate-800/70 transition-colors"
+            onClick={() => handleStatsClick('concluida')}
+          >
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-slate-400 text-sm font-medium">Concluídas</p>
+                  <p className="text-3xl font-bold text-green-400">{filteredTasks.filter(t => t.status === 'concluida').length}</p>
+                </div>
+                <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-6 h-6 text-green-400" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-slate-800/50 border-slate-700/50">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-slate-400 text-sm font-medium">Performance</p>
+                  <p className="text-3xl font-bold text-blue-400">
+                    {filteredTasks.length > 0 ? Math.round((filteredTasks.filter(t => t.status === 'concluida').length / filteredTasks.length) * 100) : 0}%
+                  </p>
+                </div>
+                <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center">
+                  <Calendar className="w-6 h-6 text-blue-400" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Navegação de visualização */}
+        <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-lg p-6 mb-6 border border-slate-700/50">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <Button
+                onClick={() => navigateDate('prev')}
+                variant="outline"
+                size="sm"
+                className="border-slate-600 hover:border-slate-500"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <h2 className="text-xl font-semibold text-white">
+                {getViewTitleBR(currentView, selectedDate)}
+              </h2>
+              <Button
+                onClick={() => navigateDate('next')}
+                variant="outline"
+                size="sm"
+                className="border-slate-600 hover:border-slate-500"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => setCurrentView('day')}
+                variant={currentView === 'day' ? 'default' : 'outline'}
+                size="sm"
+                className={currentView === 'day' ? 'bg-blue-600 hover:bg-blue-700' : 'border-slate-600 hover:border-slate-500'}
+              >
+                Dia
+              </Button>
+              <Button
+                onClick={() => setCurrentView('week')}
+                variant={currentView === 'week' ? 'default' : 'outline'}
+                size="sm"
+                className={currentView === 'week' ? 'bg-blue-600 hover:bg-blue-700' : 'border-slate-600 hover:border-slate-500'}
+              >
+                Semana
+              </Button>
+              <Button
+                onClick={() => setCurrentView('month')}
+                variant={currentView === 'month' ? 'default' : 'outline'}
+                size="sm"
+                className={currentView === 'month' ? 'bg-blue-600 hover:bg-blue-700' : 'border-slate-600 hover:border-slate-500'}
+              >
+                Mês
+              </Button>
+            </div>
+          </div>
+          
+          <Tabs value={activeFilter} onValueChange={(value) => setActiveFilter(value as any)} className="mb-4">
+            <TabsList className="grid w-full grid-cols-4 lg:w-1/2 bg-slate-700/50 border-slate-600">
+              <TabsTrigger value="all" className="flex items-center gap-2 data-[state=active]:bg-slate-600">
+                <Badge variant="secondary">{getFilterCount('all')}</Badge>
+                Todas
+              </TabsTrigger>
+              <TabsTrigger value="today" className="flex items-center gap-2 data-[state=active]:bg-slate-600">
+                <Calendar className="w-4 h-4" />
+                <Badge variant="secondary">{getFilterCount('today')}</Badge>
+                Hoje
+              </TabsTrigger>
+              <TabsTrigger value="week" className="flex items-center gap-2 data-[state=active]:bg-slate-600">
+                <Clock className="w-4 h-4" />
+                <Badge variant="secondary">{getFilterCount('week')}</Badge>
+                Esta Semana
+              </TabsTrigger>
+              <TabsTrigger value="month" className="flex items-center gap-2 data-[state=active]:bg-slate-600">
+                <Users className="w-4 h-4" />
+                <Badge variant="secondary">{getFilterCount('month')}</Badge>
+                Este Mês
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
+        {/* Conteúdo das tarefas */}
+        <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-slate-700/50">
           {isLoading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="text-gray-600 mt-4">Carregando tarefas...</p>
+              <p className="text-slate-400 mt-4">Carregando tarefas...</p>
             </div>
-          ) : filteredTasks.length === 0 ? (
-            <Card>
-              <CardContent className="text-center py-8">
-                <p className="text-gray-500">Nenhuma tarefa encontrada</p>
-                <p className="text-sm text-gray-400 mt-2">
-                  {searchTerm ? 'Tente ajustar sua pesquisa' : 'Comece criando uma nova tarefa'}
-                </p>
-              </CardContent>
-            </Card>
           ) : (
-            filteredTasks
-              .filter(task => 
-                task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                task.description.toLowerCase().includes(searchTerm.toLowerCase())
-              )
-              .map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  actionButtons={<div />}
-                  getStatusColor={getStatusColor}
-                  getPriorityColor={getPriorityColor}
-                  getStatusLabel={getStatusLabel}
-                  getPriorityLabel={getPriorityLabel}
-                  getUserName={getUserNameFallback}
-                  canEditTask={() => canEditTaskFull(task)}
-                  onEditTask={handleOpenEditDialog}
-                />
-              ))
+            <>
+              {currentView === 'day' && renderDayView()}
+              {currentView === 'week' && renderWeekView()}
+              {currentView === 'month' && renderMonthView()}
+            </>
           )}
         </div>
       </div>
 
-      {/* Dialog de criação de tarefa */}
+      {/* Diálogos */}
       <CreateTaskDialog
         isOpen={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
@@ -600,7 +826,6 @@ const TaskManager = () => {
         isCreating={isCreatingTask}
       />
 
-      {/* Dialog de edição de tarefa */}
       <EditTaskDialog
         isOpen={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
@@ -608,6 +833,17 @@ const TaskManager = () => {
         onTaskChange={setEditTask}
         onSaveTask={handleEditTask}
         isSaving={isEditingTask}
+      />
+
+      <TaskDetailsModal
+        task={selectedTask}
+        isOpen={isTaskDetailsOpen}
+        onClose={handleCloseTaskDetails}
+        onUpdateStatus={updateTaskStatus}
+        onDeleteTask={handleDeleteTask}
+        canEdit={selectedTask ? canEditTask(selectedTask) : false}
+        canDelete={selectedTask ? canDeleteTask(selectedTask) : false}
+        isUpdating={!!updatingTask}
       />
     </div>
   );
