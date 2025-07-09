@@ -127,7 +127,7 @@ Use os botões no topo para filtrar por período:
 
 ## Gerenciamento de Usuários
 
-*Esta seção é visível apenas para Admin, Franqueado, Coordenador e Supervisor ADM*
+*Esta seção mantém as restrições originais baseadas em hierarquia*
 
 ### Visualizando Usuários
 - Lista todos os usuários que você tem permissão para ver
