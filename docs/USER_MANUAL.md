@@ -104,12 +104,13 @@ Use os botões no topo para filtrar por período:
 ### Filtros Avançados
 *Disponível para todos os usuários autenticados*
 
-#### Filtrar por Usuário
-- Selecione um usuário específico para ver apenas suas tarefas
-- Útil para supervisão e acompanhamento
+#### Filtrar por Usuário Atribuído
+- Selecione um usuário específico para ver apenas as tarefas **atribuídas** a ele
+- Mostra apenas tarefas onde o usuário foi designado como responsável
+- Útil para supervisão e acompanhamento de responsabilidades
 
-#### Filtrar por Nível de Acesso
-- Filtre tarefas por cargo/função:
+#### Filtrar por Nível de Acesso Atribuído
+- Filtre tarefas por cargo/função dos usuários **atribuídos**:
   - Administrador
   - Franqueado  
   - Coordenador
@@ -119,6 +120,7 @@ Use os botões no topo para filtrar por período:
   - Estagiário
   - Professor
   - Vendedor
+- Mostra apenas tarefas atribuídas a usuários do nível selecionado
 
 #### Limpando Filtros
 - Clique em **"Limpar"** para remover todos os filtros avançados

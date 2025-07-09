@@ -79,10 +79,10 @@ const AdvancedTaskFilters: React.FC<AdvancedTaskFiltersProps> = ({
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <Label className="text-slate-300 text-sm mb-2 block">Filtrar por Usuário</Label>
+            <Label className="text-slate-300 text-sm mb-2 block">Filtrar por Usuário Atribuído</Label>
             <Select value={selectedUser} onValueChange={onUserChange}>
               <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
-                <SelectValue placeholder="Selecionar usuário..." />
+                <SelectValue placeholder="Selecionar usuário atribuído..." />
               </SelectTrigger>
               <SelectContent className="bg-slate-800 border-slate-700">
                 <SelectItem value="all">Todos os usuários</SelectItem>
@@ -96,10 +96,10 @@ const AdvancedTaskFilters: React.FC<AdvancedTaskFiltersProps> = ({
           </div>
 
           <div>
-            <Label className="text-slate-300 text-sm mb-2 block">Filtrar por Nível de Acesso</Label>
+            <Label className="text-slate-300 text-sm mb-2 block">Filtrar por Nível de Acesso Atribuído</Label>
             <Select value={selectedAccessLevel} onValueChange={onAccessLevelChange}>
               <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
-                <SelectValue placeholder="Selecionar nível..." />
+                <SelectValue placeholder="Selecionar nível atribuído..." />
               </SelectTrigger>
               <SelectContent className="bg-slate-800 border-slate-700">
                 {accessLevels.map((level) => (

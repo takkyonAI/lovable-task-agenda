@@ -176,15 +176,14 @@ export const useTaskManager = () => {
         break;
     }
 
-    // Filtro por usuário
+    // Filtro por usuário (apenas tarefas atribuídas)
     if (selectedUser !== 'all') {
       filtered = filtered.filter(task => 
-        task.created_by === selectedUser || 
         task.assigned_users.includes(selectedUser)
       );
     }
 
-    // Filtro por nível de acesso
+    // Filtro por nível de acesso (apenas tarefas atribuídas)
     if (selectedAccessLevel !== 'all') {
       try {
         const { data: userProfiles } = await supabase
@@ -195,7 +194,6 @@ export const useTaskManager = () => {
         if (userProfiles) {
           const userIds = userProfiles.map(profile => profile.user_id);
           filtered = filtered.filter(task => 
-            userIds.includes(task.created_by) || 
             task.assigned_users.some(userId => userIds.includes(userId))
           );
         }
