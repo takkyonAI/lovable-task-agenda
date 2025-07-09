@@ -99,114 +99,178 @@ export const useTaskManager = () => {
     setupAutoRefresh();
     setupHeartbeat();
     
-    // 🚀 MELHORIA: Real-time subscription com melhor processamento e notificações
-    const channel = supabase
-      .channel('tasks-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tasks'
-        },
-        (payload) => {
-          console.log('🔄 Real-time task change:', payload);
-          setIsRealTimeConnected(true);
-          setLastUpdateTime(Date.now());
-          
-          // Handle different event types with optimized state updates
-          if (payload.eventType === 'DELETE') {
-            // Immediate UI update for deletions
-            setTasks(prevTasks => prevTasks.filter(task => task.id !== payload.old.id));
+    let retryCount = 0;
+    const maxRetries = 5;
+    let reconnectTimeout: NodeJS.Timeout;
+    let currentChannel: any;
+    
+    const setupRealtimeConnection = async () => {
+      console.log('🔄 Setting up realtime connection...');
+      
+      // Check if user is authenticated before setting up real-time
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error || !session) {
+          console.log('❌ User not authenticated, skipping real-time setup');
+          setIsRealTimeConnected(false);
+          return;
+        }
+        console.log('✅ User authenticated, setting up real-time connection');
+      } catch (error) {
+        console.error('❌ Error checking auth status:', error);
+        setIsRealTimeConnected(false);
+        return;
+      }
+      
+      // Clean up existing channel before creating new one
+      if (currentChannel) {
+        supabase.removeChannel(currentChannel);
+      }
+      
+      currentChannel = supabase
+        .channel('tasks-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'tasks'
+          },
+          (payload) => {
+            console.log('🔄 Real-time task change:', payload);
+            setIsRealTimeConnected(true);
+            setLastUpdateTime(Date.now());
+            retryCount = 0; // Reset retry count on successful message
             
-            toast({
-              title: "🗑️ Tarefa Removida",
-              description: "Uma tarefa foi removida do sistema",
-              duration: 3000,
-              variant: "destructive"
-            });
-            
-          } else if (payload.eventType === 'INSERT') {
-            // For inserts, add task immediately instead of full reload
-            const newTask = payload.new;
-            if (newTask && newTask.id) {
-              setTasks(prevTasks => {
-                // Check if task already exists to prevent duplicates
-                const existingTask = prevTasks.find(task => task.id === newTask.id);
-                if (existingTask) {
-                  console.log('Task already exists, skipping duplicate:', newTask.id);
-                  return prevTasks;
-                }
-                
-                // Format the new task
-                const formattedTask: Task = {
-                  id: newTask.id,
-                  title: newTask.title,
-                  description: newTask.description || '',
-                  status: newTask.status as 'pendente' | 'em_andamento' | 'concluida' | 'cancelada',
-                  priority: newTask.priority === 'alta' ? 'urgente' : newTask.priority as 'baixa' | 'media' | 'urgente',
-                  due_date: newTask.due_date || undefined,
-                  assigned_users: newTask.assigned_users || [],
-                  created_by: newTask.created_by,
-                  created_at: new Date(newTask.created_at),
-                  updated_at: new Date(newTask.updated_at),
-                  completed_at: newTask.completed_at ? new Date(newTask.completed_at) : undefined,
-                  is_private: newTask.is_private ?? false
-                };
-                
-                // 🔔 MELHORIA: Mostrar notificação para nova tarefa
-                const isCreatedByCurrentUser = currentUser?.user_id === newTask.created_by;
-                showNewTaskNotification(formattedTask, isCreatedByCurrentUser);
-                
-                // Add to the beginning of the array (newest first)
-                return [formattedTask, ...prevTasks];
+            // Handle different event types with optimized state updates
+            if (payload.eventType === 'DELETE') {
+              // Immediate UI update for deletions
+              setTasks(prevTasks => prevTasks.filter(task => task.id !== payload.old.id));
+              
+              toast({
+                title: "🗑️ Tarefa Removida",
+                description: "Uma tarefa foi removida do sistema",
+                duration: 3000,
+                variant: "destructive"
               });
-            }
-          } else if (payload.eventType === 'UPDATE') {
-            // For updates, update specific task instead of full reload
-            const updatedTask = payload.new;
-            if (updatedTask && updatedTask.id) {
-              setTasks(prevTasks => prevTasks.map(task => {
-                if (task.id === updatedTask.id) {
-                  const wasCompleted = task.status === 'concluida';
-                  const isNowCompleted = updatedTask.status === 'concluida';
-                  
-                  // 🔔 MELHORIA: Notificação para tarefa concluída
-                  if (!wasCompleted && isNowCompleted && currentUser?.user_id !== updatedTask.created_by) {
-                    toast({
-                      title: "✅ Tarefa Concluída!",
-                      description: `"${updatedTask.title}" foi marcada como concluída`,
-                      duration: 4000,
-                      variant: "success"
-                    });
+              
+            } else if (payload.eventType === 'INSERT') {
+              // For inserts, add task immediately instead of full reload
+              const newTask = payload.new;
+              if (newTask && newTask.id) {
+                setTasks(prevTasks => {
+                  // Check if task already exists to prevent duplicates
+                  const existingTask = prevTasks.find(task => task.id === newTask.id);
+                  if (existingTask) {
+                    console.log('Task already exists, skipping duplicate:', newTask.id);
+                    return prevTasks;
                   }
                   
-                  return {
-                    ...task,
-                    title: updatedTask.title,
-                    description: updatedTask.description || '',
-                    status: updatedTask.status as 'pendente' | 'em_andamento' | 'concluida' | 'cancelada',
-                    priority: updatedTask.priority === 'alta' ? 'urgente' : updatedTask.priority as 'baixa' | 'media' | 'urgente',
-                    due_date: updatedTask.due_date || undefined,
-                    assigned_users: updatedTask.assigned_users || [],
-                    updated_at: new Date(updatedTask.updated_at),
-                    completed_at: updatedTask.completed_at ? new Date(updatedTask.completed_at) : undefined,
-                    is_private: updatedTask.is_private ?? false
+                  // Format the new task
+                  const formattedTask: Task = {
+                    id: newTask.id,
+                    title: newTask.title,
+                    description: newTask.description || '',
+                    status: newTask.status as 'pendente' | 'em_andamento' | 'concluida' | 'cancelada',
+                    priority: newTask.priority === 'alta' ? 'urgente' : newTask.priority as 'baixa' | 'media' | 'urgente',
+                    due_date: newTask.due_date || undefined,
+                    assigned_users: newTask.assigned_users || [],
+                    created_by: newTask.created_by,
+                    created_at: new Date(newTask.created_at),
+                    updated_at: new Date(newTask.updated_at),
+                    completed_at: newTask.completed_at ? new Date(newTask.completed_at) : undefined,
+                    is_private: newTask.is_private ?? false
                   };
-                }
-                return task;
-              }));
+                  
+                  // 🔔 MELHORIA: Mostrar notificação para nova tarefa
+                  const isCreatedByCurrentUser = currentUser?.user_id === newTask.created_by;
+                  showNewTaskNotification(formattedTask, isCreatedByCurrentUser);
+                  
+                  // Add to the beginning of the array (newest first)
+                  return [formattedTask, ...prevTasks];
+                });
+              }
+            } else if (payload.eventType === 'UPDATE') {
+              // For updates, update specific task instead of full reload
+              const updatedTask = payload.new;
+              if (updatedTask && updatedTask.id) {
+                setTasks(prevTasks => prevTasks.map(task => {
+                  if (task.id === updatedTask.id) {
+                    const wasCompleted = task.status === 'concluida';
+                    const isNowCompleted = updatedTask.status === 'concluida';
+                    
+                    // 🔔 MELHORIA: Notificação para tarefa concluída
+                    if (!wasCompleted && isNowCompleted && currentUser?.user_id !== updatedTask.created_by) {
+                      toast({
+                        title: "✅ Tarefa Concluída!",
+                        description: `"${updatedTask.title}" foi marcada como concluída`,
+                        duration: 4000,
+                        variant: "success"
+                      });
+                    }
+                    
+                    return {
+                      ...task,
+                      title: updatedTask.title,
+                      description: updatedTask.description || '',
+                      status: updatedTask.status as 'pendente' | 'em_andamento' | 'concluida' | 'cancelada',
+                      priority: updatedTask.priority === 'alta' ? 'urgente' : updatedTask.priority as 'baixa' | 'media' | 'urgente',
+                      due_date: updatedTask.due_date || undefined,
+                      assigned_users: updatedTask.assigned_users || [],
+                      updated_at: new Date(updatedTask.updated_at),
+                      completed_at: updatedTask.completed_at ? new Date(updatedTask.completed_at) : undefined,
+                      is_private: updatedTask.is_private ?? false
+                    };
+                  }
+                  return task;
+                }));
+              }
             }
           }
-        }
-      )
-      .subscribe((status) => {
-        console.log('🔗 Real-time connection status:', status);
-        setIsRealTimeConnected(status === 'SUBSCRIBED');
-      });
+        )
+        .subscribe(async (status) => {
+          console.log('🔗 Real-time connection status:', status);
+          
+          if (status === 'SUBSCRIBED') {
+            console.log('✅ Real-time connected successfully!');
+            setIsRealTimeConnected(true);
+            retryCount = 0;
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            console.log('❌ Real-time connection failed:', status);
+            setIsRealTimeConnected(false);
+            
+            if (retryCount < maxRetries) {
+              retryCount++;
+              const delay = Math.min(1000 * Math.pow(2, retryCount), 30000); // Exponential backoff, max 30s
+              console.log(`🔄 Attempting to reconnect in ${delay}ms (attempt ${retryCount}/${maxRetries})`);
+              
+              reconnectTimeout = setTimeout(() => {
+                console.log('🔄 Reconnecting...');
+                setupRealtimeConnection();
+              }, delay);
+            } else {
+              console.log('❌ Max retry attempts reached. Real-time connection failed.');
+              toast({
+                title: "⚠️ Conexão Real-time Perdida",
+                description: "A conexão em tempo real foi perdida. Clique em 'Atualizar' para recarregar.",
+                duration: 0, // Persistent toast
+                variant: "destructive"
+              });
+            }
+          }
+        });
+    };
+    
+    // Initial connection setup
+    setupRealtimeConnection();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+      if (currentChannel) {
+        supabase.removeChannel(currentChannel);
+      }
       if (loadTasksTimeoutRef.current) {
         clearTimeout(loadTasksTimeoutRef.current);
       }
