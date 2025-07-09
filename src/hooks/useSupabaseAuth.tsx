@@ -632,7 +632,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const getVisibleUsers = async (): Promise<User[]> => {
     try {
-      if (!currentUser) return [];
+      if (!currentUser) {
+        console.log('🔍 DEBUG getVisibleUsers - No current user');
+        return [];
+      }
+
+      console.log('🔍 DEBUG getVisibleUsers - Current user role:', currentUser.role);
 
       // Remover restrições de hierarquia - todos os usuários podem ver todos os usuários ativos
       // Isso permite que qualquer usuário possa atribuir tarefas a qualquer outro usuário
@@ -647,8 +652,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return [];
       }
 
+      console.log('🔍 DEBUG getVisibleUsers - Raw data from DB:', data);
+      console.log('🔍 DEBUG getVisibleUsers - Number of users found:', data?.length || 0);
+
       // Retornar todos os usuários ativos sem filtrar por hierarquia
-      return (data || [])
+      const users = (data || [])
         .map((user: any) => ({
           id: user.id as string,
           user_id: user.user_id as string,
@@ -660,6 +668,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           created_at: new Date(user.created_at as string),
           last_login: user.last_login ? new Date(user.last_login as string) : undefined
         }));
+
+      console.log('🔍 DEBUG getVisibleUsers - Processed users:', users);
+      console.log('🔍 DEBUG getVisibleUsers - User roles found:', users.map(u => u.role));
+
+      return users;
     } catch (error) {
       console.error('Erro ao buscar usuários visíveis:', error);
       return [];
