@@ -99,11 +99,19 @@ export const useTaskManager = () => {
     setupAutoRefresh();
     setupHeartbeat();
     
-    // Simplified real-time connection
-    console.log('🔄 Setting up simplified real-time connection...');
+    // Enhanced real-time connection with detailed debugging
+    console.log('🔄 Setting up enhanced real-time connection...');
+    console.log('🔍 Current user:', currentUser?.user_id);
+    console.log('🔍 Supabase URL:', import.meta.env.VITE_SUPABASE_URL || 'Not found');
     
     const channel = supabase
-      .channel('public:tasks')
+      .channel('public:tasks', {
+        config: {
+          presence: {
+            key: currentUser?.user_id || 'anonymous'
+          }
+        }
+      })
       .on(
         'postgres_changes',
         {
@@ -112,7 +120,13 @@ export const useTaskManager = () => {
           table: 'tasks'
         },
         (payload) => {
-          console.log('🔄 Real-time change received:', payload);
+          console.log('🎯 Real-time change received:', {
+            eventType: payload.eventType,
+            table: payload.table,
+            schema: payload.schema,
+            new: payload.new,
+            old: payload.old
+          });
           setIsRealTimeConnected(true);
           setLastUpdateTime(Date.now());
           
@@ -121,16 +135,45 @@ export const useTaskManager = () => {
           loadTasks();
         }
       )
-      .subscribe((status) => {
-        console.log('🔗 Real-time status:', status);
-        if (status === 'SUBSCRIBED') {
-          console.log('✅ Real-time connected!');
-          setIsRealTimeConnected(true);
-        } else {
-          console.log('❌ Real-time disconnected:', status);
-          setIsRealTimeConnected(false);
+      .subscribe(async (status, err) => {
+        console.log('🔗 Real-time subscription status:', status);
+        if (err) console.error('❌ Real-time subscription error:', err);
+        
+        switch (status) {
+          case 'SUBSCRIBED':
+            console.log('✅ Real-time connected successfully!');
+            setIsRealTimeConnected(true);
+            break;
+          case 'CHANNEL_ERROR':
+            console.error('❌ Real-time channel error');
+            setIsRealTimeConnected(false);
+            break;
+          case 'TIMED_OUT':
+            console.error('⏰ Real-time connection timed out');
+            setIsRealTimeConnected(false);
+            break;
+          case 'CLOSED':
+            console.warn('🔒 Real-time connection closed');
+            setIsRealTimeConnected(false);
+            break;
+          default:
+            console.log('🔄 Real-time status:', status);
+            setIsRealTimeConnected(false);
         }
       });
+
+    // Additional debugging
+    console.log('📺 Channel created:', channel);
+    
+    // Test connection after a short delay
+    setTimeout(() => {
+      console.log('🧪 Testing real-time connection status...');
+      console.log('📊 Channel state:', {
+        topic: channel.topic,
+        state: channel.state,
+        joinedOnce: channel.joinedOnce
+      });
+    }, 3000);
 
     return () => {
       console.log('🧹 Cleaning up real-time connection...');
