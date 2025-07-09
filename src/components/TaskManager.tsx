@@ -560,13 +560,13 @@ const TaskManager: React.FC = () => {
                               : 'bg-slate-800/20 text-slate-500'
                           }`}
                           onDoubleClick={() => handleDoubleClickDay(day)}
-                          style={{ minHeight: `${60 + (dayTasks.length * 50)}px` }}
+                          style={{ minHeight: `${60 + (dayTasks.length * 30)}px` }}
                         >
                           <div className={`text-center mb-1 text-xs sm:text-sm ${isToday ? 'text-blue-400 font-bold' : 'text-slate-300'}`}>
                             {day.getDate()}
                           </div>
                           
-                          <div className="space-y-1 max-h-[120px] overflow-y-auto">
+                          <div className="space-y-1">
                             {dayTasks.map(task => (
                               <div 
                                 key={task.id} 
@@ -576,15 +576,14 @@ const TaskManager: React.FC = () => {
                                   handleTaskClick(task);
                                 }}
                               >
-                                <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center justify-between">
                                   <span className="text-white font-medium truncate text-xs flex-1 text-left">{task.title}</span>
-                                  <div className={`w-2 h-2 rounded-full ml-1 ${
+                                  <div className={`w-2 h-2 rounded-full ml-1 flex-shrink-0 ${
                                     task.priority === 'urgente' ? 'bg-red-500' :
                                     task.priority === 'media' ? 'bg-orange-500' :
                                     'bg-blue-500'
                                   }`}></div>
                                 </div>
-                                {renderUserInfo(task, true)}
                               </div>
                             ))}
                           </div>
