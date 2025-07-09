@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Lock, Eye, EyeOff } from 'lucide-react';
+import { Lock, Eye, EyeOff, LogOut } from 'lucide-react';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { sanitizeInput } from '@/utils/inputValidation';
 import { APP_NAME } from '@/constants/app';
@@ -19,7 +19,7 @@ const FirstTimePasswordChange: React.FC = () => {
     new: false,
     confirm: false
   });
-  const { firstTimePasswordChange } = useSupabaseAuth();
+  const { firstTimePasswordChange, logout } = useSupabaseAuth();
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +53,15 @@ const FirstTimePasswordChange: React.FC = () => {
       ...prev,
       [field]: !prev[field]
     }));
+  };
+
+  const handleBackToLogin = async () => {
+    try {
+      await logout();
+      // O logout automaticamente redireciona para a tela de login
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    }
   };
 
   return (
@@ -131,6 +140,18 @@ const FirstTimePasswordChange: React.FC = () => {
               {isLoading ? 'Alterando...' : 'Alterar Senha'}
             </Button>
           </form>
+          
+          <div className="mt-4 pt-4 border-t border-slate-700">
+            <Button
+              type="button"
+              onClick={handleBackToLogin}
+              variant="outline"
+              className="w-full bg-transparent border-slate-600 text-slate-400 hover:text-slate-300 hover:border-slate-500 h-9"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Voltar ao Login
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
