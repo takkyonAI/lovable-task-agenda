@@ -582,7 +582,7 @@ const TaskManager = () => {
                   getStatusLabel={getStatusLabel}
                   getPriorityLabel={getPriorityLabel}
                   getUserName={getUserNameFallback}
-                  canEditTask={canEditTaskFull}
+                  canEditTask={() => canEditTaskFull(task)}
                   onEditTask={handleOpenEditDialog}
                 />
               ))
