@@ -5,7 +5,7 @@
 SELECT 'ASSESSORA ADM USER INFO:' as info;
 SELECT user_id, email, name, role 
 FROM user_profiles 
-WHERE email = 'tatianarbeiroadvogada@gmail.com';
+WHERE email = 'tatianaribeiroadvogada@gmail.com';
 
 -- Step 2: Mostrar todas as tarefas no banco
 SELECT 'TOTAL TASKS IN DATABASE:' as info;
@@ -35,7 +35,7 @@ WHERE schemaname = 'public' AND tablename = 'tasks';
 WITH tatiana_user AS (
   SELECT user_id 
   FROM user_profiles 
-  WHERE email = 'tatianarbeiroadvogada@gmail.com'
+  WHERE email = 'tatianaribeiroadvogada@gmail.com'
 )
 SELECT 'TESTS FOR TATIANA ADM:' as info;
 
@@ -43,7 +43,7 @@ SELECT 'TESTS FOR TATIANA ADM:' as info;
 WITH tatiana_user AS (
   SELECT user_id 
   FROM user_profiles 
-  WHERE email = 'tatianarbeiroadvogada@gmail.com'
+  WHERE email = 'tatianaribeiroadvogada@gmail.com'
 )
 SELECT 'Tasks created by tatiana adm:' as test1, COUNT(*) as count 
 FROM tasks, tatiana_user
@@ -53,7 +53,7 @@ WHERE created_by = tatiana_user.user_id;
 WITH tatiana_user AS (
   SELECT user_id 
   FROM user_profiles 
-  WHERE email = 'tatianarbeiroadvogada@gmail.com'
+  WHERE email = 'tatianaribeiroadvogada@gmail.com'
 )
 SELECT 'Tasks assigned to tatiana adm:' as test2, COUNT(*) as count 
 FROM tasks, tatiana_user
@@ -63,7 +63,7 @@ WHERE assigned_users @> ARRAY[tatiana_user.user_id];
 WITH tatiana_user AS (
   SELECT user_id 
   FROM user_profiles 
-  WHERE email = 'tatianarbeiroadvogada@gmail.com'
+  WHERE email = 'tatianaribeiroadvogada@gmail.com'
 )
 SELECT 'Tasks created by other assessoras ADM:' as test3, COUNT(*) as count 
 FROM tasks t
@@ -75,7 +75,7 @@ AND t.created_by != tatiana_user.user_id;
 WITH tatiana_user AS (
   SELECT user_id 
   FROM user_profiles 
-  WHERE email = 'tatianarbeiroadvogada@gmail.com'
+  WHERE email = 'tatianaribeiroadvogada@gmail.com'
 )
 SELECT 'Tasks assigned to other assessoras ADM:' as test4, COUNT(*) as count
 FROM tasks t
@@ -95,7 +95,7 @@ ORDER BY email;
 WITH tatiana_user AS (
   SELECT user_id 
   FROM user_profiles 
-  WHERE email = 'tatianarbeiroadvogada@gmail.com'
+  WHERE email = 'tatianaribeiroadvogada@gmail.com'
 )
 SELECT 'SIMULATED RLS POLICY RESULT:' as info;
 
@@ -103,7 +103,7 @@ SELECT 'SIMULATED RLS POLICY RESULT:' as info;
 WITH tatiana_user AS (
   SELECT user_id 
   FROM user_profiles 
-  WHERE email = 'tatianarbeiroadvogada@gmail.com'
+  WHERE email = 'tatianaribeiroadvogada@gmail.com'
 )
 SELECT COUNT(*) as should_see_tasks
 FROM tasks t, tatiana_user tu
@@ -133,14 +133,14 @@ WHERE
 WITH tatiana_user AS (
   SELECT user_id 
   FROM user_profiles 
-  WHERE email = 'tatianarbeiroadvogada@gmail.com'
+  WHERE email = 'tatianaribeiroadvogada@gmail.com'
 )
 SELECT 'TASKS TATIANA SHOULD SEE:' as info;
 
 WITH tatiana_user AS (
   SELECT user_id 
   FROM user_profiles 
-  WHERE email = 'tatianarbeiroadvogada@gmail.com'
+  WHERE email = 'tatianaribeiroadvogada@gmail.com'
 )
 SELECT 
   t.id,
