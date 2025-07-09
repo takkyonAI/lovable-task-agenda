@@ -637,8 +637,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Construir o objeto de atualização
       const updateData: any = {
         name: sanitizeInput(name),
-        email: sanitizeInput(email),
-        updated_at: new Date().toISOString()
+        email: sanitizeInput(email)
       };
 
       // Se role for fornecido, incluir na atualização
