@@ -12,7 +12,7 @@ interface TaskCardProps {
   getStatusLabel: (status: string) => string;
   getPriorityLabel: (priority: string) => string;
   getUserName: (userId: string) => string;
-  canEditTask?: (task: Task) => boolean;
+  canEditTask?: (() => boolean) | boolean;
   onEditTask?: (task: Task) => void;
 }
 
@@ -33,6 +33,9 @@ const TaskCard: React.FC<TaskCardProps> = ({
     }
   };
 
+  // Verifica se pode editar - pode ser uma função ou um boolean
+  const canEdit = typeof canEditTask === 'function' ? canEditTask() : canEditTask;
+
   return (
     <div className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30 border border-slate-600 hover:bg-slate-700/40 transition-colors">
       <div className="flex-1">
@@ -44,7 +47,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
           <Badge className={`${getPriorityColor(task.priority)} border`}>
             {getPriorityLabel(task.priority)}
           </Badge>
-          {canEditTask && canEditTask(task) && (
+          {canEdit && (
             <button
               onClick={handleEditClick}
               className="p-1 text-slate-400 hover:text-blue-400 transition-colors"
