@@ -13,6 +13,7 @@ export const useTaskManager = () => {
   const [selectedUser, setSelectedUser] = useState<string>('all');
   const [selectedAccessLevel, setSelectedAccessLevel] = useState<string>('all');
   const [selectedPriority, setSelectedPriority] = useState<'all' | 'baixa' | 'media' | 'urgente'>('all');
+  const [selectedStatus, setSelectedStatus] = useState<'all' | 'pendente' | 'em_andamento' | 'concluida' | 'cancelada'>('all');
 
   const { currentUser } = useSupabaseAuth();
   const { toast } = useToast();
@@ -123,7 +124,7 @@ export const useTaskManager = () => {
 
   useEffect(() => {
     filterTasks();
-  }, [tasks, activeFilter, selectedUser, selectedAccessLevel, selectedPriority]);
+  }, [tasks, activeFilter, selectedUser, selectedAccessLevel, selectedPriority, selectedStatus]);
 
   /**
    * Carrega todas as tarefas do banco de dados
@@ -288,6 +289,11 @@ export const useTaskManager = () => {
       filtered = filtered.filter(task => task.priority === selectedPriority);
     }
 
+    // Filtro por status
+    if (selectedStatus !== 'all') {
+      filtered = filtered.filter(task => task.status === selectedStatus);
+    }
+
     setFilteredTasks(filtered);
   };
 
@@ -295,6 +301,7 @@ export const useTaskManager = () => {
     setSelectedUser('all');
     setSelectedAccessLevel('all');
     setSelectedPriority('all');
+    setSelectedStatus('all');
   };
 
   const getFilterCount = (filter: 'all' | 'today' | 'week' | 'month') => {
@@ -613,6 +620,8 @@ export const useTaskManager = () => {
     setSelectedAccessLevel,
     selectedPriority,
     setSelectedPriority,
+    selectedStatus,
+    setSelectedStatus,
     clearAdvancedFilters,
     getFilterCount,
     updateTaskStatus,

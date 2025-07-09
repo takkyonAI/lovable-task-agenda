@@ -45,6 +45,8 @@ const TaskManager: React.FC = () => {
     setSelectedAccessLevel,
     selectedPriority,
     setSelectedPriority,
+    selectedStatus,
+    setSelectedStatus,
     clearAdvancedFilters,
     getFilterCount,
     updateTaskStatus,
@@ -55,6 +57,15 @@ const TaskManager: React.FC = () => {
   } = useTaskManager();
 
   const { getUserName, userProfiles } = useUserProfiles();
+
+  // Handler para clique nos cards de estatísticas
+  const handleStatsClick = (status: 'all' | 'pendente' | 'concluida') => {
+    setSelectedStatus(status);
+    // Limpar outros filtros avançados para focar apenas no status
+    setSelectedUser('all');
+    setSelectedAccessLevel('all');
+    setSelectedPriority('all');
+  };
 
   // Função para calcular altura dinâmica baseada na quantidade de tarefas
   const calculateDynamicHeight = (taskCount: number, view: 'week' | 'month') => {
@@ -296,7 +307,12 @@ const TaskManager: React.FC = () => {
         
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <Card className="bg-slate-700/30 border-slate-600">
+            <Card 
+              className={`bg-slate-700/30 border-slate-600 cursor-pointer hover:bg-slate-600/50 transition-colors ${
+                selectedStatus === 'all' ? 'ring-2 ring-blue-500 border-blue-500' : ''
+              }`}
+              onClick={() => handleStatsClick('all')}
+            >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -308,7 +324,12 @@ const TaskManager: React.FC = () => {
               </CardContent>
             </Card>
             
-            <Card className="bg-slate-700/30 border-slate-600">
+            <Card 
+              className={`bg-slate-700/30 border-slate-600 cursor-pointer hover:bg-slate-600/50 transition-colors ${
+                selectedStatus === 'pendente' ? 'ring-2 ring-yellow-500 border-yellow-500' : ''
+              }`}
+              onClick={() => handleStatsClick('pendente')}
+            >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -320,7 +341,12 @@ const TaskManager: React.FC = () => {
               </CardContent>
             </Card>
             
-            <Card className="bg-slate-700/30 border-slate-600">
+            <Card 
+              className={`bg-slate-700/30 border-slate-600 cursor-pointer hover:bg-slate-600/50 transition-colors ${
+                selectedStatus === 'concluida' ? 'ring-2 ring-green-500 border-green-500' : ''
+              }`}
+              onClick={() => handleStatsClick('concluida')}
+            >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
