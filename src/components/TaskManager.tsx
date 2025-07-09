@@ -43,6 +43,8 @@ const TaskManager: React.FC = () => {
     setSelectedUser,
     selectedAccessLevel,
     setSelectedAccessLevel,
+    selectedPriority,
+    setSelectedPriority,
     clearAdvancedFilters,
     getFilterCount,
     updateTaskStatus,
@@ -355,6 +357,8 @@ const TaskManager: React.FC = () => {
               onUserChange={setSelectedUser}
               selectedAccessLevel={selectedAccessLevel}
               onAccessLevelChange={setSelectedAccessLevel}
+              selectedPriority={selectedPriority}
+              onPriorityChange={setSelectedPriority}
               onClearFilters={clearAdvancedFilters}
               userProfiles={userProfiles}
             />

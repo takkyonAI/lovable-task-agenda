@@ -18,6 +18,8 @@ interface AdvancedTaskFiltersProps {
   onUserChange: (userId: string) => void;
   selectedAccessLevel: string;
   onAccessLevelChange: (level: string) => void;
+  selectedPriority: 'all' | 'baixa' | 'media' | 'urgente';
+  onPriorityChange: (priority: 'all' | 'baixa' | 'media' | 'urgente') => void;
   userProfiles: Record<string, UserProfile>;
   onClearFilters: () => void;
 }
@@ -27,6 +29,8 @@ const AdvancedTaskFilters: React.FC<AdvancedTaskFiltersProps> = ({
   onUserChange,
   selectedAccessLevel,
   onAccessLevelChange,
+  selectedPriority,
+  onPriorityChange,
   userProfiles,
   onClearFilters
 }) => {
@@ -52,9 +56,16 @@ const AdvancedTaskFilters: React.FC<AdvancedTaskFiltersProps> = ({
     { value: 'vendedor', label: 'Vendedor' }
   ];
 
+  const priorities = [
+    { value: 'all', label: 'Todas as Prioridades' },
+    { value: 'baixa', label: 'Baixa' },
+    { value: 'media', label: 'Média' },
+    { value: 'urgente', label: 'Urgente' }
+  ];
+
   const userList = Object.values(userProfiles).sort((a, b) => a.name.localeCompare(b.name));
 
-  const hasActiveFilters = selectedUser !== 'all' || selectedAccessLevel !== 'all';
+  const hasActiveFilters = selectedUser !== 'all' || selectedAccessLevel !== 'all' || selectedPriority !== 'all';
 
   return (
     <Card className="bg-slate-700/30 border-slate-600 mb-4">
@@ -77,7 +88,7 @@ const AdvancedTaskFilters: React.FC<AdvancedTaskFiltersProps> = ({
           )}
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Label className="text-slate-300 text-sm mb-2 block">Filtrar por Usuário Atribuído</Label>
             <Select value={selectedUser} onValueChange={onUserChange}>
@@ -96,15 +107,31 @@ const AdvancedTaskFilters: React.FC<AdvancedTaskFiltersProps> = ({
           </div>
 
           <div>
-            <Label className="text-slate-300 text-sm mb-2 block">Filtrar por Nível de Acesso Atribuído</Label>
+            <Label className="text-slate-300 text-sm mb-2 block">Filtrar por Nível de Acesso</Label>
             <Select value={selectedAccessLevel} onValueChange={onAccessLevelChange}>
               <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
-                <SelectValue placeholder="Selecionar nível atribuído..." />
+                <SelectValue placeholder="Selecionar nível de acesso..." />
               </SelectTrigger>
               <SelectContent className="bg-slate-800 border-slate-700">
                 {accessLevels.map((level) => (
                   <SelectItem key={level.value} value={level.value}>
                     {level.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label className="text-slate-300 text-sm mb-2 block">Filtrar por Prioridade</Label>
+            <Select value={selectedPriority} onValueChange={onPriorityChange}>
+              <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+                <SelectValue placeholder="Selecionar prioridade..." />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-800 border-slate-700">
+                {priorities.map((priority) => (
+                  <SelectItem key={priority.value} value={priority.value}>
+                    {priority.label}
                   </SelectItem>
                 ))}
               </SelectContent>
