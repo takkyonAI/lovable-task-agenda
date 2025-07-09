@@ -146,10 +146,10 @@ const FirstTimePasswordChange: React.FC = () => {
               type="button"
               onClick={handleBackToLogin}
               variant="outline"
-              className="w-full bg-transparent border-slate-600 text-slate-400 hover:text-slate-300 hover:border-slate-500 h-9"
+              className="w-full bg-red-900/20 border-red-500 text-red-400 hover:text-red-300 hover:border-red-400 h-10 font-semibold"
             >
               <LogOut className="h-4 w-4 mr-2" />
-              Voltar ao Login
+              🔙 VOLTAR AO LOGIN
             </Button>
           </div>
         </CardContent>
