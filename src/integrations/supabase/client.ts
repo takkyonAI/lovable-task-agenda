@@ -18,12 +18,16 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     params: {
       eventsPerSecond: 10,
     },
-    heartbeatIntervalMs: 30000,
-    reconnectAfterMs: (tries: number) => Math.min(tries * 1000, 30000),
+    heartbeatIntervalMs: 15000, // Reduced for more frequent checks
+    reconnectAfterMs: (tries: number) => Math.min(tries * 1000, 10000), // Faster reconnection
+    logger: (level: any, message: string, data?: any) => {
+      console.log(`[Supabase Realtime ${level}]`, message, data);
+    },
   },
   global: {
     headers: {
       'apikey': SUPABASE_PUBLISHABLE_KEY,
+      'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
     },
   },
 });
