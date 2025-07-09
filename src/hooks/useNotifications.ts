@@ -74,11 +74,26 @@ export const useNotifications = () => {
       requireInteraction: true
     });
 
-    // Mostrar toast também
+    // Mostrar toast com variante baseada no tipo
+    const getToastVariant = (type: string) => {
+      switch (type) {
+        case 'task_assigned':
+          return 'info';
+        case 'task_overdue':
+          return 'destructive';
+        case 'task_pending':
+          return 'warning';
+        default:
+          return 'default';
+      }
+    };
+
+    // Mostrar toast também com design melhorado
     toast({
       title: notification.title,
       description: notification.message,
-      duration: 5000
+      duration: 6000,
+      variant: getToastVariant(notification.type) as any
     });
 
     return newNotification.id;
@@ -137,7 +152,7 @@ export const useNotifications = () => {
         const daysOverdue = Math.floor((Date.now() - dueDateObj.getTime()) / (1000 * 60 * 60 * 24));
         
         addNotification({
-          title: 'Tarefa Vencida!',
+          title: '⚠️ Tarefa Vencida!',
           message: `"${task.title}" venceu há ${daysOverdue} dia(s)`,
           type: 'task_overdue',
           taskId: task.id
@@ -148,40 +163,41 @@ export const useNotifications = () => {
     }
   };
 
-  // Verificar tarefas pendentes próximas do vencimento
+  // Verificar tarefas próximas do vencimento
   const checkPendingTasks = async () => {
     if (!currentUser) return;
 
     try {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowStr = tomorrow.toISOString();
-
+      const now = new Date();
+      const fourHoursFromNow = new Date(now.getTime() + 4 * 60 * 60 * 1000);
+      
       const { data: pendingTasks, error } = await supabase
         .from('tasks')
         .select('*')
         .contains('assigned_users', [currentUser.user_id])
-        .eq('status', 'pendente')
-        .lt('due_date', tomorrowStr);
+        .gt('due_date', now.toISOString())
+        .lt('due_date', fourHoursFromNow.toISOString())
+        .neq('status', 'concluida')
+        .neq('status', 'cancelada');
 
       if (error) {
-        console.error('Erro ao verificar tarefas pendentes:', error);
+        console.error('Erro ao verificar tarefas próximas do vencimento:', error);
         return;
       }
 
       pendingTasks?.forEach(task => {
         const dueDateObj = new Date(task.due_date);
-        const hoursLeft = Math.floor((dueDateObj.getTime() - Date.now()) / (1000 * 60 * 60));
+        const hoursUntilDue = Math.floor((dueDateObj.getTime() - Date.now()) / (1000 * 60 * 60));
         
         addNotification({
-          title: 'Tarefa Próxima do Vencimento',
-          message: `"${task.title}" vence em ${hoursLeft}h`,
+          title: '🕒 Tarefa Próxima do Vencimento',
+          message: `"${task.title}" vence em ${hoursUntilDue}h`,
           type: 'task_pending',
           taskId: task.id
         });
       });
     } catch (error) {
-      console.error('Erro ao verificar tarefas pendentes:', error);
+      console.error('Erro ao verificar tarefas próximas do vencimento:', error);
     }
   };
 
@@ -207,7 +223,7 @@ export const useNotifications = () => {
             // Se é uma nova tarefa atribuída
             if (payload.eventType === 'INSERT') {
               addNotification({
-                title: 'Nova Tarefa Atribuída!',
+                title: '🎯 Nova Tarefa Atribuída!',
                 message: `Você foi atribuído à tarefa: "${task.title}"`,
                 type: 'task_assigned',
                 taskId: task.id
@@ -221,7 +237,7 @@ export const useNotifications = () => {
               
               if (!wasAssigned && isNowAssigned) {
                 addNotification({
-                  title: 'Nova Tarefa Atribuída!',
+                  title: '🎯 Nova Tarefa Atribuída!',
                   message: `Você foi atribuído à tarefa: "${task.title}"`,
                   type: 'task_assigned',
                   taskId: task.id
