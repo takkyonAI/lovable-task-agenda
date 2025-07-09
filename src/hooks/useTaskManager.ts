@@ -55,33 +55,14 @@ export const useTaskManager = () => {
 
   /**
    * Carrega todas as tarefas do banco de dados
-   * 
-   * Esta função inclui logs de debug para monitorar o processamento de datas
-   * e ajudar a identificar problemas de timezone. Os logs foram adicionados
-   * durante a correção do problema de timezone em 08/01/2025.
    */
   const loadTasks = async () => {
     setIsLoading(true);
     try {
-      console.log('🔍 DEBUG loadTasks - Iniciando carregamento de tarefas');
-      console.log('🔍 DEBUG loadTasks - Usuário atual:', currentUser?.user_id, 'Role:', currentUser?.role);
-      
       const { data: taskData, error: taskError } = await supabase
         .from('tasks')
         .select('*')
         .order('created_at', { ascending: false });
-
-      console.log('🔍 DEBUG loadTasks - Dados retornados do banco:', taskData?.length, 'tarefas');
-      console.log('🔍 DEBUG loadTasks - Erro do banco:', taskError);
-      
-      if (taskData) {
-        console.log('🔍 DEBUG loadTasks - Primeiras 3 tarefas:', taskData.slice(0, 3).map(t => ({
-          id: t.id,
-          title: t.title,
-          created_by: t.created_by,
-          assigned_users: t.assigned_users
-        })));
-      }
 
       if (taskError) {
         console.error('Erro ao carregar tarefas:', taskError);
@@ -118,7 +99,6 @@ export const useTaskManager = () => {
           return formattedTask;
         });
 
-        console.log('🔍 DEBUG loadTasks - Tarefas formatadas:', formattedTasks.length);
         setTasks(formattedTasks);
       }
     } catch (error) {
@@ -134,12 +114,6 @@ export const useTaskManager = () => {
   };
 
   const filterTasks = async () => {
-    console.log('🔍 DEBUG filterTasks - Iniciando filtragem');
-    console.log('🔍 DEBUG filterTasks - Total de tarefas antes dos filtros:', tasks.length);
-    console.log('🔍 DEBUG filterTasks - Filtro ativo:', activeFilter);
-    console.log('🔍 DEBUG filterTasks - Usuário selecionado:', selectedUser);
-    console.log('🔍 DEBUG filterTasks - Nível de acesso selecionado:', selectedAccessLevel);
-    
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const weekStart = new Date(today);
@@ -177,15 +151,12 @@ export const useTaskManager = () => {
         break;
     }
 
-    console.log('🔍 DEBUG filterTasks - Após filtro temporal:', filtered.length);
-
     // Filtro por usuário
     if (selectedUser !== 'all') {
       filtered = filtered.filter(task => 
         task.created_by === selectedUser || 
         task.assigned_users.includes(selectedUser)
       );
-      console.log('🔍 DEBUG filterTasks - Após filtro por usuário:', filtered.length);
     }
 
     // Filtro por nível de acesso
@@ -202,14 +173,12 @@ export const useTaskManager = () => {
             userIds.includes(task.created_by) || 
             task.assigned_users.some(userId => userIds.includes(userId))
           );
-          console.log('🔍 DEBUG filterTasks - Após filtro por nível de acesso:', filtered.length);
         }
       } catch (error) {
         console.error('Erro ao filtrar por nível de acesso:', error);
       }
     }
 
-    console.log('🔍 DEBUG filterTasks - Total final de tarefas filtradas:', filtered.length);
     setFilteredTasks(filtered);
   };
 
@@ -404,8 +373,6 @@ export const useTaskManager = () => {
         created_by: currentUser.user_id
       };
       
-      console.log('🔍 DEBUG createTask - Data to insert:', insertData);
-      
       const { data, error } = await supabase
         .from('tasks')
         .insert(insertData)
@@ -421,8 +388,6 @@ export const useTaskManager = () => {
         return false;
       }
 
-      console.log('🔍 DEBUG createTask - Task created successfully:', data);
-      
       toast({
         title: "Sucesso",
         description: "Tarefa criada com sucesso",
