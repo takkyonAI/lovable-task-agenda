@@ -9,6 +9,7 @@ import { Plus, Search, Filter, Calendar, Clock, Users, ShieldCheck, RefreshCw, W
 import CreateTaskDialog from './task/CreateTaskDialog';
 import EditTaskDialog from './task/EditTaskDialog';
 import TaskCard from './task/TaskCard';
+import TaskFilters from './task/TaskFilters';
 import AdvancedTaskFilters from './task/AdvancedTaskFilters';
 import TaskDetailsModal from './task/TaskDetailsModal';
 import { useTaskManager } from '@/hooks/useTaskManager';
@@ -56,7 +57,6 @@ const TaskManager = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   // 🔄 Estado para controle de refresh manual
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -626,30 +626,21 @@ const TaskManager = () => {
               />
             </div>
 
-            <Button
-              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              variant="outline"
-              className="flex items-center gap-2 border-slate-600 hover:border-slate-500"
-            >
-              <Filter className="w-4 h-4" />
-              Filtros
-            </Button>
+
           </div>
         </div>
 
         {/* Filtros avançados */}
-        {showAdvancedFilters && (
-          <AdvancedTaskFilters
-            selectedUser={selectedUser}
-            onUserChange={setSelectedUser}
-            selectedAccessLevel={selectedAccessLevel}
-            onAccessLevelChange={setSelectedAccessLevel}
-            selectedPriority={selectedPriority}
-            onPriorityChange={setSelectedPriority}
-            userProfiles={userProfiles}
-            onClearFilters={clearAdvancedFilters}
-          />
-        )}
+        <AdvancedTaskFilters
+          selectedUser={selectedUser}
+          onUserChange={setSelectedUser}
+          selectedAccessLevel={selectedAccessLevel}
+          onAccessLevelChange={setSelectedAccessLevel}
+          selectedPriority={selectedPriority}
+          onPriorityChange={setSelectedPriority}
+          userProfiles={userProfiles}
+          onClearFilters={clearAdvancedFilters}
+        />
 
         {/* Cards de Estatísticas */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -774,29 +765,11 @@ const TaskManager = () => {
             </div>
           </div>
           
-          <Tabs value={activeFilter} onValueChange={(value) => setActiveFilter(value as any)} className="mb-4">
-            <TabsList className="grid w-full grid-cols-4 lg:w-1/2 bg-slate-700/50 border-slate-600">
-              <TabsTrigger value="all" className="flex items-center gap-2 data-[state=active]:bg-slate-600">
-                <Badge variant="secondary">{getFilterCount('all')}</Badge>
-                Todas
-              </TabsTrigger>
-              <TabsTrigger value="today" className="flex items-center gap-2 data-[state=active]:bg-slate-600">
-                <Calendar className="w-4 h-4" />
-                <Badge variant="secondary">{getFilterCount('today')}</Badge>
-                Hoje
-              </TabsTrigger>
-              <TabsTrigger value="week" className="flex items-center gap-2 data-[state=active]:bg-slate-600">
-                <Clock className="w-4 h-4" />
-                <Badge variant="secondary">{getFilterCount('week')}</Badge>
-                Esta Semana
-              </TabsTrigger>
-              <TabsTrigger value="month" className="flex items-center gap-2 data-[state=active]:bg-slate-600">
-                <Users className="w-4 h-4" />
-                <Badge variant="secondary">{getFilterCount('month')}</Badge>
-                Este Mês
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <TaskFilters
+            activeFilter={activeFilter}
+            onFilterChange={setActiveFilter}
+            getFilterCount={getFilterCount}
+          />
         </div>
 
         {/* Conteúdo das tarefas */}
