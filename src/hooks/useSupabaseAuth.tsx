@@ -632,12 +632,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const getVisibleUsers = async (): Promise<User[]> => {
     try {
-      if (!currentUser) {
-        console.log('🔍 DEBUG getVisibleUsers - No current user');
-        return [];
-      }
-
-      console.log('🔍 DEBUG getVisibleUsers - Current user role:', currentUser.role);
+      if (!currentUser) return [];
 
       // Usar a função do banco de dados que retorna todos os usuários ativos
       // Isso permite que qualquer usuário possa atribuir tarefas a qualquer outro usuário
@@ -658,8 +653,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return [];
         }
         
-        console.log('🔍 DEBUG getVisibleUsers - Using fallback query');
-        const fallbackUsers = (fallbackData || []).map((user: any) => ({
+        return (fallbackData || []).map((user: any) => ({
           id: user.id as string,
           user_id: user.user_id as string,
           name: user.name as string,
@@ -670,16 +664,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           created_at: new Date(user.created_at as string),
           last_login: user.last_login ? new Date(user.last_login as string) : undefined
         }));
-        
-        console.log('🔍 DEBUG getVisibleUsers - Fallback users:', fallbackUsers);
-        return fallbackUsers;
       }
 
-      console.log('🔍 DEBUG getVisibleUsers - Raw data from DB function:', data);
-      console.log('🔍 DEBUG getVisibleUsers - Number of users found:', data?.length || 0);
-
       // Processar dados da função do banco
-      const users = (Array.isArray(data) ? data : [])
+      return (Array.isArray(data) ? data : [])
         .map((user: any) => ({
           id: user.user_id as string, // Função retorna user_id como id
           user_id: user.user_id as string,
@@ -691,11 +679,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           created_at: new Date(), // Não retornado pela função
           last_login: undefined // Não retornado pela função
         }));
-
-      console.log('🔍 DEBUG getVisibleUsers - Processed users:', users);
-      console.log('🔍 DEBUG getVisibleUsers - User roles found:', users.map(u => u.role));
-
-      return users;
     } catch (error) {
       console.error('Erro ao buscar usuários visíveis:', error);
       return [];

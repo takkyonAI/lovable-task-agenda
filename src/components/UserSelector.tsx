@@ -45,11 +45,7 @@ const UserSelector: React.FC<UserSelectorProps> = ({
 
   const loadUsers = async () => {
     try {
-      console.log('🔍 DEBUG UserSelector - Loading users...');
       const users = await getVisibleUsers();
-      console.log('🔍 DEBUG UserSelector - Users loaded:', users);
-      console.log('🔍 DEBUG UserSelector - Number of users:', users.length);
-      console.log('🔍 DEBUG UserSelector - User roles:', users.map(u => `${u.name} (${u.role})`));
       setAvailableUsers(users);
     } catch (error) {
       console.error('Erro ao carregar usuários:', error);
