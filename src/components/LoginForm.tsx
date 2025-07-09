@@ -3,16 +3,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Shield, Mail, Lock } from 'lucide-react';
+import { Mail, Lock } from 'lucide-react';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { sanitizeInput } from '@/utils/inputValidation';
 import { APP_NAME } from '@/constants/app';
+import Logo from '@/components/ui/Logo';
 
 const LoginForm: React.FC = () => {
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [loginAttempts, setLoginAttempts] = useState(0);
   const { login } = useSupabaseAuth();
+
+  // Debug: Confirmar que o LoginForm está usando o componente Logo
+  console.log('🔄 LoginForm carregado com componente Logo em:', new Date().toLocaleTimeString());
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,9 +47,8 @@ const LoginForm: React.FC = () => {
     <div className="h-screen w-full bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-6">
       <Card className="w-full max-w-md bg-slate-800/50 backdrop-blur-sm border-slate-700">
         <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center mb-4">
-            <Shield className="w-6 h-6 text-white" />
-          </div>
+          {/* LOGO DA ROCKFELLER - UPDATED */}
+          <Logo size="lg" variant="icon" className="mx-auto mb-4" />
           <CardTitle className="text-white text-xl">{APP_NAME}</CardTitle>
           <p className="text-slate-400 text-sm">Acesse sua conta</p>
         </CardHeader>

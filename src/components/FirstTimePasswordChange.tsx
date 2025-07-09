@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { APP_NAME, PASSWORD_CONFIG } from '@/constants/app';
 import { validatePassword } from '@/utils/inputValidation';
+import Logo from '@/components/ui/Logo';
 
 const FirstTimePasswordChange: React.FC = () => {
   const [newPassword, setNewPassword] = useState('');
@@ -16,12 +17,12 @@ const FirstTimePasswordChange: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState<{
-    isValid: boolean;
-    message: string;
-    score: number;
-  }>({ isValid: false, message: '', score: 0 });
-
+  const [passwordStrength, setPasswordStrength] = useState({
+    isValid: false,
+    message: '',
+    score: 0
+  });
+  
   const { currentUser, logout } = useSupabaseAuth();
   const { toast } = useToast();
 
@@ -34,10 +35,10 @@ const FirstTimePasswordChange: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newPassword || !confirmPassword) {
+    if (!passwordStrength.isValid) {
       toast({
         title: "Erro",
-        description: "Preencha todos os campos",
+        description: "Por favor, crie uma senha que atenda aos requisitos",
         variant: "destructive"
       });
       return;
@@ -52,25 +53,13 @@ const FirstTimePasswordChange: React.FC = () => {
       return;
     }
 
-    if (!passwordStrength.isValid) {
-      toast({
-        title: "Erro",
-        description: passwordStrength.message,
-        variant: "destructive"
-      });
-      return;
-    }
-
     setIsLoading(true);
 
     try {
-      // Atualizar senha no Supabase Auth
-      const { error: authError } = await supabase.auth.updateUser({
-        password: newPassword
-      });
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
 
-      if (authError) {
-        throw authError;
+      if (error) {
+        throw error;
       }
 
       // Marcar first_login_completed como true
@@ -121,9 +110,7 @@ const FirstTimePasswordChange: React.FC = () => {
     <div className="h-screen w-full bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-6">
       <Card className="w-full max-w-md bg-slate-800/50 backdrop-blur-sm border-slate-700">
         <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center mb-4">
-            <AlertCircle className="w-6 h-6 text-white" />
-          </div>
+          <Logo size="md" variant="icon" className="mx-auto mb-4" />
           <CardTitle className="text-white text-xl">{APP_NAME}</CardTitle>
           <p className="text-slate-400 text-sm">Troca Obrigatória de Senha</p>
         </CardHeader>
