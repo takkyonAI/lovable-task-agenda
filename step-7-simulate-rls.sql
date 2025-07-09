@@ -1,15 +1,15 @@
 -- Step 7: Simular o resultado completo da política RLS
--- Substitua 'USER_ID_AQUI' pelo user_id retornado no Step 1
+-- User ID: bd0dd7f6-55fe-4c28-ac90-368addcb5f9b
 
 -- Esta query mostra quantas tarefas tatiana ADM deveria ver
 SELECT 'Total de tarefas que tatiana ADM deveria ver:' as info, COUNT(*) as should_see_tasks
 FROM tasks t
 WHERE 
   -- Condição 1: Tarefas criadas por ela
-  t.created_by = 'USER_ID_AQUI' 
+  t.created_by = 'bd0dd7f6-55fe-4c28-ac90-368addcb5f9b' 
   OR 
   -- Condição 2: Tarefas atribuídas a ela
-  t.assigned_users @> '["USER_ID_AQUI"]'
+  t.assigned_users @> '["bd0dd7f6-55fe-4c28-ac90-368addcb5f9b"]'
   OR 
   -- Condição 3: Tarefas criadas por outras assessoras ADM
   t.created_by IN (
