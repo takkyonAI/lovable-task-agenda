@@ -508,12 +508,12 @@ const TaskManager: React.FC = () => {
                                     {task.description}
                                   </div>
                                 )}
-                                <div className="flex justify-between items-center mb-2">
+                                <div className="flex flex-wrap gap-1 mb-2">
                                   <Badge className={`text-xs ${getStatusColor(task.status)}`}>
-                                    {getStatusLabel(task.status).charAt(0).toUpperCase()}
+                                    {getStatusLabel(task.status)}
                                   </Badge>
                                   <Badge className={`text-xs ${getPriorityColor(task.priority)}`}>
-                                    {getPriorityLabel(task.priority).charAt(0).toUpperCase()}
+                                    {getPriorityLabel(task.priority)}
                                   </Badge>
                                 </div>
                                 {renderUserInfo(task)}
