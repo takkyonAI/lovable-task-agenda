@@ -11,27 +11,28 @@ const Logo: React.FC<LogoProps> = ({
   size = 'md', 
   variant = 'full' 
 }) => {
+  // Tamanhos aumentados em 200%
   const sizeClasses = {
-    sm: 'w-8 h-8 text-sm',
-    md: 'w-12 h-12 text-base',
-    lg: 'w-16 h-16 text-lg'
+    sm: 'w-16 h-16 text-sm',    // era w-8 h-8
+    md: 'w-24 h-24 text-base',  // era w-12 h-12
+    lg: 'w-32 h-32 text-lg'     // era w-16 h-16
   };
 
   const textSizeClasses = {
-    sm: 'text-xs',
-    md: 'text-sm',
-    lg: 'text-base'
+    sm: 'text-sm',   // era text-xs
+    md: 'text-lg',   // era text-sm
+    lg: 'text-xl'    // era text-base
   };
 
   // Usando logo da pasta public (mais confiável)
   const rockfellerLogoUrl = '/rockfeller-logo.png';
-  console.log('🏢 Logo da Rockfeller URL:', rockfellerLogoUrl);
+  console.log('🏢 Logo da Rockfeller URL (200% maior):', rockfellerLogoUrl);
   console.log('🔄 Componente Logo carregado em:', new Date().toLocaleTimeString());
 
-  // ✅ LOGO REAL DA ROCKFELLER IMPLEMENTADA! [PUBLIC FOLDER]
+  // ✅ LOGO REAL DA ROCKFELLER IMPLEMENTADA! [200% MAIOR]
   if (variant === 'icon' || variant === 'full') {
     return (
-      <div className={`${sizeClasses[size]} ${className}`} data-logo="rockfeller-public">
+      <div className={`${sizeClasses[size]} ${className}`} data-logo="rockfeller-public-200">
         <img 
           src={rockfellerLogoUrl} 
           alt="Rockfeller Logo" 
@@ -44,14 +45,14 @@ const Logo: React.FC<LogoProps> = ({
             (e.target as HTMLImageElement).parentElement!.innerHTML = `
               <div class="w-full h-full bg-gradient-to-br from-blue-600 via-blue-700 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg border border-blue-500/20">
                 <div class="text-white font-bold tracking-tight">
-                  <span class="text-yellow-300 text-lg">R</span>
-                  <span class="text-white text-sm">F</span>
+                  <span class="text-yellow-300 text-2xl">R</span>
+                  <span class="text-white text-lg">F</span>
                 </div>
               </div>
             `;
           }}
           onLoad={() => {
-            console.log('✅ Logo da Rockfeller carregada com sucesso!');
+            console.log('✅ Logo da Rockfeller carregada com sucesso! (200% maior)');
           }}
         />
       </div>
@@ -67,7 +68,7 @@ const Logo: React.FC<LogoProps> = ({
   }
 
   return (
-    <div className={`flex items-center space-x-2 ${className}`} data-logo="rockfeller-full-public">
+    <div className={`flex items-center space-x-3 ${className}`} data-logo="rockfeller-full-public-200">
       <div className={`${sizeClasses[size]}`}>
         <img 
           src={rockfellerLogoUrl} 
@@ -81,14 +82,14 @@ const Logo: React.FC<LogoProps> = ({
             (e.target as HTMLImageElement).parentElement!.innerHTML = `
               <div class="w-full h-full bg-gradient-to-br from-blue-600 via-blue-700 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg border border-blue-500/20">
                 <div class="text-white font-bold tracking-tight">
-                  <span class="text-yellow-300 text-lg">R</span>
-                  <span class="text-white text-sm">F</span>
+                  <span class="text-yellow-300 text-2xl">R</span>
+                  <span class="text-white text-lg">F</span>
                 </div>
               </div>
             `;
           }}
           onLoad={() => {
-            console.log('✅ Logo da Rockfeller carregada com sucesso!');
+            console.log('✅ Logo da Rockfeller carregada com sucesso! (200% maior)');
           }}
         />
       </div>
