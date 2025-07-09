@@ -2,7 +2,7 @@ import React from 'react';
 
 interface LogoProps {
   className?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   variant?: 'full' | 'icon' | 'text';
 }
 
@@ -11,14 +11,16 @@ const Logo: React.FC<LogoProps> = ({
   size = 'md', 
   variant = 'full' 
 }) => {
-  // Tamanhos aumentados em 200%
+  // Tamanhos aumentados em 200% + novo tamanho xs
   const sizeClasses = {
+    xs: 'w-12 h-12 text-xs',    // novo tamanho extra pequeno
     sm: 'w-16 h-16 text-sm',    // era w-8 h-8
     md: 'w-24 h-24 text-base',  // era w-12 h-12
     lg: 'w-32 h-32 text-lg'     // era w-16 h-16
   };
 
   const textSizeClasses = {
+    xs: 'text-xs',   // novo tamanho extra pequeno
     sm: 'text-sm',   // era text-xs
     md: 'text-lg',   // era text-sm
     lg: 'text-xl'    // era text-base
