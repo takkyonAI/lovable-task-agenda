@@ -45,8 +45,8 @@ export const useNotifications = () => {
     if (!isSupported || permission !== 'granted') return;
 
     const notification = new Notification(title, {
-      icon: '/favicon.ico',
-      badge: '/favicon.ico',
+      icon: '/rockfeller-favicon.png',
+      badge: '/rockfeller-favicon.png',
       ...options
     });
 

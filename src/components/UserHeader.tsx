@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { LogOut, Crown, Shield, User, GraduationCap, UserCheck, FileText, UserCog } from 'lucide-react';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import NotificationCenter from './NotificationCenter';
+import Logo from '@/components/ui/Logo';
 
 const UserHeader: React.FC = () => {
   const { currentUser, logout } = useSupabaseAuth();
@@ -55,15 +56,17 @@ const UserHeader: React.FC = () => {
       <CardContent className="p-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg">
-              {getRoleIcon(currentUser.role)}
+            {/* Logo da Rockfeller no UserHeader */}
+            <div className="p-1">
+              <Logo size="xs" variant="icon" />
             </div>
             <div className="min-w-0 flex-1">
               <h2 className="font-semibold text-white truncate">{currentUser.name}</h2>
               <p className="text-slate-400 text-sm truncate">{currentUser.email}</p>
             </div>
             <Badge className={`${getRoleColor(currentUser.role)} whitespace-nowrap`}>
-              {getRoleLabel(currentUser.role)}
+              {getRoleIcon(currentUser.role)}
+              <span className="ml-1">{getRoleLabel(currentUser.role)}</span>
             </Badge>
           </div>
           
