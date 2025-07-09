@@ -99,10 +99,13 @@ export const useTaskManager = () => {
     setupAutoRefresh();
     setupHeartbeat();
     
-    // Simple direct real-time connection
+    // Hybrid real-time + polling approach
     let channel: any = null;
+    let pollingInterval: NodeJS.Timeout | null = null;
+    let realTimeAttempts = 0;
+    const maxRealTimeAttempts = 3;
     
-    console.log('🔄 Setting up basic real-time connection...');
+    console.log('🔄 Setting up hybrid real-time/polling system...');
     
     // Wait for auth before setting up real-time
     if (!currentUser) {
@@ -110,63 +113,123 @@ export const useTaskManager = () => {
       return;
     }
     
-    try {
-      // Create channel with basic configuration
-      channel = supabase
-        .channel('tasks_channel')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'tasks'
-          },
-          (payload) => {
-            console.log('🎯 Real-time event:', payload.eventType);
-            setIsRealTimeConnected(true);
-            setLastUpdateTime(Date.now());
+    // Setup polling as immediate fallback
+    const setupPolling = () => {
+      console.log('📊 Setting up polling fallback (30s intervals)...');
+      pollingInterval = setInterval(() => {
+        console.log('🔄 Polling update...');
+        loadTasks();
+        setLastUpdateTime(Date.now());
+      }, 30000); // Poll every 30 seconds
+      
+      toast({
+        title: "📊 Modo Polling Ativo",
+        description: "Atualizações automáticas a cada 30 segundos",
+        duration: 3000
+      });
+    };
+    
+    const attemptRealTimeConnection = () => {
+      if (realTimeAttempts >= maxRealTimeAttempts) {
+        console.log('❌ Max real-time attempts reached, using polling only');
+        setupPolling();
+        return;
+      }
+      
+      realTimeAttempts++;
+      console.log(`🔄 Real-time attempt ${realTimeAttempts}/${maxRealTimeAttempts}...`);
+      
+      try {
+        // Clean up existing channel
+        if (channel) {
+          supabase.removeChannel(channel);
+        }
+        
+        // Create channel with timeout
+        const connectionTimeout = setTimeout(() => {
+          console.warn('⏰ Real-time connection timeout, falling back to polling');
+          setIsRealTimeConnected(false);
+          setupPolling();
+        }, 10000); // 10 second timeout
+        
+        channel = supabase
+          .channel(`tasks_${Date.now()}`)
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'tasks'
+            },
+            (payload) => {
+              console.log('🎯 Real-time event received:', payload.eventType);
+              setIsRealTimeConnected(true);
+              setLastUpdateTime(Date.now());
+              
+              // Clear polling if real-time works
+              if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+              }
+              
+              debouncedLoadTasks();
+            }
+          )
+          .subscribe((status) => {
+            console.log('🔗 Real-time status:', status);
             
-            // Reload tasks on any change
-            debouncedLoadTasks();
-          }
-        )
-        .subscribe((status) => {
-          console.log('🔗 Subscription status:', status);
-          
-          if (status === 'SUBSCRIBED') {
-            console.log('✅ Real-time connected!');
-            setIsRealTimeConnected(true);
-            toast({
-              title: "✅ Real-time Conectado",
-              description: "Atualizações automáticas habilitadas!",
-              duration: 3000
-            });
-          } else if (status === 'CLOSED') {
-            console.warn('🔒 Real-time closed');
-            setIsRealTimeConnected(false);
-          } else if (status === 'CHANNEL_ERROR') {
-            console.error('❌ Channel error');
-            setIsRealTimeConnected(false);
-            toast({
-              title: "⚠️ Erro na Conexão",
-              description: "Problema na conexão real-time. Usando atualização manual.",
-              variant: "destructive",
-              duration: 5000
-            });
-          }
-        });
-      
-      console.log('📺 Channel created:', channel);
-      
-    } catch (error) {
-      console.error('❌ Real-time setup error:', error);
-      setIsRealTimeConnected(false);
-    }
+            if (status === 'SUBSCRIBED') {
+              clearTimeout(connectionTimeout);
+              console.log('✅ Real-time connected successfully!');
+              setIsRealTimeConnected(true);
+              
+              // Clear polling since real-time is working
+              if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+              }
+              
+              toast({
+                title: "✅ Real-time Conectado",
+                description: "Atualizações instantâneas habilitadas!",
+                duration: 3000
+              });
+            } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+              clearTimeout(connectionTimeout);
+              console.warn(`🔒 Real-time ${status.toLowerCase()}, attempt ${realTimeAttempts}/${maxRealTimeAttempts}`);
+              setIsRealTimeConnected(false);
+              
+              // Retry or fall back to polling
+              if (realTimeAttempts < maxRealTimeAttempts) {
+                setTimeout(() => attemptRealTimeConnection(), 5000);
+              } else {
+                setupPolling();
+              }
+            }
+          });
+        
+      } catch (error) {
+        console.error('❌ Real-time setup error:', error);
+        setIsRealTimeConnected(false);
+        
+        if (realTimeAttempts < maxRealTimeAttempts) {
+          setTimeout(() => attemptRealTimeConnection(), 5000);
+        } else {
+          setupPolling();
+        }
+      }
+    };
+    
+    // Start with real-time attempt
+    attemptRealTimeConnection();
 
     return () => {
-      console.log('🧹 Cleaning up...');
+      console.log('🧹 Cleaning up hybrid system...');
       if (channel) {
         supabase.removeChannel(channel);
+      }
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
       }
       if (loadTasksTimeoutRef.current) {
         clearTimeout(loadTasksTimeoutRef.current);
