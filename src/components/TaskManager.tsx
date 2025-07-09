@@ -12,6 +12,7 @@ import TaskCard from './task/TaskCard';
 import TaskFilters from './task/TaskFilters';
 import AdvancedTaskFilters from './task/AdvancedTaskFilters';
 import TaskDetailsModal from './task/TaskDetailsModal';
+import { RealTimeTest } from './RealTimeTest';
 import { useTaskManager } from '@/hooks/useTaskManager';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { getStatusColor, getPriorityColor, getStatusLabel, getPriorityLabel } from '@/utils/taskUtils';
@@ -786,6 +787,11 @@ const TaskManager = () => {
               {currentView === 'month' && renderMonthView()}
             </>
           )}
+        </div>
+        
+        {/* Real-time Test Component - Temporary Debug Tool */}
+        <div className="mt-6">
+          <RealTimeTest />
         </div>
       </div>
 
