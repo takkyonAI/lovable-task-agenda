@@ -59,10 +59,16 @@ export const useTaskManager = () => {
   const loadTasks = async () => {
     setIsLoading(true);
     try {
+      console.log('🔍 loadTasks - Starting to load tasks...');
+      
       const { data: taskData, error: taskError } = await supabase
         .from('tasks')
         .select('*')
         .order('created_at', { ascending: false });
+
+      console.log('🔍 loadTasks - Raw taskData from DB:', taskData?.length || 0);
+      console.log('🔍 loadTasks - Task error:', taskError);
+      console.log('🔍 loadTasks - Current user:', currentUser?.user_id);
 
       if (taskError) {
         console.error('Erro ao carregar tarefas:', taskError);
@@ -75,6 +81,8 @@ export const useTaskManager = () => {
       }
 
       if (taskData) {
+        console.log('🔍 loadTasks - Processing tasks...');
+        
         const formattedTasks: Task[] = taskData.map((task) => {
           // Map "alta" priority to "urgente" for backward compatibility
           let priority: 'baixa' | 'media' | 'urgente' = task.priority as 'baixa' | 'media' | 'urgente';
@@ -98,6 +106,14 @@ export const useTaskManager = () => {
           
           return formattedTask;
         });
+
+        console.log('🔍 loadTasks - Formatted tasks count:', formattedTasks.length);
+        console.log('🔍 loadTasks - First 3 tasks:', formattedTasks.slice(0, 3).map(t => ({
+          id: t.id,
+          title: t.title,
+          created_by: t.created_by,
+          assigned_users: t.assigned_users
+        })));
 
         setTasks(formattedTasks);
       }
