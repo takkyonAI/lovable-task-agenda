@@ -32,9 +32,8 @@ const AdvancedTaskFilters: React.FC<AdvancedTaskFiltersProps> = ({
 }) => {
   const { currentUser } = useSupabaseAuth();
 
-  // Verificar se o usuário tem permissão para ver os filtros avançados
-  const canUseAdvancedFilters = currentUser && 
-    ['admin', 'franqueado', 'supervisor_adm', 'coordenador'].includes(currentUser.role);
+  // Todos os usuários autenticados podem usar os filtros avançados
+  const canUseAdvancedFilters = currentUser && currentUser.role;
 
   if (!canUseAdvancedFilters) {
     return null;
@@ -47,6 +46,8 @@ const AdvancedTaskFilters: React.FC<AdvancedTaskFiltersProps> = ({
     { value: 'coordenador', label: 'Coordenador' },
     { value: 'supervisor_adm', label: 'Supervisor ADM' },
     { value: 'assessora_adm', label: 'Assessora ADM' },
+    { value: 'assessora', label: 'Assessora' },
+    { value: 'estagiario', label: 'Estagiário' },
     { value: 'professor', label: 'Professor' },
     { value: 'vendedor', label: 'Vendedor' }
   ];

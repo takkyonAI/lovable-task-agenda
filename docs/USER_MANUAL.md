@@ -43,7 +43,7 @@ A interface possui duas abas principais:
 
 #### 👥 Usuários  
 - Gerenciamento de usuários do sistema
-- Disponível apenas para: **Admin**, **Franqueado**, **Coordenador**, **Supervisor ADM**
+- Disponível para: **Todos os usuários autenticados**
 
 ---
 
@@ -102,7 +102,7 @@ Use os botões no topo para filtrar por período:
 - **Este Mês**: Tarefas do mês atual
 
 ### Filtros Avançados
-*Disponível para Admin, Franqueado, Coordenador e Supervisor ADM*
+*Disponível para todos os usuários autenticados*
 
 #### Filtrar por Usuário
 - Selecione um usuário específico para ver apenas suas tarefas
@@ -115,6 +115,8 @@ Use os botões no topo para filtrar por período:
   - Coordenador
   - Supervisor ADM
   - Assessora ADM
+  - Assessora
+  - Estagiário
   - Professor
   - Vendedor
 
