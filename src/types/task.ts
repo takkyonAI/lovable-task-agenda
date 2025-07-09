@@ -11,6 +11,7 @@ export interface Task {
   created_at: Date;
   updated_at: Date;
   completed_at?: Date;
+  is_private: boolean;
 }
 
 export interface NewTask {
@@ -21,4 +22,5 @@ export interface NewTask {
   due_date: string;
   due_time: string;
   assigned_users: string[];
+  is_private: boolean;
 }

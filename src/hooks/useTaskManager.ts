@@ -104,7 +104,8 @@ export const useTaskManager = () => {
             created_by: task.created_by,
             created_at: new Date(task.created_at),
             updated_at: new Date(task.updated_at),
-            completed_at: task.completed_at ? new Date(task.completed_at) : undefined
+            completed_at: task.completed_at ? new Date(task.completed_at) : undefined,
+            is_private: task.is_private || false
           };
           
           return formattedTask;
@@ -348,6 +349,7 @@ export const useTaskManager = () => {
     due_date: string;
     due_time: string;
     assigned_users: string[];
+    is_private: boolean;
   }) => {
     if (!newTask.title.trim()) {
       toast({
@@ -405,7 +407,8 @@ export const useTaskManager = () => {
         priority: newTask.priority,
         due_date: formattedDueDate,
         assigned_users: newTask.assigned_users,
-        created_by: currentUser.user_id
+        created_by: currentUser.user_id,
+        is_private: newTask.is_private
       };
       
       const { data, error } = await supabase

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Target, Clock, CheckCircle, TrendingUp, CalendarDays, Calendar, ChevronLeft, ChevronRight, User, Users } from 'lucide-react';
+import { Target, Clock, CheckCircle, TrendingUp, CalendarDays, Calendar, ChevronLeft, ChevronRight, User, Users, Eye } from 'lucide-react';
 import CreateTaskDialog from './task/CreateTaskDialog';
 import TaskDetailsModal from './task/TaskDetailsModal';
 import TaskFilters from './task/TaskFilters';
@@ -27,7 +27,8 @@ const TaskManager: React.FC = () => {
     priority: 'media',
     due_date: '',
     due_time: '09:00',
-    assigned_users: []
+    assigned_users: [],
+    is_private: false
   });
 
   const {
@@ -116,7 +117,8 @@ const TaskManager: React.FC = () => {
         priority: 'media',
         due_date: '',
         due_time: '09:00',
-        assigned_users: []
+        assigned_users: [],
+        is_private: false
       });
       setIsCreateDialogOpen(false);
     }
@@ -149,7 +151,8 @@ const TaskManager: React.FC = () => {
       priority: 'media',
       due_date: `${dateString} ${timeString}:00`,
       due_time: timeString,
-      assigned_users: []
+      assigned_users: [],
+      is_private: false
     });
     setIsCreateDialogOpen(true);
   };
@@ -168,7 +171,8 @@ const TaskManager: React.FC = () => {
       priority: 'media',
       due_date: `${dateString} 09:00:00`,
       due_time: '09:00',
-      assigned_users: []
+      assigned_users: [],
+      is_private: false
     });
     setIsCreateDialogOpen(true);
   };
@@ -427,196 +431,10 @@ const TaskManager: React.FC = () => {
                               onClick={() => handleTaskClick(task)}
                             >
                               <div className="flex items-start justify-between mb-2">
-                                <h4 className="font-medium text-white text-sm break-words flex-1 text-left">{task.title}</h4>
-                                <Badge className={`text-xs ml-2 ${getStatusColor(task.status)}`}>
-                                  {getStatusLabel(task.status)}
-                                </Badge>
-                              </div>
-                              {task.description && (
-                                <p className="text-slate-400 text-xs mb-2 text-left">{task.description}</p>
-                              )}
-                              <div className="flex items-center justify-between mb-2">
-                                <Badge className={`text-xs ${getPriorityColor(task.priority)}`}>
-                                  {getPriorityLabel(task.priority)}
-                                </Badge>
-                              </div>
-                              {renderUserInfo(task)}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="week">
-              <Card className="bg-slate-700/30 border-slate-600">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center">
-                    <CalendarDays className="w-5 h-5 mr-2" />
-                    <span className="hidden sm:inline">Visualização Semanal (Segunda a Sábado)</span>
-                    <span className="sm:hidden">Semana</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                    {weekDays.map((day, index) => {
-                      const dayTasks = getTasksForDay(day);
-                      const isToday = isSameDay(day, getTodayBR());
-                      const dynamicHeight = calculateDynamicHeight(dayTasks.length, 'week');
-                      
-                      return (
-                        <div 
-                          key={index} 
-                          className={`border border-slate-600 rounded-lg p-2 sm:p-3 ${dynamicHeight} cursor-pointer hover:bg-slate-600/10 transition-colors ${
-                            isToday ? 'bg-blue-500/10 border-blue-500' : 'bg-slate-600/20'
-                          }`}
-                          onDoubleClick={() => handleDoubleClickDay(day)}
-                          style={{ minHeight: `${150 + (dayTasks.length * 80)}px` }}
-                        >
-                          <div className="text-center mb-2 sm:mb-3">
-                            <div className="text-xs text-slate-400">
-                              {day.toLocaleDateString('pt-BR', { weekday: 'short' })}
-                            </div>
-                            <div className={`text-sm sm:text-lg font-semibold ${isToday ? 'text-blue-400' : 'text-white'}`}>
-                              {day.getDate()}
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-1 sm:space-y-2">
-                            {dayTasks.map(task => (
-                              <div 
-                                key={task.id} 
-                                className="p-2 bg-slate-500/30 rounded text-xs cursor-pointer hover:bg-slate-500/40 transition-colors"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleTaskClick(task);
-                                }}
-                              >
-                                <div className="mb-1 sm:mb-2">
-                                  <span className="text-white font-medium break-words block text-left text-xs sm:text-sm line-clamp-2">{task.title}</span>
+                                <div className="flex items-center gap-2 flex-1">
+                                  <h4 className="font-medium text-white text-sm break-words flex-1 text-left">{task.title}</h4>
+                                  {task.is_private && (
+                                    <Eye className="w-4 h-4 text-amber-400 flex-shrink-0" title="Tarefa Privada" />
+                                  )}
                                 </div>
-                                {task.due_date && (
-                                  <div className="text-slate-400 mb-1 sm:mb-2 text-left text-xs">
-                                    {formatTimeToBR(task.due_date)}
-                                  </div>
-                                )}
-                                {task.description && (
-                                  <div className="text-slate-400 mb-1 sm:mb-2 text-left text-xs line-clamp-2">
-                                    {task.description}
-                                  </div>
-                                )}
-                                <div className="flex flex-wrap gap-1 mb-2">
-                                  <Badge className={`text-xs ${getStatusColor(task.status)}`}>
-                                    {getStatusLabel(task.status)}
-                                  </Badge>
-                                  <Badge className={`text-xs ${getPriorityColor(task.priority)}`}>
-                                    {getPriorityLabel(task.priority)}
-                                  </Badge>
-                                </div>
-                                {renderUserInfo(task)}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="month">
-              <Card className="bg-slate-700/30 border-slate-600">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center">
-                    <Calendar className="w-5 h-5 mr-2" />
-                    <span className="truncate">{getViewTitleBR('month', selectedDate)}</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-7 gap-1">
-                    {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
-                      <div key={day} className="text-center text-xs text-slate-400 py-1 sm:py-2 font-medium">
-                        {day}
-                      </div>
-                    ))}
-                    
-                    {monthDays.map((day, index) => {
-                      const dayTasks = getTasksForDay(day);
-                      const isCurrentMonth = day.getMonth() === selectedDate.getMonth();
-                      const isToday = isSameDay(day, getTodayBR());
-                      
-                      return (
-                        <div 
-                          key={index} 
-                          className={`border border-slate-600 rounded p-1 text-xs cursor-pointer hover:bg-slate-600/10 transition-colors ${
-                            isCurrentMonth 
-                              ? isToday 
-                                ? 'bg-blue-500/20 border-blue-500' 
-                                : 'bg-slate-600/20' 
-                              : 'bg-slate-800/20 text-slate-500'
-                          }`}
-                          onDoubleClick={() => handleDoubleClickDay(day)}
-                          style={{ minHeight: `${60 + (dayTasks.length * 30)}px` }}
-                        >
-                          <div className={`text-center mb-1 text-xs sm:text-sm ${isToday ? 'text-blue-400 font-bold' : 'text-slate-300'}`}>
-                            {day.getDate()}
-                          </div>
-                          
-                          <div className="space-y-1">
-                            {dayTasks.map(task => (
-                              <div 
-                                key={task.id} 
-                                className="p-1 bg-slate-500/30 rounded text-xs cursor-pointer hover:bg-slate-500/40 transition-colors"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleTaskClick(task);
-                                }}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <span className="text-white font-medium truncate text-xs flex-1 text-left">{task.title}</span>
-                                  <div className={`w-2 h-2 rounded-full ml-1 flex-shrink-0 ${
-                                    task.priority === 'urgente' ? 'bg-red-500' :
-                                    task.priority === 'media' ? 'bg-orange-500' :
-                                    'bg-blue-500'
-                                  }`}></div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-
-          {isLoading && (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-              <p className="text-slate-400 mt-2">Carregando tarefas...</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <TaskDetailsModal
-        task={selectedTask}
-        isOpen={isTaskDetailsOpen}
-        onClose={handleCloseTaskDetails}
-        onUpdateStatus={updateTaskStatus}
-        onDeleteTask={handleDeleteTask}
-        canEdit={selectedTask ? canEditTask(selectedTask) : false}
-        canDelete={selectedTask ? canDeleteTask(selectedTask) : false}
-        isUpdating={selectedTask ? updatingTask === selectedTask.id : false}
-      />
-    </div>
-  );
-};
-
-export default TaskManager;
+                                <Badge className={`

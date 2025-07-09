@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Plus, Key } from 'lucide-react';
 import UserSelector from '../UserSelector';
 
 interface NewTask {
@@ -16,6 +17,7 @@ interface NewTask {
   due_date: string;
   due_time: string;
   assigned_users: string[];
+  is_private: boolean;
 }
 
 interface CreateTaskDialogProps {
@@ -209,6 +211,22 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
               selectedUsers={newTask.assigned_users}
               onUsersChange={(users) => onTaskChange({ ...newTask, assigned_users: users })}
               placeholder="Buscar usuários para atribuir..."
+            />
+          </div>
+
+          {/* Privacy Toggle */}
+          <div className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg border border-slate-600">
+            <div className="flex items-center space-x-2">
+              <Key className="w-4 h-4 text-amber-400" />
+              <div>
+                <Label className="text-slate-300 font-medium">Tarefa Privada</Label>
+                <p className="text-xs text-slate-400">Visível apenas para criador, atribuídos e admin/franqueados</p>
+              </div>
+            </div>
+            <Switch
+              checked={newTask.is_private}
+              onCheckedChange={(checked) => onTaskChange({ ...newTask, is_private: checked })}
+              className="data-[state=checked]:bg-amber-500"
             />
           </div>
           
