@@ -3,10 +3,7 @@ SELECT
     'Real-time publication status' as check_type,
     schemaname,
     tablename,
-    pubinsert,
-    pubupdate,
-    pubdelete,
-    pubtruncate
+    'Published' as status
 FROM pg_publication_tables 
 WHERE pubname = 'supabase_realtime'
 AND tablename = 'tasks';
@@ -22,15 +19,14 @@ WHERE extname = 'supabase_realtime';
 -- Check table permissions for realtime
 SELECT 
     'Table permissions' as check_type,
-    schemaname,
-    tablename,
-    grantor,
+    table_schema,
+    table_name,
     grantee,
     privilege_type,
     is_grantable
 FROM information_schema.table_privileges 
 WHERE table_name = 'tasks' 
-AND grantee = 'supabase_realtime_admin';
+AND grantee LIKE '%realtime%';
 
 -- Check RLS policies that might affect realtime
 SELECT 
@@ -40,9 +36,7 @@ SELECT
     policyname,
     permissive,
     roles,
-    cmd,
-    qual,
-    with_check
+    cmd
 FROM pg_policies 
 WHERE tablename = 'tasks'
 ORDER BY policyname;
