@@ -11,17 +11,15 @@ import Logo from '@/components/ui/Logo';
 
 const FirstTimePasswordChange: React.FC = () => {
   const [passwordData, setPasswordData] = useState({ 
-    currentPassword: '', 
     newPassword: '', 
     confirmPassword: '' 
   });
   const [isLoading, setIsLoading] = useState(false);
   const [showPasswords, setShowPasswords] = useState({
-    current: false,
     new: false,
     confirm: false
   });
-  const { changePassword } = useSupabaseAuth();
+  const { firstTimePasswordChange } = useSupabaseAuth();
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +37,10 @@ const FirstTimePasswordChange: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await changePassword(passwordData.currentPassword, passwordData.newPassword);
+      const success = await firstTimePasswordChange(passwordData.newPassword);
+      if (!success) {
+        console.error('Erro ao alterar senha');
+      }
     } catch (error) {
       console.error('Erro ao alterar senha:', error);
     } finally {
@@ -47,7 +48,7 @@ const FirstTimePasswordChange: React.FC = () => {
     }
   };
 
-  const toggleShowPassword = (field: 'current' | 'new' | 'confirm') => {
+  const toggleShowPassword = (field: 'new' | 'confirm') => {
     setShowPasswords(prev => ({
       ...prev,
       [field]: !prev[field]
@@ -65,32 +66,13 @@ const FirstTimePasswordChange: React.FC = () => {
         </CardHeader>
         
         <CardContent className="py-3">
+          <div className="mb-4 p-3 bg-blue-900/50 border border-blue-700 rounded-lg">
+            <p className="text-slate-300 text-sm">
+              <strong>Primeiro acesso:</strong> Crie sua nova senha pessoal para substituir a senha temporária.
+            </p>
+          </div>
+          
           <form onSubmit={handlePasswordChange} className="space-y-3">
-            <div>
-              <Label htmlFor="current-password" className="text-slate-300 text-sm">Senha Atual</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                <Input
-                  id="current-password"
-                  type={showPasswords.current ? 'text' : 'password'}
-                  value={passwordData.currentPassword}
-                  onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: sanitizeInput(e.target.value) }))}
-                  className="bg-slate-700/50 border-slate-600 text-white pl-10 pr-10 h-9"
-                  placeholder="••••••••"
-                  required
-                  minLength={6}
-                  maxLength={128}
-                />
-                <button
-                  type="button"
-                  onClick={() => toggleShowPassword('current')}
-                  className="absolute right-3 top-3 text-slate-400 hover:text-slate-300"
-                >
-                  {showPasswords.current ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-            
             <div>
               <Label htmlFor="new-password" className="text-slate-300 text-sm">Nova Senha</Label>
               <div className="relative">
