@@ -39,6 +39,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, name: string) => Promise<boolean>;
   logout: () => Promise<void>;
   createUser: (userData: { name: string; email: string; role: User['role'] }) => Promise<boolean>;
+  updateUser: (userId: string, userData: { name: string; email: string; role?: User['role'] }) => Promise<boolean>;
   hasPermission: (requiredRole: User['role']) => boolean;
   canAccessUserManagement: () => boolean;
   getAllUsers: () => Promise<User[]>;
@@ -601,6 +602,82 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const updateUser = async (userId: string, userData: { name: string; email: string; role?: User['role'] }): Promise<boolean> => {
+    try {
+      // Verificar se o usuário tem permissão para editar usuários
+      if (!canAccessUserManagement()) {
+        toast({
+          title: "Erro",
+          description: "Você não tem permissão para editar usuários.",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      const { name, email, role } = userData;
+
+      if (!validateName(name)) {
+        toast({
+          title: "Erro",
+          description: "Nome deve ter entre 2 e 100 caracteres",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      if (!validateEmail(email)) {
+        toast({
+          title: "Erro",
+          description: "Por favor, insira um email válido",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      // Construir o objeto de atualização
+      const updateData: any = {
+        name: sanitizeInput(name),
+        email: sanitizeInput(email),
+        updated_at: new Date().toISOString()
+      };
+
+      // Se role for fornecido, incluir na atualização
+      if (role) {
+        updateData.role = role;
+      }
+
+      const { error } = await supabase
+        .from('user_profiles')
+        .update(updateData)
+        .eq('id', userId);
+
+      if (error) {
+        console.error('Erro ao atualizar usuário:', error);
+        toast({
+          title: "Erro",
+          description: "Falha ao atualizar usuário",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Usuário atualizado com sucesso",
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Erro ao atualizar usuário:', error);
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao atualizar usuário",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
   const getAllUsers = async (): Promise<User[]> => {
     try {
       const { data, error } = await supabase
@@ -882,6 +959,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       signUp,
       logout,
       createUser,
+      updateUser,
       hasPermission,
       canAccessUserManagement,
       getAllUsers,

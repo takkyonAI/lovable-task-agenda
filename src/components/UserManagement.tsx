@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Users, Plus, Crown, Shield, User as UserIcon, UserX, Mail, CheckCircle, Clock, RefreshCw, Trash2, UserMinus, Eye, EyeOff, GraduationCap, UserCheck, FileText, UserCog } from 'lucide-react';
+import { Users, Plus, Crown, Shield, User as UserIcon, UserX, Mail, CheckCircle, Clock, RefreshCw, Trash2, UserMinus, Eye, EyeOff, GraduationCap, UserCheck, FileText, UserCog, Edit } from 'lucide-react';
 import { User } from '@/types/user';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -15,17 +15,26 @@ import PasswordManagement from './PasswordManagement';
 const UserManagement: React.FC = () => {
   const [confirmedUsers, setConfirmedUsers] = useState<User[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
     role: 'vendedor' as const,
   });
+  const [editUser, setEditUser] = useState({
+    name: '',
+    email: '',
+    role: 'vendedor' as User['role'],
+  });
 
   const { 
     canAccessUserManagement, 
     createUser, 
+    updateUser,
     getAllUsers, 
     refreshProfile,
     changePassword,
@@ -148,6 +157,70 @@ const UserManagement: React.FC = () => {
       });
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setEditUser({
+      name: user.name,
+      email: user.email,
+      role: user.role
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateUser = async () => {
+    if (!editingUser) return;
+
+    if (!editUser.name || !editUser.email) {
+      toast({
+        title: "Erro",
+        description: "Preencha todos os campos obrigatórios",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validar email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(editUser.email)) {
+      toast({
+        title: "Erro",
+        description: "Por favor, insira um email válido",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const userData = {
+        name: editUser.name,
+        email: editUser.email,
+        role: editUser.role
+      };
+
+      const success = await updateUser(editingUser.id, userData);
+      if (success) {
+        setEditUser({
+          name: '',
+          email: '',
+          role: 'vendedor',
+        });
+        setEditingUser(null);
+        setIsEditDialogOpen(false);
+        await loadUsers();
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar usuário:', error);
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao atualizar usuário",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -369,6 +442,16 @@ const UserManagement: React.FC = () => {
                       <PasswordManagement userId={user.id} userName={user.name} />
                       
                       <Button
+                        onClick={() => handleEditUser(user)}
+                        variant="outline"
+                        size="sm"
+                        className="bg-blue-500/20 border-blue-500/30 hover:bg-blue-500/30 text-blue-400 text-xs"
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        Editar
+                      </Button>
+                      
+                      <Button
                         onClick={() => handleToggleUserStatus(user.id, user.name, user.is_active !== false)}
                         variant="outline"
                         size="sm"
@@ -418,6 +501,92 @@ const UserManagement: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+      
+      {/* Edit User Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="bg-slate-800 border-slate-700 max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-white">Editar Usuário</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="editUserName" className="text-slate-300">Nome *</Label>
+              <Input
+                id="editUserName"
+                value={editUser.name}
+                onChange={(e) => setEditUser(prev => ({ ...prev, name: e.target.value }))}
+                className="bg-slate-700/50 border-slate-600 text-white"
+                placeholder="Nome completo do usuário"
+                disabled={isUpdating}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="editUserEmail" className="text-slate-300">Email *</Label>
+              <Input
+                id="editUserEmail"
+                type="email"
+                value={editUser.email}
+                onChange={(e) => setEditUser(prev => ({ ...prev, email: e.target.value }))}
+                className="bg-slate-700/50 border-slate-600 text-white"
+                placeholder="email@exemplo.com"
+                disabled={isUpdating}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="editUserRole" className="text-slate-300">Papel</Label>
+              <Select 
+                value={editUser.role} 
+                onValueChange={(value: any) => setEditUser(prev => ({ ...prev, role: value }))}
+                disabled={isUpdating}
+              >
+                <SelectTrigger className="bg-slate-700/50 border-slate-600">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-800 border-slate-700">
+                  <SelectItem value="admin">Administrador</SelectItem>
+                  <SelectItem value="franqueado">Franqueado</SelectItem>
+                  <SelectItem value="vendedor">Vendedor</SelectItem>
+                  <SelectItem value="professor">Professor</SelectItem>
+                  <SelectItem value="coordenador">Coordenador</SelectItem>
+                  <SelectItem value="assessora_adm">Assessora ADM</SelectItem>
+                  <SelectItem value="supervisor_adm">Supervisor ADM</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleUpdateUser}
+                disabled={isUpdating}
+                className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              >
+                {isUpdating ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Edit className="w-4 h-4 mr-2" />
+                    Salvar Alterações
+                  </>
+                )}
+              </Button>
+              
+              <Button 
+                onClick={() => setIsEditDialogOpen(false)}
+                disabled={isUpdating}
+                variant="outline"
+                className="bg-slate-700/50 border-slate-600 hover:bg-slate-600/50 text-white"
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
