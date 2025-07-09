@@ -121,11 +121,8 @@ export const useNotifications = () => {
       
       const { data: overdueTasks, error } = await supabase
         .from('tasks')
-        .select(`
-          *,
-          task_assignments!inner(user_id)
-        `)
-        .eq('task_assignments.user_id', currentUser.user_id)
+        .select('*')
+        .contains('assigned_users', [currentUser.user_id])
         .lt('due_date', now)
         .neq('status', 'concluida')
         .neq('status', 'cancelada');
@@ -162,11 +159,8 @@ export const useNotifications = () => {
 
       const { data: pendingTasks, error } = await supabase
         .from('tasks')
-        .select(`
-          *,
-          task_assignments!inner(user_id)
-        `)
-        .eq('task_assignments.user_id', currentUser.user_id)
+        .select('*')
+        .contains('assigned_users', [currentUser.user_id])
         .eq('status', 'pendente')
         .lt('due_date', tomorrowStr);
 
@@ -196,32 +190,44 @@ export const useNotifications = () => {
     if (!currentUser) return;
 
     const channel = supabase
-      .channel('task-assignments-notifications')
+      .channel('task-notifications')
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
-          table: 'task_assignments',
-          filter: `user_id=eq.${currentUser.user_id}`
+          table: 'tasks'
         },
         async (payload) => {
-          console.log('Nova atribuição de tarefa:', payload);
+          console.log('Mudança em tarefa:', payload);
           
-          // Buscar detalhes da tarefa
-          const { data: task } = await supabase
-            .from('tasks')
-            .select('*')
-            .eq('id', payload.new.task_id)
-            .single();
-
-          if (task) {
-            addNotification({
-              title: 'Nova Tarefa Atribuída!',
-              message: `Você foi atribuído à tarefa: "${task.title}"`,
-              type: 'task_assigned',
-              taskId: task.id
-            });
+          // Verificar se esta tarefa é relevante para o usuário atual
+          const task = payload.new as any;
+          if (task && task.assigned_users && task.assigned_users.includes(currentUser.user_id)) {
+            // Se é uma nova tarefa atribuída
+            if (payload.eventType === 'INSERT') {
+              addNotification({
+                title: 'Nova Tarefa Atribuída!',
+                message: `Você foi atribuído à tarefa: "${task.title}"`,
+                type: 'task_assigned',
+                taskId: task.id
+              });
+            }
+            // Se é uma atualização que adiciona o usuário
+            else if (payload.eventType === 'UPDATE') {
+              const oldTask = payload.old as any;
+              const wasAssigned = oldTask?.assigned_users?.includes(currentUser.user_id);
+              const isNowAssigned = task.assigned_users.includes(currentUser.user_id);
+              
+              if (!wasAssigned && isNowAssigned) {
+                addNotification({
+                  title: 'Nova Tarefa Atribuída!',
+                  message: `Você foi atribuído à tarefa: "${task.title}"`,
+                  type: 'task_assigned',
+                  taskId: task.id
+                });
+              }
+            }
           }
         }
       )
