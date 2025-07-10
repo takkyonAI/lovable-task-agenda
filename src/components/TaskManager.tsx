@@ -442,6 +442,7 @@ const TaskManager = () => {
             className={`bg-slate-800/30 backdrop-blur-sm rounded-lg border border-slate-700/50 flex flex-col ${
               isToday ? 'ring-2 ring-blue-500/50' : ''
             }`}
+            style={{ height: '950px' }}
             onDoubleClick={() => handleDoubleClickDay(day)}
           >
             {/* Header do dia */}
@@ -458,7 +459,8 @@ const TaskManager = () => {
             <div 
               className="flex-1 p-2 sm:p-3 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800"
               style={{ 
-                maxHeight: '900px !important'
+                height: '860px',
+                maxHeight: '860px'
               }}
             >
               <div className="space-y-1 sm:space-y-2">
