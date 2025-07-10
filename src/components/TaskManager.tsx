@@ -439,10 +439,9 @@ const TaskManager = () => {
         return (
           <div
             key={index}
-            className={`bg-slate-800/30 backdrop-blur-sm rounded-lg border border-slate-700/50 flex flex-col ${
+            className={`bg-slate-800/30 backdrop-blur-sm rounded-lg border border-slate-700/50 flex flex-col h-screen max-h-screen ${
               isToday ? 'ring-2 ring-blue-500/50' : ''
             }`}
-            style={{ height: '950px' }}
             onDoubleClick={() => handleDoubleClickDay(day)}
           >
             {/* Header do dia */}
