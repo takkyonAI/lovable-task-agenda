@@ -310,3 +310,14 @@ All colors MUST be HSL.
     scrollbar-color: #475569 #1e293b;
   }
 }
+
+/* Custom height classes for weekly view - CRITICAL HEIGHT FIX */
+.task-container-height {
+  max-height: 200px;
+}
+
+@media (min-width: 640px) {
+  .task-container-height {
+    max-height: 900px !important;
+  }
+}
