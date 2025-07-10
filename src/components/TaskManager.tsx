@@ -455,7 +455,7 @@ const TaskManager = () => {
             </div>
             
             {/* Container das tarefas com scroll */}
-            <div className="flex-1 p-2 sm:p-3 overflow-y-auto max-h-[200px] sm:max-h-[900px] scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800">
+            <div className="flex-1 p-2 sm:p-3 overflow-y-auto max-h-[200px] sm:max-h-96 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800">
               <div className="space-y-1 sm:space-y-2">
                 {dayTasks.length === 0 ? (
                   <div className="text-xs text-slate-500 text-center py-4">
