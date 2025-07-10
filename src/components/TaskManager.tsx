@@ -439,10 +439,9 @@ const TaskManager = () => {
         return (
           <div
             key={index}
-            className={`bg-slate-800/30 backdrop-blur-sm rounded-lg border border-slate-700/50 flex flex-col ${
+            className={`bg-slate-800/30 backdrop-blur-sm rounded-lg border border-slate-700/50 flex flex-col h-[300px] sm:h-[900px] ${
               isToday ? 'ring-2 ring-blue-500/50' : ''
             }`}
-            style={{ height: '900px' }}
             onDoubleClick={() => handleDoubleClickDay(day)}
           >
             {/* Header do dia */}
@@ -457,11 +456,7 @@ const TaskManager = () => {
             
             {/* Container das tarefas com scroll */}
             <div 
-              className="flex-1 p-2 sm:p-3 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800"
-              style={{ 
-                height: '800px',
-                maxHeight: '800px'
-              }}
+              className="flex-1 p-2 sm:p-3 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800 h-[220px] max-h-[220px] sm:h-[800px] sm:max-h-[800px]"
             >
               <div className="space-y-1 sm:space-y-2">
                 {dayTasks.length === 0 ? (
