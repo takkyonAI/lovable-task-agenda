@@ -161,7 +161,8 @@ export const useTaskManager = () => {
 
   useEffect(() => {
     loadTasks();
-    setupFallbackRefresh();
+    // 🚫 DESATIVADO: Fallback refresh - removido para testar se resolve o problema de "piscar"
+    // setupFallbackRefresh();
     
     // 🚀 NOVO SISTEMA REAL-TIME OTIMIZADO - Sem "piscar"
     let channel: any = null;
