@@ -176,19 +176,19 @@ export const useTaskManager = () => {
     }
     
     try {
-      channel = supabase
+        channel = supabase
         .channel(`tasks_optimized_${Date.now()}`)
-        .on(
-          'postgres_changes',
-          {
+          .on(
+            'postgres_changes',
+            {
             event: 'INSERT',
-            schema: 'public',
-            table: 'tasks'
-          },
-          (payload) => {
+              schema: 'public',
+              table: 'tasks'
+            },
+            (payload) => {
             console.log('🎯 Nova tarefa detectada:', payload.new);
-            setIsRealTimeConnected(true);
-            setLastUpdateTime(Date.now());
+              setIsRealTimeConnected(true);
+              setLastUpdateTime(Date.now());
             handleTaskInsert(payload.new);
           }
         )
@@ -218,36 +218,36 @@ export const useTaskManager = () => {
             setIsRealTimeConnected(true);
             setLastUpdateTime(Date.now());
             handleTaskDelete(payload.old);
-          }
-        )
-        .subscribe((status) => {
+            }
+          )
+          .subscribe((status) => {
           console.log('🔗 Status real-time:', status);
-          
-          if (status === 'SUBSCRIBED') {
-            console.log('✅ Sistema real-time otimizado conectado!');
-            setIsRealTimeConnected(true);
             
-            toast({
+            if (status === 'SUBSCRIBED') {
+            console.log('✅ Sistema real-time otimizado conectado!');
+              setIsRealTimeConnected(true);
+              
+              toast({
               title: "⚡ Sistema Otimizado",
               description: "Atualizações instantâneas sem piscar ativadas!",
-              duration: 3000
-            });
-          } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+                duration: 3000
+              });
+            } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
             console.warn('🔒 Real-time desconectado:', status);
-            setIsRealTimeConnected(false);
-            
+              setIsRealTimeConnected(false);
+              
             toast({
               title: "🔄 Modo Fallback",
               description: "Atualizações a cada 5 minutos",
               duration: 3000
             });
-          }
-        });
+            }
+          });
         
-    } catch (error) {
+      } catch (error) {
       console.error('❌ Erro ao configurar real-time:', error);
-      setIsRealTimeConnected(false);
-    }
+        setIsRealTimeConnected(false);
+        }
 
     return () => {
       console.log('🧹 Limpando sistema otimizado...');
