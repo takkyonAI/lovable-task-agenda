@@ -430,7 +430,7 @@ const TaskManager = () => {
 
   // Renderização da visualização semanal
   const renderWeekView = () => (
-    <div className="grid grid-cols-6 gap-2">
+    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-4">
       {weekDays.map((day, index) => {
         const dayTasks = getTasksForDay(day);
         const isToday = isSameDay(day, getTodayBR());
@@ -439,12 +439,13 @@ const TaskManager = () => {
         return (
           <div
             key={index}
-            className={`bg-slate-800/30 backdrop-blur-sm rounded-lg p-3 border border-slate-700/50 ${
+            className={`bg-slate-800/30 backdrop-blur-sm rounded-lg border border-slate-700/50 flex flex-col ${
               isToday ? 'ring-2 ring-blue-500/50' : ''
             }`}
             onDoubleClick={() => handleDoubleClickDay(day)}
           >
-            <div className="flex items-center justify-between mb-2">
+            {/* Header do dia */}
+            <div className="flex items-center justify-between p-2 sm:p-3 border-b border-slate-700/30">
               <div className="text-sm font-medium text-slate-300">
                 {dayLabel}
               </div>
@@ -453,27 +454,45 @@ const TaskManager = () => {
               </div>
             </div>
             
-            <div className="space-y-1">
-              {dayTasks.map((task) => (
-                <div
-                  key={task.id}
-                  className="cursor-pointer"
-                  onClick={() => handleTaskClick(task)}
-                >
-                  <TaskCard
-                    task={task}
-                    actionButtons={<div />}
-                    getStatusColor={getStatusColor}
-                    getPriorityColor={getPriorityColor}
-                    getStatusLabel={getStatusLabel}
-                    getPriorityLabel={getPriorityLabel}
-                    getUserName={getUserNameFallback}
-                    canEditTask={() => canEditTaskFull(task)}
-                    onEditTask={handleOpenEditDialog}
-                  />
-                </div>
-              ))}
+            {/* Container das tarefas com scroll */}
+            <div className="flex-1 p-2 sm:p-3 overflow-y-auto max-h-[200px] sm:max-h-[300px] scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800">
+              <div className="space-y-1 sm:space-y-2">
+                {dayTasks.length === 0 ? (
+                  <div className="text-xs text-slate-500 text-center py-4">
+                    Nenhuma tarefa
+                  </div>
+                ) : (
+                  dayTasks.map((task) => (
+                    <div
+                      key={task.id}
+                      className="cursor-pointer"
+                      onClick={() => handleTaskClick(task)}
+                    >
+                      <TaskCard
+                        task={task}
+                        actionButtons={<div />}
+                        getStatusColor={getStatusColor}
+                        getPriorityColor={getPriorityColor}
+                        getStatusLabel={getStatusLabel}
+                        getPriorityLabel={getPriorityLabel}
+                        getUserName={getUserNameFallback}
+                        canEditTask={() => canEditTaskFull(task)}
+                        onEditTask={handleOpenEditDialog}
+                      />
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
+            
+            {/* Contador de tarefas */}
+            {dayTasks.length > 0 && (
+              <div className="px-2 sm:px-3 py-1 border-t border-slate-700/30">
+                <div className="text-xs text-slate-400 text-center">
+                  {dayTasks.length} tarefa{dayTasks.length !== 1 ? 's' : ''}
+                </div>
+              </div>
+            )}
           </div>
         );
       })}
