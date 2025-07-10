@@ -458,7 +458,8 @@ const TaskManager = () => {
             <div 
               className="flex-1 p-2 sm:p-3 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800"
               style={{ 
-                maxHeight: window.innerWidth >= 640 ? '900px' : '200px'
+                maxHeight: '900px !important',
+                border: '2px solid lime'
               }}
             >
               <div className="space-y-1 sm:space-y-2">
