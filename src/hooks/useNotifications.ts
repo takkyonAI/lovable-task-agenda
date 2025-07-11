@@ -163,20 +163,21 @@ export const useNotifications = () => {
     }
   };
 
-  // Verificar tarefas próximas do vencimento
+  // Verificar tarefas próximas do vencimento (30 minutos antes)
   const checkPendingTasks = async () => {
     if (!currentUser) return;
 
     try {
       const now = new Date();
-      const fourHoursFromNow = new Date(now.getTime() + 4 * 60 * 60 * 1000);
+      const thirtyMinutesFromNow = new Date(now.getTime() + 30 * 60 * 1000);
+      const fortyFiveMinutesFromNow = new Date(now.getTime() + 45 * 60 * 1000);
       
       const { data: pendingTasks, error } = await supabase
         .from('tasks')
         .select('*')
         .contains('assigned_users', [currentUser.user_id])
-        .gt('due_date', now.toISOString())
-        .lt('due_date', fourHoursFromNow.toISOString())
+        .gt('due_date', thirtyMinutesFromNow.toISOString())
+        .lt('due_date', fortyFiveMinutesFromNow.toISOString())
         .neq('status', 'concluida')
         .neq('status', 'cancelada');
 
@@ -187,11 +188,11 @@ export const useNotifications = () => {
 
       pendingTasks?.forEach(task => {
         const dueDateObj = new Date(task.due_date);
-        const hoursUntilDue = Math.floor((dueDateObj.getTime() - Date.now()) / (1000 * 60 * 60));
+        const minutesUntilDue = Math.floor((dueDateObj.getTime() - Date.now()) / (1000 * 60));
         
         addNotification({
           title: 'Tarefa Próxima do Vencimento',
-          message: `"${task.title}" vence em ${hoursUntilDue}h`,
+          message: `"${task.title}" vence em ${minutesUntilDue} minutos`,
           type: 'task_pending',
           taskId: task.id
         });
@@ -262,11 +263,11 @@ export const useNotifications = () => {
     checkOverdueTasks();
     checkPendingTasks();
 
-    // Verificar a cada 30 minutos
+    // Verificar a cada 5 minutos para maior precisão nas notificações de 30 minutos
     const interval = setInterval(() => {
       checkOverdueTasks();
       checkPendingTasks();
-    }, 30 * 60 * 1000);
+    }, 5 * 60 * 1000);
 
     return () => clearInterval(interval);
   }, [currentUser]);
