@@ -175,12 +175,6 @@ class ErrorBoundary extends Component<
       const browser = this.detectBrowser();
       
       // Tentar recuperação automática
-      if (this.state.recoveryAttempts < 1) {
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
-      }
-      
       if (this.state.recoveryAttempts < 3) {
         setTimeout(() => {
           this.forceRecovery();
@@ -208,23 +202,23 @@ class ErrorBoundary extends Component<
       
       // Se falhou 3 vezes, mostrar erro
       return (
-        <div className="h-screen w-full bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex items-center justify-center p-6">
+        <div className="h-screen w-full bg-gradient-to-br from-slate-900 via-red-900 to-slate-800 flex items-center justify-center p-6">
           <div className="max-w-md w-full bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg p-6 text-center">
-            <div className="text-blue-400 text-lg font-bold mb-4">
-              {browser.isFirefox ? '🦊 Firefox - Erro Detectado' : '🚨 Recarregando Sistema'}
+            <div className="text-red-400 text-lg font-bold mb-4">
+              {browser.isFirefox ? '🦊 Firefox - Erro Detectado' : '🚨 Erro Crítico Detectado'}
             </div>
             
             <div className="text-slate-300 mb-6">
               {browser.isFirefox 
                 ? 'Erro específico do Firefox detectado. A aplicação será recarregada.'
-                : 'Sistema será recarregado automaticamente. A aplicação será recarregada.'
+                : 'Erro DOM crítico detectado. A aplicação será recarregada.'
               }
             </div>
             
             <div className="space-y-3">
               <button
                 onClick={() => window.location.reload()}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
               >
                 🔄 Recarregar Aplicação
               </button>
