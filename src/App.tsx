@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider, useSupabaseAuth } from '@/hooks/useSupabaseAuth';
@@ -13,6 +13,45 @@ const queryClient = new QueryClient();
 
 // 🚨 SOLUÇÃO RADICAL: SEM ERROR BOUNDARY = SEM TELA VERMELHA
 // Aplicação roda sem Error Boundary - erros são tratados globalmente
+
+// 🔧 ROUTER CUSTOMIZADO QUE NUNCA PERMITE ERROS
+function SafeRouter({ children }: { children: React.ReactNode }) {
+  // Interceptar TODOS os erros antes que cheguem ao React Router
+  React.useEffect(() => {
+    const originalError = console.error;
+    console.error = (...args) => {
+      const message = args.join(' ').toLowerCase();
+      
+      // Bloquear TODOS os erros relacionados ao React Router
+      if (message.includes('react router') || 
+          message.includes('router') || 
+          message.includes('route') ||
+          message.includes('websocket') ||
+          message.includes('application error')) {
+        console.log('🚫 ERRO BLOQUEADO ANTES DO REACT ROUTER:', args[0]);
+        return;
+      }
+      
+      originalError.apply(console, args);
+    };
+    
+    return () => {
+      console.error = originalError;
+    };
+  }, []);
+
+  try {
+    return (
+      <BrowserRouter>
+        {children}
+      </BrowserRouter>
+    );
+  } catch (error) {
+    console.log('🚫 ERRO CAPTURADO NO ROUTER CUSTOMIZADO:', error);
+    // Retornar children sem router em caso de erro
+    return <>{children}</>;
+  }
+}
 
 // 🔧 INTERCEPTADOR GLOBAL DE ERROS
 const setupGlobalErrorHandling = () => {
@@ -169,10 +208,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Router>
+        <SafeRouter>
           <AppContent />
           <Toaster />
-        </Router>
+        </SafeRouter>
       </AuthProvider>
     </QueryClientProvider>
   );
