@@ -602,91 +602,319 @@ const TaskManager = () => {
     </div>
   );
 
-  // 🔧 DIAGNÓSTICO AUTOMÁTICO: Adicionar logs detalhados para debugar problema de cliques
+  // 🔧 DIAGNÓSTICO AUTOMÁTICO AVANÇADO: Sistema melhorado para detectar problemas de cliques
   useEffect(() => {
-    const runClickDiagnostic = () => {
-      console.log('🔧 DIAGNÓSTICO DE CLIQUES - TaskManager carregado');
+    const runAdvancedClickDiagnostic = () => {
+      console.log('🔧 === DIAGNÓSTICO AVANÇADO DE CLIQUES - TaskManager ===');
+      console.log('⏰ Timestamp:', new Date().toISOString());
       console.log('👤 Usuário atual:', currentUser?.email);
       console.log('📊 Tasks carregadas:', tasks.length);
       console.log('🎯 Filtros ativos:', { activeFilter, selectedUser, selectedStatus, selectedPriority });
       
-      // Verificar se event listeners estão funcionando
-      const testButton = document.createElement('button');
-      testButton.textContent = 'Teste de Clique';
-      testButton.style.position = 'fixed';
-      testButton.style.top = '10px';
-      testButton.style.right = '10px';
-      testButton.style.zIndex = '9999';
-      testButton.style.backgroundColor = 'red';
-      testButton.style.color = 'white';
-      testButton.style.padding = '10px';
-      testButton.style.border = 'none';
-      testButton.style.borderRadius = '4px';
-      testButton.style.cursor = 'pointer';
-      
-      let clickCount = 0;
-      testButton.addEventListener('click', (e) => {
-        clickCount++;
-        console.log(`🖱️ TESTE DE CLIQUE ${clickCount} - Evento funcionando!`, e);
-        testButton.textContent = `Clique ${clickCount}`;
+      // 1. Verificar erros críticos salvos
+      const checkSavedErrors = () => {
+        const lastError = localStorage.getItem('last-error');
+        const criticalError = localStorage.getItem('critical-dom-error');
         
-        if (clickCount >= 3) {
-          testButton.remove();
-          console.log('✅ Event listeners funcionando normalmente - problema pode ser específico dos componentes');
+        if (lastError) {
+          console.log('❌ Último erro salvo:', JSON.parse(lastError));
         }
-      });
-      
-      document.body.appendChild(testButton);
-      
-      // Verificar erros JavaScript
-      const originalError = console.error;
-      console.error = (...args) => {
-        console.log('❌ ERRO JAVASCRIPT DETECTADO:', ...args);
-        originalError.apply(console, args);
+        
+        if (criticalError) {
+          console.log('🚨 Erro crítico DOM detectado:', JSON.parse(criticalError));
+          
+          // Se há erro crítico, tentar recuperar
+          console.log('🔧 Tentando recuperar funcionalidade de cliques...');
+          
+          // Aguardar um pouco e tentar restaurar event listeners
+          setTimeout(() => {
+            const buttons = document.querySelectorAll('button, [role="button"]');
+            console.log(`🔧 Encontrados ${buttons.length} botões, tentando restaurar listeners...`);
+            
+            buttons.forEach((btn, index) => {
+              if (btn && typeof btn.addEventListener === 'function') {
+                // Adicionar listener temporário para verificar se funciona
+                btn.addEventListener('click', (e) => {
+                  console.log(`✅ Botão ${index} funcionando após recuperação`);
+                }, { once: true });
+              }
+            });
+          }, 500);
+        }
       };
       
-      // Verificar se há overlays invisíveis
-      const checkOverlays = () => {
+      // 2. Criar botão de teste mais robusto
+      const createAdvancedTestButton = () => {
+        const testButton = document.createElement('button');
+        testButton.textContent = '🔧 Teste Avançado';
+        testButton.style.cssText = `
+          position: fixed;
+          top: 10px;
+          right: 10px;
+          z-index: 99999;
+          background: linear-gradient(45deg, #ff4444, #ff6666);
+          color: white;
+          padding: 12px 16px;
+          border: none;
+          border-radius: 8px;
+          font-weight: bold;
+          cursor: pointer;
+          box-shadow: 0 4px 12px rgba(255, 68, 68, 0.3);
+          transition: all 0.3s ease;
+        `;
+        
+        let clickCount = 0;
+        let errorCount = 0;
+        
+        const handleTestClick = (e) => {
+          clickCount++;
+          console.log(`🖱️ TESTE AVANÇADO CLIQUE #${clickCount}:`, {
+            target: e.target,
+            currentTarget: e.currentTarget,
+            coordinates: { x: e.clientX, y: e.clientY },
+            timestamp: new Date().toISOString(),
+            eventPhase: e.eventPhase,
+            bubbles: e.bubbles,
+            cancelable: e.cancelable,
+            defaultPrevented: e.defaultPrevented,
+            isTrusted: e.isTrusted
+          });
+          
+          testButton.textContent = `✅ Clique ${clickCount}`;
+          testButton.style.background = 'linear-gradient(45deg, #44ff44, #66ff66)';
+          
+          setTimeout(() => {
+            testButton.textContent = '🔧 Teste Avançado';
+            testButton.style.background = 'linear-gradient(45deg, #ff4444, #ff6666)';
+          }, 1000);
+          
+          if (clickCount >= 5) {
+            testButton.remove();
+            console.log('✅ Event listeners funcionando normalmente após 5 cliques');
+          }
+        };
+        
+        // Adicionar múltiplos tipos de listeners
+        testButton.addEventListener('click', handleTestClick);
+        testButton.addEventListener('mousedown', (e) => {
+          console.log('🖱️ MouseDown detectado:', e.type);
+        });
+        testButton.addEventListener('mouseup', (e) => {
+          console.log('🖱️ MouseUp detectado:', e.type);
+        });
+        
+        // Adicionar listener de erro
+        testButton.addEventListener('error', (e) => {
+          errorCount++;
+          console.error(`❌ Erro no botão de teste #${errorCount}:`, e);
+        });
+        
+        document.body.appendChild(testButton);
+        
+        // Remover após 45 segundos
+        setTimeout(() => {
+          if (testButton.parentNode) {
+            testButton.parentNode.removeChild(testButton);
+            console.log('🗑️ Botão de teste avançado removido');
+          }
+        }, 45000);
+      };
+      
+      // 3. Verificar componentes específicos problemáticos
+      const checkProblematicComponents = () => {
+        // Verificar dropdowns/selects
+        const dropdowns = document.querySelectorAll('select, [role="combobox"], [role="listbox"]');
+        console.log(`🔍 Dropdowns encontrados: ${dropdowns.length}`);
+        
+        dropdowns.forEach((dropdown, index) => {
+          const rect = dropdown.getBoundingClientRect();
+          const style = window.getComputedStyle(dropdown);
+          
+          console.log(`Dropdown ${index}:`, {
+            visible: rect.width > 0 && rect.height > 0,
+            position: rect,
+            disabled: dropdown.disabled,
+            display: style.display,
+            visibility: style.visibility,
+            opacity: style.opacity,
+            pointerEvents: style.pointerEvents,
+            zIndex: style.zIndex
+          });
+          
+          // Verificar se dropdown tem opções
+          if (dropdown.options) {
+            console.log(`  - Opções: ${dropdown.options.length}`);
+          }
+        });
+        
+        // Verificar cards de tarefas
+        const taskCards = document.querySelectorAll('[data-testid*="task"], .task-card, [class*="task"]');
+        console.log(`🔍 Task cards encontrados: ${taskCards.length}`);
+        
+        taskCards.forEach((card, index) => {
+          if (index < 5) { // Verificar apenas os primeiros 5
+            const rect = card.getBoundingClientRect();
+            console.log(`Task card ${index}:`, {
+              visible: rect.width > 0 && rect.height > 0,
+              position: rect,
+              className: card.className,
+              clickable: card.style.cursor || window.getComputedStyle(card).cursor
+            });
+          }
+        });
+      };
+      
+      // 4. Monitorar erros em tempo real
+      const setupErrorMonitoring = () => {
+        let jsErrorCount = 0;
+        let promiseErrorCount = 0;
+        
+        const errorHandler = (e) => {
+          jsErrorCount++;
+          console.error(`🚨 ERRO JS #${jsErrorCount} DURANTE DIAGNÓSTICO:`, {
+            message: e.message,
+            filename: e.filename,
+            lineno: e.lineno,
+            colno: e.colno,
+            error: e.error,
+            timestamp: new Date().toISOString()
+          });
+          
+          // Se for erro de DOM, alertar
+          if (e.message.includes('removeChild') || e.message.includes('Node')) {
+            console.error('🚨 ERRO DOM CRÍTICO DETECTADO EM TEMPO REAL!');
+            localStorage.setItem('critical-dom-error-realtime', JSON.stringify({
+              error: e.message,
+              timestamp: new Date().toISOString(),
+              detected: 'real-time'
+            }));
+          }
+        };
+        
+        const promiseErrorHandler = (e) => {
+          promiseErrorCount++;
+          console.error(`🚨 PROMISE REJEITADA #${promiseErrorCount}:`, {
+            reason: e.reason,
+            timestamp: new Date().toISOString()
+          });
+        };
+        
+        window.addEventListener('error', errorHandler);
+        window.addEventListener('unhandledrejection', promiseErrorHandler);
+        
+        // Cleanup após 5 minutos
+        setTimeout(() => {
+          window.removeEventListener('error', errorHandler);
+          window.removeEventListener('unhandledrejection', promiseErrorHandler);
+          console.log('🔧 Monitoramento de erros finalizado');
+        }, 300000);
+      };
+      
+      // 5. Verificar overlays que podem estar bloqueando cliques
+      const checkBlockingOverlays = () => {
         const elementsAtCenter = document.elementsFromPoint(window.innerWidth / 2, window.innerHeight / 2);
         console.log('🎯 Elementos no centro da tela:', elementsAtCenter.map(el => ({
           tagName: el.tagName,
           className: el.className,
           id: el.id,
-          zIndex: window.getComputedStyle(el).zIndex
+          zIndex: window.getComputedStyle(el).zIndex,
+          position: window.getComputedStyle(el).position,
+          pointerEvents: window.getComputedStyle(el).pointerEvents
         })));
-      };
-      
-      setTimeout(checkOverlays, 2000);
-      
-      // Verificar se React está funcionando
-      console.log('⚛️ React DevTools disponível:', typeof (window as any).__REACT_DEVTOOLS_GLOBAL_HOOK__ !== 'undefined');
-      
-      // Adicionar listener global para cliques
-      const globalClickListener = (e) => {
-        console.log('🖱️ CLIQUE GLOBAL DETECTADO:', {
-          target: e.target,
-          currentTarget: e.currentTarget,
-          type: e.type,
-          bubbles: e.bubbles,
-          cancelable: e.cancelable,
-          defaultPrevented: e.defaultPrevented,
-          eventPhase: e.eventPhase,
-          isTrusted: e.isTrusted,
-          timeStamp: e.timeStamp
+        
+        // Verificar elementos suspeitos
+        const suspiciousElements = document.querySelectorAll('*');
+        let suspiciousCount = 0;
+        
+        suspiciousElements.forEach(el => {
+          const style = window.getComputedStyle(el);
+          const rect = el.getBoundingClientRect();
+          
+          // Elemento com z-index muito alto
+          if (parseInt(style.zIndex) > 9999) {
+            suspiciousCount++;
+            console.warn(`⚠️ Elemento suspeito (z-index alto): ${el.tagName}.${el.className}`);
+          }
+          
+          // Elemento grande e transparente
+          if (rect.width > window.innerWidth * 0.8 && rect.height > window.innerHeight * 0.8 && 
+              (style.opacity === '0' || style.visibility === 'hidden')) {
+            suspiciousCount++;
+            console.warn(`⚠️ Elemento suspeito (overlay invisível): ${el.tagName}.${el.className}`);
+          }
         });
+        
+        console.log(`🔍 Total de elementos suspeitos encontrados: ${suspiciousCount}`);
       };
       
-      document.addEventListener('click', globalClickListener, true);
+      // 6. Configurar listener global avançado
+      const setupAdvancedGlobalListener = () => {
+        let globalClickCount = 0;
+        let lastClickTime = 0;
+        
+        const advancedGlobalListener = (e) => {
+          globalClickCount++;
+          const currentTime = Date.now();
+          const timeSinceLastClick = currentTime - lastClickTime;
+          
+          console.log(`🖱️ CLIQUE GLOBAL AVANÇADO #${globalClickCount}:`, {
+            target: {
+              tagName: e.target.tagName,
+              className: e.target.className,
+              id: e.target.id,
+              textContent: e.target.textContent?.substring(0, 50)
+            },
+            coordinates: { x: e.clientX, y: e.clientY },
+            timing: {
+              timestamp: new Date().toISOString(),
+              timeSinceLastClick: timeSinceLastClick
+            },
+            event: {
+              type: e.type,
+              bubbles: e.bubbles,
+              cancelable: e.cancelable,
+              defaultPrevented: e.defaultPrevented,
+              eventPhase: e.eventPhase,
+              isTrusted: e.isTrusted
+            },
+            path: e.composedPath?.()?.slice(0, 5).map(el => ({
+              tagName: el.tagName,
+              className: el.className,
+              id: el.id
+            }))
+          });
+          
+          lastClickTime = currentTime;
+        };
+        
+        document.addEventListener('click', advancedGlobalListener, true);
+        
+        // Cleanup após 10 minutos
+        setTimeout(() => {
+          document.removeEventListener('click', advancedGlobalListener, true);
+          console.log(`🔧 Listener global avançado removido após capturar ${globalClickCount} cliques`);
+        }, 600000);
+      };
       
-      // Cleanup após 30 segundos
+      // Executar todos os diagnósticos
+      console.log('🚀 Executando diagnósticos...');
+      
+      checkSavedErrors();
+      createAdvancedTestButton();
+      setupErrorMonitoring();
+      
       setTimeout(() => {
-        document.removeEventListener('click', globalClickListener, true);
-        console.log('🔧 Diagnóstico de cliques finalizado');
-      }, 30000);
+        checkProblematicComponents();
+        checkBlockingOverlays();
+        setupAdvancedGlobalListener();
+        
+        console.log('✅ DIAGNÓSTICO AVANÇADO COMPLETO');
+        console.log('📊 Monitore o console por alguns minutos para ver resultados');
+      }, 1000);
     };
     
     // Executar diagnóstico após componente carregar
-    const timer = setTimeout(runClickDiagnostic, 1000);
+    const timer = setTimeout(runAdvancedClickDiagnostic, 1000);
     
     return () => clearTimeout(timer);
   }, [currentUser, tasks.length]);

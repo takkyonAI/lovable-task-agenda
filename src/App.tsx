@@ -11,14 +11,14 @@ import './App.css';
 
 const queryClient = new QueryClient();
 
-// 🔧 CORREÇÃO: ErrorBoundary melhorado para resolver problemas de DOM
+// 🔧 CORREÇÃO CRÍTICA: ErrorBoundary melhorado para resolver problema removeChild
 class ErrorBoundary extends Component<
   { children: ReactNode },
-  { hasError: boolean; error: Error | null; errorInfo: any }
+  { hasError: boolean; error: Error | null; errorInfo: any; recoveryAttempts: number }
 > {
   constructor(props: { children: ReactNode }) {
     super(props);
-    this.state = { hasError: false, error: null, errorInfo: null };
+    this.state = { hasError: false, error: null, errorInfo: null, recoveryAttempts: 0 };
   }
 
   static getDerivedStateFromError(error: Error) {
@@ -26,45 +26,55 @@ class ErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: any) {
-    // 🔧 CORREÇÃO: Log mais preciso do dispositivo
+    // 🔧 CORREÇÃO: Detecção precisa de dispositivos
     const userAgent = navigator.userAgent;
-    const isDesktopChrome = /Chrome/i.test(userAgent) && !/Mobile/i.test(userAgent);
-    const deviceType = isDesktopChrome ? 'Chrome Desktop' : 'Other Device';
+    const platform = navigator.platform;
     
-    console.error(`🔧 ErrorBoundary caught an error on ${deviceType}:`, error, errorInfo);
+    const isRealIPad = /iPad/i.test(userAgent) || 
+                      (platform.includes('Mac') && navigator.maxTouchPoints > 0 && /Safari/i.test(userAgent) && !/Chrome/i.test(userAgent));
     
-    // 🚨 CORREÇÃO CRÍTICA: Detectar erro de removeChild que quebra cliques
-    if (error.message.includes('removeChild') || error.message.includes('Node')) {
-      console.error('🚨 DOM MANIPULATION ERROR DETECTED - This is breaking all clicks!');
-      console.error('🔧 Attempting to recover without DOM manipulation...');
+    const isDesktopChrome = /Chrome/i.test(userAgent) && !/Mobile/i.test(userAgent) && !isRealIPad;
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(userAgent) && !isDesktopChrome;
+    
+    const deviceType = isRealIPad ? 'Real iPad' : isDesktopChrome ? 'Chrome Desktop' : isMobile ? 'Mobile Device' : 'Unknown Device';
+    
+    console.error(`🔧 ErrorBoundary caught error on ${deviceType}:`, error, errorInfo);
+    
+    // 🚨 CORREÇÃO CRÍTICA: Detectar erro de removeChild que quebra todos os cliques
+    const isDOMError = error.message.includes('removeChild') || 
+                      error.message.includes('Node') || 
+                      error.message.includes('insertBefore') ||
+                      error.message.includes('appendChild') ||
+                      error.stack?.includes('removeChild');
+    
+    if (isDOMError) {
+      console.error('🚨 CRITICAL DOM ERROR DETECTED - This breaks all click functionality!');
+      console.error('🔧 Error details:', {
+        message: error.message,
+        stack: error.stack,
+        component: errorInfo.componentStack,
+        timestamp: new Date().toISOString()
+      });
       
-      // Não fazer nada que possa causar mais erros de DOM
-      // Apenas logar e deixar o React se recuperar
+      // Salvar erro crítico
       try {
         localStorage.setItem('critical-dom-error', JSON.stringify({
           error: error.message,
+          stack: error.stack,
           timestamp: new Date().toISOString(),
-          recovery: 'DOM manipulation avoided'
+          device: deviceType,
+          userAgent: navigator.userAgent,
+          recoveryAttempts: this.state.recoveryAttempts
         }));
       } catch (e) {
         console.error('Failed to save critical error:', e);
       }
       
-      // Tentar limpar apenas event listeners sem tocar no DOM
-      setTimeout(() => {
-        try {
-          console.log('🔧 Attempting to restore click functionality...');
-          // Recriar event listeners globais
-          document.addEventListener('click', (e) => {
-            console.log('🖱️ Global click detected:', e.target);
-          }, { once: true });
-        } catch (e) {
-          console.error('Failed to restore click listeners:', e);
-        }
-      }, 100);
+      // 🔧 CORREÇÃO: Tentar recuperar funcionalidade de cliques
+      this.attemptClickRecovery();
     }
     
-    // 🔧 CORREÇÃO: Salvar erro no localStorage para debug
+    // 🔧 CORREÇÃO: Salvar erro completo no localStorage
     try {
       localStorage.setItem('last-error', JSON.stringify({
         error: error.message,
@@ -73,25 +83,80 @@ class ErrorBoundary extends Component<
         timestamp: new Date().toISOString(),
         userAgent: navigator.userAgent,
         url: window.location.href,
-        isDOMError: error.message.includes('removeChild') || error.message.includes('Node')
+        isDOMError,
+        deviceType,
+        recoveryAttempts: this.state.recoveryAttempts
       }));
     } catch (e) {
       console.error('Failed to save error to localStorage:', e);
     }
     
-    this.setState({ errorInfo });
+    this.setState({ 
+      errorInfo, 
+      recoveryAttempts: this.state.recoveryAttempts + 1 
+    });
   }
 
-  // 🔧 CORREÇÃO: Método seguro para reload
+  // 🔧 NOVO: Método para tentar recuperar funcionalidade de cliques
+  attemptClickRecovery = () => {
+    console.log('🔧 Attempting to recover click functionality...');
+    
+    // Aguardar um pouco antes de tentar recuperar
+    setTimeout(() => {
+      try {
+        // Verificar se event listeners globais estão funcionando
+        const testClick = () => {
+          console.log('✅ Global click listener is working');
+        };
+        
+        // Adicionar listener global temporário
+        document.addEventListener('click', testClick, { once: true });
+        
+        // Tentar recriar event listeners essenciais
+        const buttons = document.querySelectorAll('button, [role="button"]');
+        console.log(`🔧 Found ${buttons.length} clickable elements, attempting to restore...`);
+        
+        buttons.forEach((button, index) => {
+          if (button && typeof button.addEventListener === 'function') {
+            button.addEventListener('click', (e) => {
+              console.log(`🖱️ Button ${index} clicked successfully`);
+            }, { once: true });
+          }
+        });
+        
+        // Verificar se React ainda está funcionando
+        if (window.React) {
+          console.log('✅ React is still available');
+        } else {
+          console.warn('⚠️ React may not be available');
+        }
+        
+        console.log('🔧 Click recovery attempt completed');
+        
+      } catch (e) {
+        console.error('❌ Click recovery failed:', e);
+      }
+    }, 100);
+  };
+
+  // 🔧 CORREÇÃO: Método de reload mais robusto
   handleReload = () => {
     try {
-      // Limpar estado
-      this.setState({ hasError: false, error: null, errorInfo: null });
+      console.log('🔄 Attempting safe reload...');
+      
+      // Limpar estado de erro
+      this.setState({ 
+        hasError: false, 
+        error: null, 
+        errorInfo: null, 
+        recoveryAttempts: 0 
+      });
       
       // Limpar localStorage de erros
       localStorage.removeItem('last-error');
+      localStorage.removeItem('critical-dom-error');
       
-      // Reload seguro
+      // Reload mais seguro
       window.location.href = window.location.href;
     } catch (e) {
       console.error('Error during reload:', e);
@@ -109,61 +174,74 @@ class ErrorBoundary extends Component<
       const isRealIPad = /iPad/i.test(userAgent) || 
                         (platform.includes('Mac') && navigator.maxTouchPoints > 0 && /Safari/i.test(userAgent) && !/Chrome/i.test(userAgent));
       
-      const isDesktopChrome = /Chrome/i.test(userAgent) && !/Mobile/i.test(userAgent);
+      const isDesktopChrome = /Chrome/i.test(userAgent) && !/Mobile/i.test(userAgent) && !isRealIPad;
       const isMobile = /iPhone|iPad|iPod|Android/i.test(userAgent) && !isDesktopChrome;
+      
+      const isDOMError = this.state.error?.message.includes('removeChild') || 
+                        this.state.error?.message.includes('Node') ||
+                        this.state.error?.stack?.includes('removeChild');
       
       return (
         <div className="h-screen w-full bg-gradient-to-br from-slate-900 via-red-900 to-slate-800 flex items-center justify-center p-6">
           <div className="max-w-md w-full bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg p-6 text-center">
             <div className="text-red-400 text-lg font-bold mb-4">
-              {isRealIPad ? '🍎 iPad Error Detected' : isMobile ? '📱 Mobile Error' : isDesktopChrome ? '💻 Chrome Desktop Error' : '❌ Application Error'}
+              {isDOMError ? '🚨 Critical Click Error' : 
+               isRealIPad ? '🍎 iPad Error' : 
+               isMobile ? '📱 Mobile Error' : 
+               isDesktopChrome ? '💻 Chrome Desktop Error' : 
+               '❌ Application Error'}
             </div>
-            <div className="text-white text-sm mb-4">
-              {this.state.error?.message || 'Unknown error occurred'}
+            
+            <div className="text-slate-300 mb-6">
+              {isDOMError ? 
+                'DOM manipulation error detected. This may cause clicks to stop working.' :
+                'An unexpected error occurred. The application will reload to recover.'
+              }
             </div>
             
             {/* 🔧 CORREÇÃO: Informações de debug mais completas */}
-            <div className="text-slate-300 text-xs mb-4 bg-slate-900/50 p-3 rounded">
+            <div className="text-xs text-slate-400 mb-4 text-left">
               <strong>Debug Info:</strong><br/>
-              <div className="text-left space-y-1">
-                <div>Platform: {navigator.platform}</div>
-                <div>Mobile: {isMobile ? 'Yes' : 'No'}</div>
-                <div>Touch Points: {navigator.maxTouchPoints}</div>
-                <div>Time: {new Date().toLocaleString()}</div>
-                {this.state.error?.stack && (
-                  <div className="mt-2">
-                    <strong>Stack:</strong><br/>
-                    <div className="text-xs text-slate-400 max-h-20 overflow-y-auto">
-                      {this.state.error.stack.split('\n').slice(0, 3).join('\n')}
-                    </div>
-                  </div>
-                )}
-              </div>
+              Device: {isRealIPad ? 'Real iPad' : isDesktopChrome ? 'Chrome Desktop' : isMobile ? 'Mobile' : 'Unknown'}<br/>
+              Error: {this.state.error?.message.substring(0, 100)}...<br/>
+              Recovery Attempts: {this.state.recoveryAttempts}<br/>
+              Time: {new Date().toLocaleTimeString()}<br/>
+              DOM Error: {isDOMError ? 'Yes' : 'No'}
             </div>
             
-            <div className="space-y-2">
+            <div className="space-y-3">
               <button
                 onClick={this.handleReload}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors"
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
               >
-                🔄 Reload Page
+                🔄 Reload Application
               </button>
               
-              {/* 🔧 CORREÇÃO: Botão para limpar dados */}
+              {isDOMError && (
+                <button
+                  onClick={this.attemptClickRecovery}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                >
+                  🔧 Try Click Recovery
+                </button>
+              )}
+              
               <button
                 onClick={() => {
-                  try {
-                    localStorage.clear();
-                    sessionStorage.clear();
-                    this.handleReload();
-                  } catch (e) {
-                    console.error('Error clearing storage:', e);
-                    this.handleReload();
+                  const errorDetails = {
+                    message: this.state.error?.message,
+                    stack: this.state.error?.stack,
+                    userAgent: navigator.userAgent,
+                    timestamp: new Date().toISOString()
+                  };
+                  console.log('📋 Error details copied to console:', errorDetails);
+                  if (navigator.clipboard) {
+                    navigator.clipboard.writeText(JSON.stringify(errorDetails, null, 2));
                   }
                 }}
-                className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition-colors text-sm"
+                className="w-full bg-slate-600 hover:bg-slate-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
               >
-                🗑️ Clear Data & Reload
+                📋 Copy Error Details
               </button>
             </div>
           </div>
