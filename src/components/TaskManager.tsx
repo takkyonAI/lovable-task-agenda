@@ -472,6 +472,7 @@ const TaskManager = () => {
                     <div
                       key={task.id}
                       className="cursor-pointer"
+                      data-task-id={task.id}
                       onClick={() => handleTaskClick(task)}
                     >
                       <TaskCard
@@ -579,6 +580,7 @@ const TaskManager = () => {
                   <div
                     key={task.id}
                     className="cursor-pointer"
+                    data-task-id={task.id}
                     onClick={() => handleTaskClick(task)}
                   >
                     <TaskCard
@@ -601,6 +603,154 @@ const TaskManager = () => {
       })}
     </div>
   );
+
+  // 🔧 CORREÇÃO DIRETA: Forçar funcionamento de cliques como fallback
+  useEffect(() => {
+    const forceClickFunctionality = () => {
+      console.log('🔧 APLICANDO CORREÇÃO DIRETA DE CLIQUES');
+      
+      // Aguardar um pouco para garantir que os componentes estão renderizados
+      setTimeout(() => {
+        // 1. Adicionar event listeners nativos para task cards
+        const taskCards = document.querySelectorAll('[class*="cursor-pointer"]');
+        console.log(`🔧 Encontrados ${taskCards.length} elementos clicáveis`);
+        
+        taskCards.forEach((card, index) => {
+          // Remover listeners antigos se existirem
+          const newCard = card.cloneNode(true);
+          card.parentNode?.replaceChild(newCard, card);
+          
+          // Adicionar novo listener nativo
+          newCard.addEventListener('click', (e) => {
+            console.log(`🖱️ CLIQUE NATIVO FUNCIONANDO - Card ${index}`);
+            
+            // Tentar encontrar dados da tarefa
+            const taskElement = e.currentTarget.closest('[data-task-id]') || e.currentTarget;
+            const taskId = taskElement.getAttribute('data-task-id');
+            
+            if (taskId) {
+              console.log(`🔧 Abrindo tarefa ${taskId}`);
+              // Encontrar a tarefa nos dados
+              const task = tasks.find(t => t.id === taskId);
+              if (task) {
+                setSelectedTask(task);
+                setIsTaskDetailsOpen(true);
+              }
+            } else {
+              console.log('⚠️ Task ID não encontrado, tentando fallback');
+              // Fallback: usar o primeiro card clicável
+              if (tasks.length > 0) {
+                setSelectedTask(tasks[0]);
+                setIsTaskDetailsOpen(true);
+              }
+            }
+          });
+        });
+        
+        // 2. Adicionar event listeners para botões
+        const buttons = document.querySelectorAll('button');
+        console.log(`🔧 Encontrados ${buttons.length} botões`);
+        
+        buttons.forEach((button, index) => {
+          if (!button.getAttribute('data-native-listener')) {
+            button.setAttribute('data-native-listener', 'true');
+            
+            // Adicionar listener nativo como backup
+            button.addEventListener('click', (e) => {
+              console.log(`🖱️ CLIQUE NATIVO EM BOTÃO ${index} - ${button.textContent?.substring(0, 20)}`);
+              
+              // Se o botão não está respondendo ao React, forçar ação
+              if (!e.defaultPrevented) {
+                const buttonText = button.textContent?.toLowerCase() || '';
+                
+                // Identificar tipo de botão e forçar ação
+                if (buttonText.includes('criar') || buttonText.includes('nova')) {
+                  console.log('🔧 Forçando abertura de criar tarefa');
+                  setIsCreateDialogOpen(true);
+                } else if (buttonText.includes('filtro') || buttonText.includes('filter')) {
+                  console.log('🔧 Botão de filtro detectado');
+                } else if (buttonText.includes('debug') || buttonText.includes('diagnóstico')) {
+                  console.log('🔧 Forçando abertura de diagnóstico');
+                  setIsDiagnosticOpen(true);
+                }
+              }
+            });
+          }
+        });
+        
+        // 3. Adicionar event listeners para dropdowns/selects
+        const selects = document.querySelectorAll('select, [role="combobox"], [role="listbox"]');
+        console.log(`🔧 Encontrados ${selects.length} elementos select`);
+        
+        selects.forEach((select, index) => {
+          if (!select.getAttribute('data-native-listener')) {
+            select.setAttribute('data-native-listener', 'true');
+            
+            select.addEventListener('click', (e) => {
+              console.log(`🖱️ CLIQUE NATIVO EM SELECT ${index}`);
+              
+              // Forçar abertura do dropdown se não estiver funcionando
+              if (select.tagName === 'SELECT') {
+                select.focus();
+                select.click();
+              }
+            });
+            
+            select.addEventListener('change', (e) => {
+              console.log(`🔧 MUDANÇA NATIVA EM SELECT ${index}:`, e.target.value);
+            });
+          }
+        });
+        
+        // 4. Adicionar listener global de emergência
+        const emergencyClickHandler = (e) => {
+          console.log('🚨 CLIQUE DE EMERGÊNCIA DETECTADO:', {
+            target: e.target.tagName,
+            className: e.target.className,
+            text: e.target.textContent?.substring(0, 30)
+          });
+          
+          // Se é um elemento que deveria ser clicável mas não está respondendo
+          const clickableElements = ['BUTTON', 'A', 'DIV'];
+          if (clickableElements.includes(e.target.tagName)) {
+            const classList = e.target.className || '';
+            
+            if (classList.includes('cursor-pointer') || classList.includes('task-card')) {
+              console.log('🔧 Elemento clicável detectado, forçando ação');
+              
+              // Tentar encontrar dados da tarefa mais próxima
+              const taskData = e.target.closest('[data-task-id]');
+              if (taskData && tasks.length > 0) {
+                const taskId = taskData.getAttribute('data-task-id');
+                const task = tasks.find(t => t.id === taskId) || tasks[0];
+                setSelectedTask(task);
+                setIsTaskDetailsOpen(true);
+              }
+            }
+          }
+        };
+        
+        // Adicionar listener global apenas se não existir
+        if (!document.body.getAttribute('data-emergency-listener')) {
+          document.body.setAttribute('data-emergency-listener', 'true');
+          document.addEventListener('click', emergencyClickHandler, true);
+        }
+        
+        console.log('✅ CORREÇÃO DIRETA DE CLIQUES APLICADA');
+        
+      }, 2000); // Aguardar 2 segundos para garantir renderização
+    };
+    
+    // Executar correção direta
+    forceClickFunctionality();
+    
+    // Re-executar quando tasks mudarem
+    const interval = setInterval(forceClickFunctionality, 10000); // A cada 10 segundos
+    
+    return () => {
+      clearInterval(interval);
+    };
+  }, [tasks, setSelectedTask, setIsTaskDetailsOpen, setIsCreateDialogOpen, setIsDiagnosticOpen]);
 
   // 🔧 DIAGNÓSTICO AUTOMÁTICO AVANÇADO: Sistema melhorado para detectar problemas de cliques
   useEffect(() => {
