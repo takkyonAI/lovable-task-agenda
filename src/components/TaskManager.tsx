@@ -602,6 +602,95 @@ const TaskManager = () => {
     </div>
   );
 
+  // 🔧 DIAGNÓSTICO AUTOMÁTICO: Adicionar logs detalhados para debugar problema de cliques
+  useEffect(() => {
+    const runClickDiagnostic = () => {
+      console.log('🔧 DIAGNÓSTICO DE CLIQUES - TaskManager carregado');
+      console.log('👤 Usuário atual:', currentUser?.email);
+      console.log('📊 Tasks carregadas:', tasks.length);
+      console.log('🎯 Filtros ativos:', { activeFilter, selectedUser, selectedStatus, selectedPriority });
+      
+      // Verificar se event listeners estão funcionando
+      const testButton = document.createElement('button');
+      testButton.textContent = 'Teste de Clique';
+      testButton.style.position = 'fixed';
+      testButton.style.top = '10px';
+      testButton.style.right = '10px';
+      testButton.style.zIndex = '9999';
+      testButton.style.backgroundColor = 'red';
+      testButton.style.color = 'white';
+      testButton.style.padding = '10px';
+      testButton.style.border = 'none';
+      testButton.style.borderRadius = '4px';
+      testButton.style.cursor = 'pointer';
+      
+      let clickCount = 0;
+      testButton.addEventListener('click', (e) => {
+        clickCount++;
+        console.log(`🖱️ TESTE DE CLIQUE ${clickCount} - Evento funcionando!`, e);
+        testButton.textContent = `Clique ${clickCount}`;
+        
+        if (clickCount >= 3) {
+          testButton.remove();
+          console.log('✅ Event listeners funcionando normalmente - problema pode ser específico dos componentes');
+        }
+      });
+      
+      document.body.appendChild(testButton);
+      
+      // Verificar erros JavaScript
+      const originalError = console.error;
+      console.error = (...args) => {
+        console.log('❌ ERRO JAVASCRIPT DETECTADO:', ...args);
+        originalError.apply(console, args);
+      };
+      
+      // Verificar se há overlays invisíveis
+      const checkOverlays = () => {
+        const elementsAtCenter = document.elementsFromPoint(window.innerWidth / 2, window.innerHeight / 2);
+        console.log('🎯 Elementos no centro da tela:', elementsAtCenter.map(el => ({
+          tagName: el.tagName,
+          className: el.className,
+          id: el.id,
+          zIndex: window.getComputedStyle(el).zIndex
+        })));
+      };
+      
+      setTimeout(checkOverlays, 2000);
+      
+      // Verificar se React está funcionando
+      console.log('⚛️ React DevTools disponível:', typeof (window as any).__REACT_DEVTOOLS_GLOBAL_HOOK__ !== 'undefined');
+      
+      // Adicionar listener global para cliques
+      const globalClickListener = (e) => {
+        console.log('🖱️ CLIQUE GLOBAL DETECTADO:', {
+          target: e.target,
+          currentTarget: e.currentTarget,
+          type: e.type,
+          bubbles: e.bubbles,
+          cancelable: e.cancelable,
+          defaultPrevented: e.defaultPrevented,
+          eventPhase: e.eventPhase,
+          isTrusted: e.isTrusted,
+          timeStamp: e.timeStamp
+        });
+      };
+      
+      document.addEventListener('click', globalClickListener, true);
+      
+      // Cleanup após 30 segundos
+      setTimeout(() => {
+        document.removeEventListener('click', globalClickListener, true);
+        console.log('🔧 Diagnóstico de cliques finalizado');
+      }, 30000);
+    };
+    
+    // Executar diagnóstico após componente carregar
+    const timer = setTimeout(runClickDiagnostic, 1000);
+    
+    return () => clearTimeout(timer);
+  }, [currentUser, tasks.length]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <div className="max-w-7xl mx-auto p-4">
