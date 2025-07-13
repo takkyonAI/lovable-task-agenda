@@ -173,23 +173,23 @@ export const useTaskManager = () => {
   useEffect(() => {
     loadTasks();
     
-    // 🦊 FIREFOX: Detecção de navegador para comportamento específico
-    const browser = detectBrowser();
-    
-    if (browser.isFirefox) {
-      console.log('🦊 FIREFOX DETECTADO: Usando modo polling silencioso (sem real-time)');
-      
-      // 🔄 FIREFOX: Apenas polling silencioso a cada 30 segundos
-      const firefoxPollingInterval = setInterval(() => {
-        console.log('🔄 FIREFOX: Polling silencioso...');
-        loadTasks();
-      }, 30000); // 30 segundos
+    // 🦊 FIREFOX: Verificar flag global definida pelo emergency-fix.js
+    if ((window as any).FIREFOX_DISABLE_REALTIME) {
+      console.log('🦊 FIREFOX: Real-time desabilitado - usando polling via emergency-fix.js');
       
       setIsRealTimeConnected(false);
       
+      // Escutar eventos de polling do emergency-fix.js
+      const handleFirefoxPolling = () => {
+        console.log('🔄 FIREFOX: Recebido evento de polling, recarregando tarefas...');
+        loadTasks();
+      };
+      
+      window.addEventListener('firefoxPollingUpdate', handleFirefoxPolling);
+      
       return () => {
-        clearInterval(firefoxPollingInterval);
-        console.log('🧹 FIREFOX: Limpando polling silencioso');
+        window.removeEventListener('firefoxPollingUpdate', handleFirefoxPolling);
+        console.log('🧹 FIREFOX: Removendo listener de polling');
       };
     }
     

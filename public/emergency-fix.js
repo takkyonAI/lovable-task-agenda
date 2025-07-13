@@ -30,6 +30,9 @@
   if (browser.isFirefox) {
     console.log('🦊 FIREFOX DETECTADO - Aplicando correções específicas');
     
+    // 🚫 DESABILITAR COMPLETAMENTE REAL-TIME NO FIREFOX
+    window.FIREFOX_DISABLE_REALTIME = true;
+    
     // Interceptar erros específicos do Firefox
     const originalConsoleError = console.error;
     console.error = function(...args) {
@@ -44,6 +47,33 @@
       // Outros erros passam normalmente
       originalConsoleError.apply(console, args);
     };
+    
+    // 🔄 IMPLEMENTAR POLLING SILENCIOSO PARA FIREFOX
+    let firefoxPollingInterval;
+    
+    const startFirefoxPolling = () => {
+      console.log('🔄 FIREFOX: Iniciando polling silencioso a cada 30 segundos');
+      
+      firefoxPollingInterval = setInterval(() => {
+        console.log('🔄 FIREFOX: Polling silencioso executado');
+        
+        // Disparar evento personalizado para o React
+        const event = new CustomEvent('firefoxPollingUpdate', {
+          detail: { timestamp: Date.now() }
+        });
+        window.dispatchEvent(event);
+      }, 30000); // 30 segundos
+    };
+    
+    // Iniciar polling após 5 segundos (dar tempo para React carregar)
+    setTimeout(startFirefoxPolling, 5000);
+    
+    // Limpar polling quando página for fechada
+    window.addEventListener('beforeunload', () => {
+      if (firefoxPollingInterval) {
+        clearInterval(firefoxPollingInterval);
+      }
+    });
   }
   
   // 1. INTERCEPTAR MÉTODOS DOM CRÍTICOS
