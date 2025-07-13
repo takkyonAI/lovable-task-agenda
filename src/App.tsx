@@ -11,7 +11,7 @@ import './App.css';
 
 const queryClient = new QueryClient();
 
-// 🚨 SOLUÇÃO RADICAL: Prevenir completamente erros removeChild
+// 🚨 SOLUÇÃO RADICAL: Prevenir completamente erros removeChild + Firefox
 class ErrorBoundary extends Component<
   { children: ReactNode },
   { hasError: boolean; error: Error | null; errorInfo: any; recoveryAttempts: number }
@@ -23,6 +23,25 @@ class ErrorBoundary extends Component<
     // 🚨 INTERCEPTAR E PREVENIR ERROS removeChild
     this.interceptDOMErrors();
   }
+
+  // 🔍 DETECÇÃO PRECISA DE NAVEGADOR
+  detectBrowser = () => {
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isFirefox = userAgent.includes('firefox');
+    const isChrome = userAgent.includes('chrome') && !userAgent.includes('edge');
+    const isSafari = userAgent.includes('safari') && !userAgent.includes('chrome');
+    const isEdge = userAgent.includes('edge');
+    
+    console.log('🔍 DETECÇÃO NAVEGADOR:', {
+      userAgent,
+      isFirefox,
+      isChrome,
+      isSafari,
+      isEdge
+    });
+    
+    return { isFirefox, isChrome, isSafari, isEdge };
+  };
 
   // 🚨 MÉTODO RADICAL: Interceptar erros DOM antes que quebrem a aplicação
   interceptDOMErrors = () => {
@@ -73,15 +92,41 @@ class ErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: any) {
+    const browser = this.detectBrowser();
+    const errorMessage = error.message || error.toString();
+    
     console.error('🚨 ERROR BOUNDARY ATIVADO:', error, errorInfo);
+    console.log('🔍 NAVEGADOR DETECTADO:', browser);
+    
+    // 🦊 TRATAMENTO ESPECÍFICO PARA FIREFOX
+    if (browser.isFirefox) {
+      console.log('🦊 FIREFOX DETECTADO - Aplicando correções específicas');
+      
+      // Tratar erro NS_ERROR_CONTENT_BLOCKED
+      if (errorMessage.includes('NS_ERROR_CONTENT_BLOCKED')) {
+        console.log('🚫 ERRO CSP FIREFOX - WebSocket bloqueado');
+        
+        // Não tratar como erro crítico, apenas log
+        setTimeout(() => {
+          console.log('🔄 FIREFOX: Continuando sem WebSocket real-time');
+          this.setState({ 
+            hasError: false, 
+            error: null, 
+            errorInfo: null 
+          });
+        }, 500);
+        return;
+      }
+    }
     
     // Salvar erro
     try {
       localStorage.setItem('critical-error', JSON.stringify({
-        error: error.message,
+        error: errorMessage,
         stack: error.stack,
         timestamp: new Date().toISOString(),
-        recoveryAttempts: this.state.recoveryAttempts
+        recoveryAttempts: this.state.recoveryAttempts,
+        browser: browser
       }));
     } catch (e) {
       console.error('Failed to save error:', e);
@@ -123,6 +168,8 @@ class ErrorBoundary extends Component<
 
   render() {
     if (this.state.hasError) {
+      const browser = this.detectBrowser();
+      
       // Tentar recuperação automática
       if (this.state.recoveryAttempts < 3) {
         setTimeout(() => {
@@ -139,6 +186,11 @@ class ErrorBoundary extends Component<
               <div className="text-slate-300 text-sm mt-2">
                 Tentativa {this.state.recoveryAttempts + 1} de 3
               </div>
+              {browser.isFirefox && (
+                <div className="text-orange-300 text-xs mt-1">
+                  🦊 Firefox - Aplicando correções específicas
+                </div>
+              )}
             </div>
           </div>
         );
@@ -149,11 +201,14 @@ class ErrorBoundary extends Component<
         <div className="h-screen w-full bg-gradient-to-br from-slate-900 via-red-900 to-slate-800 flex items-center justify-center p-6">
           <div className="max-w-md w-full bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg p-6 text-center">
             <div className="text-red-400 text-lg font-bold mb-4">
-              🚨 Erro Crítico Detectado
+              {browser.isFirefox ? '🦊 Firefox - Erro Detectado' : '🚨 Erro Crítico Detectado'}
             </div>
             
             <div className="text-slate-300 mb-6">
-              Erro DOM crítico detectado. A aplicação será recarregada.
+              {browser.isFirefox 
+                ? 'Erro específico do Firefox detectado. A aplicação será recarregada.'
+                : 'Erro DOM crítico detectado. A aplicação será recarregada.'
+              }
             </div>
             
             <div className="space-y-3">
