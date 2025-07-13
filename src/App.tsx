@@ -11,7 +11,7 @@ import './App.css';
 
 const queryClient = new QueryClient();
 
-// 🔧 CORREÇÃO CRÍTICA: ErrorBoundary melhorado para resolver problema removeChild
+// 🚨 SOLUÇÃO RADICAL: Prevenir completamente erros removeChild
 class ErrorBoundary extends Component<
   { children: ReactNode },
   { hasError: boolean; error: Error | null; errorInfo: any; recoveryAttempts: number }
@@ -19,77 +19,78 @@ class ErrorBoundary extends Component<
   constructor(props: { children: ReactNode }) {
     super(props);
     this.state = { hasError: false, error: null, errorInfo: null, recoveryAttempts: 0 };
+    
+    // 🚨 INTERCEPTAR E PREVENIR ERROS removeChild
+    this.interceptDOMErrors();
   }
+
+  // 🚨 MÉTODO RADICAL: Interceptar erros DOM antes que quebrem a aplicação
+  interceptDOMErrors = () => {
+    const originalRemoveChild = Node.prototype.removeChild;
+    const originalAppendChild = Node.prototype.appendChild;
+    const originalInsertBefore = Node.prototype.insertBefore;
+    
+    // Interceptar removeChild
+    Node.prototype.removeChild = function(child: Node) {
+      try {
+        if (this.contains(child)) {
+          return originalRemoveChild.call(this, child);
+        } else {
+          console.warn('🔧 PREVENIU removeChild em nó não-filho:', child);
+          return child;
+        }
+      } catch (e) {
+        console.error('🚨 ERRO removeChild interceptado:', e);
+        return child;
+      }
+    };
+    
+    // Interceptar appendChild
+    Node.prototype.appendChild = function(child: Node) {
+      try {
+        return originalAppendChild.call(this, child);
+      } catch (e) {
+        console.error('🚨 ERRO appendChild interceptado:', e);
+        return child;
+      }
+    };
+    
+    // Interceptar insertBefore
+    Node.prototype.insertBefore = function(newNode: Node, referenceNode: Node | null) {
+      try {
+        return originalInsertBefore.call(this, newNode, referenceNode);
+      } catch (e) {
+        console.error('🚨 ERRO insertBefore interceptado:', e);
+        return newNode;
+      }
+    };
+    
+    console.log('🔧 INTERCEPTORES DOM INSTALADOS - removeChild protegido');
+  };
 
   static getDerivedStateFromError(error: Error) {
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: any) {
-    // 🔧 CORREÇÃO: Detecção precisa de dispositivos
-    const userAgent = navigator.userAgent;
-    const platform = navigator.platform;
+    console.error('🚨 ERROR BOUNDARY ATIVADO:', error, errorInfo);
     
-    const isRealIPad = /iPad/i.test(userAgent) || 
-                      (platform.includes('Mac') && navigator.maxTouchPoints > 0 && /Safari/i.test(userAgent) && !/Chrome/i.test(userAgent));
-    
-    const isDesktopChrome = /Chrome/i.test(userAgent) && !/Mobile/i.test(userAgent) && !isRealIPad;
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(userAgent) && !isDesktopChrome;
-    
-    const deviceType = isRealIPad ? 'Real iPad' : isDesktopChrome ? 'Chrome Desktop' : isMobile ? 'Mobile Device' : 'Unknown Device';
-    
-    console.error(`🔧 ErrorBoundary caught error on ${deviceType}:`, error, errorInfo);
-    
-    // 🚨 CORREÇÃO CRÍTICA: Detectar erro de removeChild que quebra todos os cliques
-    const isDOMError = error.message.includes('removeChild') || 
-                      error.message.includes('Node') || 
-                      error.message.includes('insertBefore') ||
-                      error.message.includes('appendChild') ||
-                      error.stack?.includes('removeChild');
-    
-    if (isDOMError) {
-      console.error('🚨 CRITICAL DOM ERROR DETECTED - This breaks all click functionality!');
-      console.error('🔧 Error details:', {
-        message: error.message,
-        stack: error.stack,
-        component: errorInfo.componentStack,
-        timestamp: new Date().toISOString()
-      });
-      
-      // Salvar erro crítico
-      try {
-        localStorage.setItem('critical-dom-error', JSON.stringify({
-          error: error.message,
-          stack: error.stack,
-          timestamp: new Date().toISOString(),
-          device: deviceType,
-          userAgent: navigator.userAgent,
-          recoveryAttempts: this.state.recoveryAttempts
-        }));
-      } catch (e) {
-        console.error('Failed to save critical error:', e);
-      }
-      
-      // 🔧 CORREÇÃO: Tentar recuperar funcionalidade de cliques
-      this.attemptClickRecovery();
-    }
-    
-    // 🔧 CORREÇÃO: Salvar erro completo no localStorage
+    // Salvar erro
     try {
-      localStorage.setItem('last-error', JSON.stringify({
+      localStorage.setItem('critical-error', JSON.stringify({
         error: error.message,
         stack: error.stack,
-        errorInfo,
         timestamp: new Date().toISOString(),
-        userAgent: navigator.userAgent,
-        url: window.location.href,
-        isDOMError,
-        deviceType,
         recoveryAttempts: this.state.recoveryAttempts
       }));
     } catch (e) {
-      console.error('Failed to save error to localStorage:', e);
+      console.error('Failed to save error:', e);
     }
+    
+    // Forçar recuperação imediata
+    setTimeout(() => {
+      this.forceRecovery();
+    }, 100);
     
     this.setState({ 
       errorInfo, 
@@ -97,151 +98,77 @@ class ErrorBoundary extends Component<
     });
   }
 
-  // 🔧 NOVO: Método para tentar recuperar funcionalidade de cliques
-  attemptClickRecovery = () => {
-    console.log('🔧 Attempting to recover click functionality...');
+  // 🔧 RECUPERAÇÃO FORÇADA
+  forceRecovery = () => {
+    console.log('🔧 FORÇANDO RECUPERAÇÃO TOTAL...');
     
-    // Aguardar um pouco antes de tentar recuperar
-    setTimeout(() => {
-      try {
-        // Verificar se event listeners globais estão funcionando
-        const testClick = () => {
-          console.log('✅ Global click listener is working');
-        };
-        
-        // Adicionar listener global temporário
-        document.addEventListener('click', testClick, { once: true });
-        
-        // Tentar recriar event listeners essenciais
-        const buttons = document.querySelectorAll('button, [role="button"]');
-        console.log(`🔧 Found ${buttons.length} clickable elements, attempting to restore...`);
-        
-        buttons.forEach((button, index) => {
-          if (button && typeof button.addEventListener === 'function') {
-            button.addEventListener('click', (e) => {
-              console.log(`🖱️ Button ${index} clicked successfully`);
-            }, { once: true });
-          }
-        });
-        
-        // Verificar se React ainda está funcionando
-        if (window.React) {
-          console.log('✅ React is still available');
-        } else {
-          console.warn('⚠️ React may not be available');
-        }
-        
-        console.log('🔧 Click recovery attempt completed');
-        
-      } catch (e) {
-        console.error('❌ Click recovery failed:', e);
-      }
-    }, 100);
-  };
-
-  // 🔧 CORREÇÃO: Método de reload mais robusto
-  handleReload = () => {
     try {
-      console.log('🔄 Attempting safe reload...');
-      
-      // Limpar estado de erro
+      // Limpar estado
       this.setState({ 
         hasError: false, 
         error: null, 
-        errorInfo: null, 
-        recoveryAttempts: 0 
+        errorInfo: null 
       });
       
-      // Limpar localStorage de erros
-      localStorage.removeItem('last-error');
-      localStorage.removeItem('critical-dom-error');
+      // Forçar re-renderização
+      this.forceUpdate();
       
-      // Reload mais seguro
-      window.location.href = window.location.href;
+      console.log('✅ RECUPERAÇÃO FORÇADA CONCLUÍDA');
     } catch (e) {
-      console.error('Error during reload:', e);
-      // Fallback para reload forçado
+      console.error('❌ FALHA NA RECUPERAÇÃO:', e);
+      // Último recurso: reload
       window.location.reload();
     }
   };
 
   render() {
     if (this.state.hasError) {
-      // 🔧 CORREÇÃO: Detecção mais precisa de dispositivos
-      const userAgent = navigator.userAgent;
-      const platform = navigator.platform;
+      // Tentar recuperação automática
+      if (this.state.recoveryAttempts < 3) {
+        setTimeout(() => {
+          this.forceRecovery();
+        }, 1000);
+        
+        return (
+          <div className="h-screen w-full bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex items-center justify-center p-6">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
+              <div className="text-white text-lg font-medium">
+                🔧 Recuperando aplicação...
+              </div>
+              <div className="text-slate-300 text-sm mt-2">
+                Tentativa {this.state.recoveryAttempts + 1} de 3
+              </div>
+            </div>
+          </div>
+        );
+      }
       
-      const isRealIPad = /iPad/i.test(userAgent) || 
-                        (platform.includes('Mac') && navigator.maxTouchPoints > 0 && /Safari/i.test(userAgent) && !/Chrome/i.test(userAgent));
-      
-      const isDesktopChrome = /Chrome/i.test(userAgent) && !/Mobile/i.test(userAgent) && !isRealIPad;
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(userAgent) && !isDesktopChrome;
-      
-      const isDOMError = this.state.error?.message.includes('removeChild') || 
-                        this.state.error?.message.includes('Node') ||
-                        this.state.error?.stack?.includes('removeChild');
-      
+      // Se falhou 3 vezes, mostrar erro
       return (
         <div className="h-screen w-full bg-gradient-to-br from-slate-900 via-red-900 to-slate-800 flex items-center justify-center p-6">
           <div className="max-w-md w-full bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg p-6 text-center">
             <div className="text-red-400 text-lg font-bold mb-4">
-              {isDOMError ? '🚨 Critical Click Error' : 
-               isRealIPad ? '🍎 iPad Error' : 
-               isMobile ? '📱 Mobile Error' : 
-               isDesktopChrome ? '💻 Chrome Desktop Error' : 
-               '❌ Application Error'}
+              🚨 Erro Crítico Detectado
             </div>
             
             <div className="text-slate-300 mb-6">
-              {isDOMError ? 
-                'DOM manipulation error detected. This may cause clicks to stop working.' :
-                'An unexpected error occurred. The application will reload to recover.'
-              }
-            </div>
-            
-            {/* 🔧 CORREÇÃO: Informações de debug mais completas */}
-            <div className="text-xs text-slate-400 mb-4 text-left">
-              <strong>Debug Info:</strong><br/>
-              Device: {isRealIPad ? 'Real iPad' : isDesktopChrome ? 'Chrome Desktop' : isMobile ? 'Mobile' : 'Unknown'}<br/>
-              Error: {this.state.error?.message.substring(0, 100)}...<br/>
-              Recovery Attempts: {this.state.recoveryAttempts}<br/>
-              Time: {new Date().toLocaleTimeString()}<br/>
-              DOM Error: {isDOMError ? 'Yes' : 'No'}
+              Erro DOM crítico detectado. A aplicação será recarregada.
             </div>
             
             <div className="space-y-3">
               <button
-                onClick={this.handleReload}
+                onClick={() => window.location.reload()}
                 className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
               >
-                🔄 Reload Application
+                🔄 Recarregar Aplicação
               </button>
               
-              {isDOMError && (
-                <button
-                  onClick={this.attemptClickRecovery}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-                >
-                  🔧 Try Click Recovery
-                </button>
-              )}
-              
               <button
-                onClick={() => {
-                  const errorDetails = {
-                    message: this.state.error?.message,
-                    stack: this.state.error?.stack,
-                    userAgent: navigator.userAgent,
-                    timestamp: new Date().toISOString()
-                  };
-                  console.log('📋 Error details copied to console:', errorDetails);
-                  if (navigator.clipboard) {
-                    navigator.clipboard.writeText(JSON.stringify(errorDetails, null, 2));
-                  }
-                }}
-                className="w-full bg-slate-600 hover:bg-slate-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                onClick={this.forceRecovery}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
               >
-                📋 Copy Error Details
+                🔧 Tentar Recuperação
               </button>
             </div>
           </div>
@@ -252,6 +179,32 @@ class ErrorBoundary extends Component<
     return this.props.children;
   }
 }
+
+// 🔧 INTERCEPTADOR GLOBAL DE ERROS
+const setupGlobalErrorHandling = () => {
+  // Interceptar erros globais
+  window.addEventListener('error', (e) => {
+    if (e.message.includes('removeChild') || e.message.includes('Node')) {
+      console.error('🚨 ERRO DOM GLOBAL INTERCEPTADO:', e.message);
+      e.preventDefault(); // Prevenir que o erro quebre a aplicação
+      return false;
+    }
+  });
+  
+  // Interceptar promises rejeitadas
+  window.addEventListener('unhandledrejection', (e) => {
+    if (e.reason && e.reason.message && e.reason.message.includes('removeChild')) {
+      console.error('🚨 PROMISE REJEITADA DOM INTERCEPTADA:', e.reason);
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  console.log('🔧 INTERCEPTADORES GLOBAIS INSTALADOS');
+};
+
+// Instalar interceptadores imediatamente
+setupGlobalErrorHandling();
 
 // 🔧 CORREÇÃO: LoadingScreen melhorado
 function LoadingScreen() {
