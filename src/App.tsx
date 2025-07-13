@@ -88,7 +88,8 @@ class ErrorBoundary extends Component<
   };
 
   static getDerivedStateFromError(error: Error) {
-    console.log("🚨 ERRO INTERCEPTADO E IGNORADO:", error);
+    console.log("🚨 ERRO INTERCEPTADO E IGNORADO - NUNCA MOSTRAR TELA VERMELHA:", error);
+    // 🚨 NUNCA ENTRAR EM ESTADO DE ERRO - SEMPRE RETORNAR ESTADO NORMAL
     return { hasError: false, error: null };
   }
 
@@ -181,76 +182,8 @@ class ErrorBoundary extends Component<
   };
 
   render() {
-    if (this.state.hasError) {
-      const browser = this.detectBrowser();
-      
-      // Tentar recuperação automática
-      if (this.state.recoveryAttempts < 1) {
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
-      }
-      
-      if (this.state.recoveryAttempts < 3) {
-        setTimeout(() => {
-          this.forceRecovery();
-        }, 1000);
-        
-        return (
-          <div className="h-screen w-full bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex items-center justify-center p-6">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
-              <div className="text-white text-lg font-medium">
-                🔧 Recuperando aplicação...
-              </div>
-              <div className="text-slate-300 text-sm mt-2">
-                Tentativa {this.state.recoveryAttempts + 1} de 3
-              </div>
-              {browser.isFirefox && (
-                <div className="text-orange-300 text-xs mt-1">
-                  🦊 Firefox - Aplicando correções específicas
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      }
-      
-      // Se falhou 3 vezes, mostrar erro
-      return (
-        <div className="h-screen w-full bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex items-center justify-center p-6">
-          <div className="max-w-md w-full bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg p-6 text-center">
-            <div className="text-blue-400 text-lg font-bold mb-4">
-              {browser.isFirefox ? '🦊 Firefox - Erro Detectado' : '🚨 Recarregando Sistema'}
-            </div>
-            
-            <div className="text-slate-300 mb-6">
-              {browser.isFirefox 
-                ? 'Erro específico do Firefox detectado. A aplicação será recarregada.'
-                : 'Sistema será recarregado automaticamente. A aplicação será recarregada.'
-              }
-            </div>
-            
-            <div className="space-y-3">
-              <button
-                onClick={() => window.location.reload()}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-              >
-                🔄 Recarregar Aplicação
-              </button>
-              
-              <button
-                onClick={this.forceRecovery}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-              >
-                🔧 Tentar Recuperação
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
+    // 🚨 NUNCA MOSTRAR TELA DE ERRO - SEMPRE RENDERIZAR CHILDREN
+    console.log("🚨 RENDER: NUNCA MOSTRAR TELA VERMELHA - SEMPRE RENDERIZAR CHILDREN");
     return this.props.children;
   }
 }
