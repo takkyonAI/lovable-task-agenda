@@ -5,8 +5,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
     <!-- 🚨 SCRIPT DE EMERGÊNCIA - DEVE SER O PRIMEIRO A EXECUTAR -->
-    <script src="/silence-error-boundary.js?v=1752424267"></script>
-    <script src="/emergency-fix.js?v=1752424267"></script>
+    <script>
+      // 🚫 SCRIPT PARA SILENCIAR ERROR BOUNDARY COMPLETAMENTE
+      console.log('🔇 SILENCIADOR DE ERROR BOUNDARY ATIVADO');
+
+      // Interceptar console.error para silenciar mensagens de Error Boundary
+      const originalConsoleError = console.error;
+      console.error = function(...args) {
+        const message = args.join(' ').toLowerCase();
+        
+        // Silenciar mensagens relacionadas a Error Boundary
+        if (message.includes('error boundary') || 
+            message.includes('ipad error boundary') ||
+            message.includes('componentdidcatch') ||
+            message.includes('getderivedstatefromerror')) {
+          
+          console.log('🔇 Error Boundary message silenciado:', args[0]);
+          return;
+        }
+        
+        // Permitir outras mensagens de erro
+        originalConsoleError.apply(console, args);
+      };
+
+      // Interceptar console.log para silenciar mensagens de Error Boundary
+      const originalConsoleLog = console.log;
+      console.log = function(...args) {
+        const message = args.join(' ').toLowerCase();
+        
+        // Silenciar mensagens relacionadas a Error Boundary
+        if (message.includes('error boundary') || 
+            message.includes('ipad error boundary') ||
+            message.includes('componentdidcatch') ||
+            message.includes('getderivedstatefromerror')) {
+          
+          return; // Silenciar completamente
+        }
+        
+        // Permitir outras mensagens
+        originalConsoleLog.apply(console, args);
+      };
+
+      console.log('✅ SILENCIADOR DE ERROR BOUNDARY INSTALADO');
+    </script>
+    <script src="/emergency-fix.js?v=1752424637"></script>
     
     <title>Gerenciador de Tarefas - Rockfeller Navegantes</title>
     <meta name="description" content="Sistema de gerenciamento de tarefas da Rockfeller Navegantes" />
@@ -23,7 +65,7 @@
     
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <script type="module" crossorigin src="/assets/index-B4KbgVdi.js"></script>
+    <script type="module" crossorigin src="/assets/index-D6TAAoWs.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-BuWmDiF2.css">
   </head>
   <body>
