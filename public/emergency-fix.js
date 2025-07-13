@@ -52,7 +52,7 @@
     let firefoxPollingInterval;
     
     const startFirefoxPolling = () => {
-      console.log('🔄 FIREFOX: Iniciando polling silencioso a cada 30 segundos');
+      console.log('🔄 FIREFOX: Iniciando polling silencioso a cada 15 segundos');
       
       firefoxPollingInterval = setInterval(() => {
         console.log('🔄 FIREFOX: Polling silencioso executado');
@@ -62,8 +62,27 @@
           detail: { timestamp: Date.now() }
         });
         window.dispatchEvent(event);
-      }, 30000); // 30 segundos
+      }, 15000); // 15 segundos - mais frequente
     };
+    
+    // 🚫 BLOQUEAR COMPLETAMENTE WEBSOCKET NO FIREFOX
+    if (window.WebSocket) {
+      console.log('🚫 FIREFOX: Bloqueando WebSocket para prevenir loops');
+      
+      // Substituir WebSocket por uma implementação que falha silenciosamente
+      window.WebSocket = function() {
+        console.log('🚫 FIREFOX: WebSocket bloqueado - usando polling');
+        throw new Error('WebSocket desabilitado no Firefox');
+      };
+      
+      // Bloquear também EventSource
+      if (window.EventSource) {
+        window.EventSource = function() {
+          console.log('🚫 FIREFOX: EventSource bloqueado - usando polling');
+          throw new Error('EventSource desabilitado no Firefox');
+        };
+      }
+    }
     
     // Iniciar polling após 5 segundos (dar tempo para React carregar)
     setTimeout(startFirefoxPolling, 5000);
