@@ -27,6 +27,17 @@ export const useTaskManager = () => {
   const isLoadingRef = useRef(false);
   const fallbackRefreshRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // 🔍 DETECÇÃO DE NAVEGADOR
+  const detectBrowser = () => {
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isFirefox = userAgent.includes('firefox');
+    const isChrome = userAgent.includes('chrome') && !userAgent.includes('edge');
+    const isSafari = userAgent.includes('safari') && !userAgent.includes('chrome');
+    const isEdge = userAgent.includes('edge');
+    
+    return { isFirefox, isChrome, isSafari, isEdge };
+  };
+
   // 🔄 OTIMIZAÇÃO: Fallback de refresh menos agressivo (apenas 1 timer)
   const setupFallbackRefresh = useCallback(() => {
     if (fallbackRefreshRef.current) {
@@ -227,20 +238,32 @@ export const useTaskManager = () => {
             console.log('✅ Sistema real-time otimizado conectado!');
               setIsRealTimeConnected(true);
               
-              toast({
-              title: "⚡ Sistema Otimizado",
-              description: "Atualizações instantâneas sem piscar ativadas!",
-                duration: 3000
-              });
+              // 🦊 FIREFOX: Não mostrar notificação de sistema otimizado para evitar piscar
+              const browser = detectBrowser();
+              if (!browser.isFirefox) {
+                toast({
+                  title: "⚡ Sistema Otimizado",
+                  description: "Atualizações instantâneas sem piscar ativadas!",
+                  duration: 3000
+                });
+              } else {
+                console.log('🦊 FIREFOX: Modo silencioso - real-time conectado sem notificação');
+              }
             } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
             console.warn('🔒 Real-time desconectado:', status);
               setIsRealTimeConnected(false);
               
-            toast({
-              title: "🔄 Modo Fallback",
-              description: "Atualizações a cada 5 minutos",
-              duration: 3000
-            });
+              // 🦊 FIREFOX: Não mostrar notificação de fallback para evitar piscar
+              const browser = detectBrowser();
+              if (!browser.isFirefox) {
+                toast({
+                  title: "🔄 Modo Fallback",
+                  description: "Atualizações a cada 5 minutos",
+                  duration: 3000
+                });
+              } else {
+                console.log('🦊 FIREFOX: Modo silencioso - sem notificação de fallback');
+              }
             }
           });
         
