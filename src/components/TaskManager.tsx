@@ -5,13 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, Filter, Calendar, Clock, Users, ShieldCheck, RefreshCw, Wifi, WifiOff, User, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
+import { Plus, Search, Filter, Calendar, Clock, Users, ShieldCheck, RefreshCw, Wifi, WifiOff, User, ChevronLeft, ChevronRight, CheckCircle, Bug } from 'lucide-react';
 import CreateTaskDialog from './task/CreateTaskDialog';
 import EditTaskDialog from './task/EditTaskDialog';
 import TaskCard from './task/TaskCard';
 import TaskFilters from './task/TaskFilters';
 import AdvancedTaskFilters from './task/AdvancedTaskFilters';
 import TaskDetailsModal from './task/TaskDetailsModal';
+import { DiagnosticPanel } from './DiagnosticPanel';
 import { useTaskManager } from '@/hooks/useTaskManager';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { getStatusColor, getPriorityColor, getStatusLabel, getPriorityLabel } from '@/utils/taskUtils';
@@ -60,6 +61,9 @@ const TaskManager = () => {
 
   // 🔄 Estado para controle de refresh manual
   const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // 🔧 CORREÇÃO: Estado para painel de diagnóstico
+  const [isDiagnosticOpen, setIsDiagnosticOpen] = useState(false);
 
   // Estados para edição de tarefas
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -647,7 +651,17 @@ const TaskManager = () => {
               />
             </div>
 
-
+            {/* 🔧 CORREÇÃO: Botão de diagnóstico */}
+            <Button
+              onClick={() => setIsDiagnosticOpen(true)}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2 border-slate-600 hover:border-slate-500 text-slate-300 hover:text-white"
+              title="Diagnóstico do Sistema"
+            >
+              <Bug className="w-4 h-4" />
+              Debug
+            </Button>
           </div>
         </div>
 
@@ -838,6 +852,13 @@ const TaskManager = () => {
         canEdit={selectedTask ? canEditTask(selectedTask) : false}
         canDelete={selectedTask ? canDeleteTask(selectedTask) : false}
         isUpdating={!!updatingTask}
+      />
+
+      {/* 🔧 CORREÇÃO: Painel de diagnóstico */}
+      <DiagnosticPanel
+        isOpen={isDiagnosticOpen}
+        onClose={() => setIsDiagnosticOpen(false)}
+        userEmail={currentUser?.email}
       />
     </div>
   );

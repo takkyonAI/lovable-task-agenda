@@ -1,23 +1,24 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
-import { AuthProvider, useSupabaseAuth } from '@/hooks/useSupabaseAuth';
-import Index from '@/pages/Index';
-import LoginForm from '@/components/LoginForm';
-import FirstTimePasswordChange from '@/components/FirstTimePasswordChange';
+import { AuthProvider } from '@/hooks/useSupabaseAuth';
+import { Index } from '@/pages/Index';
+import { LoginForm } from '@/components/LoginForm';
+import { FirstTimePasswordChange } from '@/components/FirstTimePasswordChange';
 import { useState, useEffect, Component, ReactNode } from 'react';
+import { Loader2 } from 'lucide-react';
 import './App.css';
 
 const queryClient = new QueryClient();
 
-// Simple Error Boundary for iPad debugging
+// 🔧 CORREÇÃO: ErrorBoundary melhorado para resolver problemas de DOM
 class ErrorBoundary extends Component<
   { children: ReactNode },
-  { hasError: boolean; error: Error | null }
+  { hasError: boolean; error: Error | null; errorInfo: any }
 > {
   constructor(props: { children: ReactNode }) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, errorInfo: null };
   }
 
   static getDerivedStateFromError(error: Error) {
@@ -25,40 +26,104 @@ class ErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: any) {
-    console.error('iPad Error Boundary caught an error:', error, errorInfo);
+    console.error('🔧 ErrorBoundary caught an error:', error, errorInfo);
+    
+    // 🔧 CORREÇÃO: Salvar erro no localStorage para debug
+    try {
+      localStorage.setItem('last-error', JSON.stringify({
+        error: error.message,
+        stack: error.stack,
+        errorInfo,
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent,
+        url: window.location.href
+      }));
+    } catch (e) {
+      console.error('Failed to save error to localStorage:', e);
+    }
+    
+    this.setState({ errorInfo });
   }
+
+  // 🔧 CORREÇÃO: Método seguro para reload
+  handleReload = () => {
+    try {
+      // Limpar estado
+      this.setState({ hasError: false, error: null, errorInfo: null });
+      
+      // Limpar localStorage de erros
+      localStorage.removeItem('last-error');
+      
+      // Reload seguro
+      window.location.href = window.location.href;
+    } catch (e) {
+      console.error('Error during reload:', e);
+      // Fallback para reload forçado
+      window.location.reload();
+    }
+  };
 
   render() {
     if (this.state.hasError) {
       const isIPad = navigator.platform.includes('iPad') || 
                      (navigator.platform.includes('Mac') && navigator.maxTouchPoints > 0);
       
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      
       return (
         <div className="h-screen w-full bg-gradient-to-br from-slate-900 via-red-900 to-slate-800 flex items-center justify-center p-6">
           <div className="max-w-md w-full bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg p-6 text-center">
             <div className="text-red-400 text-lg font-bold mb-4">
-              {isIPad ? '🍎 iPad Error Detected' : '❌ Application Error'}
+              {isIPad ? '🍎 iPad Error Detected' : isMobile ? '📱 Mobile Error' : '❌ Application Error'}
             </div>
             <div className="text-white text-sm mb-4">
               {this.state.error?.message || 'Unknown error occurred'}
             </div>
-            {isIPad && (
-              <div className="text-slate-300 text-xs mb-4">
-                <strong>iPad Debug Info:</strong><br/>
-                Platform: {navigator.platform}<br/>
-                User Agent: {navigator.userAgent.substring(0, 50)}...<br/>
-                Touch Points: {navigator.maxTouchPoints}
+            
+            {/* 🔧 CORREÇÃO: Informações de debug mais completas */}
+            <div className="text-slate-300 text-xs mb-4 bg-slate-900/50 p-3 rounded">
+              <strong>Debug Info:</strong><br/>
+              <div className="text-left space-y-1">
+                <div>Platform: {navigator.platform}</div>
+                <div>Mobile: {isMobile ? 'Yes' : 'No'}</div>
+                <div>Touch Points: {navigator.maxTouchPoints}</div>
+                <div>Time: {new Date().toLocaleString()}</div>
+                {this.state.error?.stack && (
+                  <div className="mt-2">
+                    <strong>Stack:</strong><br/>
+                    <div className="text-xs text-slate-400 max-h-20 overflow-y-auto">
+                      {this.state.error.stack.split('\n').slice(0, 3).join('\n')}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-            <button
-              onClick={() => {
-                this.setState({ hasError: false, error: null });
-                window.location.reload();
-              }}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-            >
-              Reload Page
-            </button>
+            </div>
+            
+            <div className="space-y-2">
+              <button
+                onClick={this.handleReload}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors"
+              >
+                🔄 Reload Page
+              </button>
+              
+              {/* 🔧 CORREÇÃO: Botão para limpar dados */}
+              <button
+                onClick={() => {
+                  try {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    this.handleReload();
+                  } catch (e) {
+                    console.error('Error clearing storage:', e);
+                    this.handleReload();
+                  }
+                }}
+                className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition-colors text-sm"
+              >
+                🗑️ Clear Data & Reload
+              </button>
+            </div>
           </div>
         </div>
       );
@@ -68,35 +133,53 @@ class ErrorBoundary extends Component<
   }
 }
 
-// Loading component with iPad-specific styling
+// 🔧 CORREÇÃO: LoadingScreen melhorado
 function LoadingScreen() {
   const [loadingTime, setLoadingTime] = useState(0);
-  
+  const [showReloadButton, setShowReloadButton] = useState(false);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setLoadingTime(prev => prev + 1);
     }, 1000);
-    
-    return () => clearInterval(interval);
+
+    // 🔧 CORREÇÃO: Mostrar botão de reload após 15 segundos
+    const reloadTimeout = setTimeout(() => {
+      setShowReloadButton(true);
+    }, 15000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(reloadTimeout);
+    };
   }, []);
-  
+
   return (
-    <div className="h-screen w-full bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex items-center justify-center prevent-white-screen">
-      <div className="text-center">
-        <div className="text-white text-xl mb-4">Carregando...</div>
-        <div className="text-slate-300 text-sm">
-          {loadingTime > 10 && "Carregamento está demorando mais que o esperado..."}
-          {loadingTime > 20 && (
-            <div className="mt-2">
-              <button 
-                onClick={() => window.location.reload()} 
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
-              >
-                Recarregar Página
-              </button>
-            </div>
-          )}
+    <div className="h-screen w-full bg-gradient-to-br from-slate-900 via-purple-900 to-slate-800 flex items-center justify-center">
+      <div className="text-center space-y-6">
+        <div className="relative">
+          <Loader2 className="w-16 h-16 text-blue-400 animate-spin mx-auto" />
+          <div className="absolute inset-0 w-16 h-16 border-4 border-blue-400/20 rounded-full mx-auto"></div>
         </div>
+        
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold text-white">Carregando Sistema</h2>
+          <p className="text-slate-300">Gerenciador de Tarefas Rockfeller</p>
+          <p className="text-slate-400 text-sm">Tempo: {loadingTime}s</p>
+        </div>
+        
+        {/* 🔧 CORREÇÃO: Botão de reload se demorar muito */}
+        {showReloadButton && (
+          <div className="space-y-2">
+            <p className="text-yellow-400 text-sm">⚠️ Carregamento está demorando...</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded transition-colors"
+            >
+              🔄 Recarregar Página
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
