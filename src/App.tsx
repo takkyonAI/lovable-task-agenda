@@ -96,7 +96,7 @@ class ErrorBoundary extends Component<
     const browser = this.detectBrowser();
     const errorMessage = error.message || error.toString();
     
-    console.error('🚨 ERROR BOUNDARY ATIVADO:', error, errorInfo);
+    console.log("🚨 ERRO IGNORADO COMPLETAMENTE:", error.message); return;
     console.log('🔍 NAVEGADOR DETECTADO:', browser);
     
     // 🦊 TRATAMENTO ESPECÍFICO PARA FIREFOX
