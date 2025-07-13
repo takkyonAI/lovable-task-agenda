@@ -172,10 +172,28 @@ export const useTaskManager = () => {
 
   useEffect(() => {
     loadTasks();
-    // 🚫 DESATIVADO: Fallback refresh - removido para testar se resolve o problema de "piscar"
-    // setupFallbackRefresh();
     
-    // 🚀 NOVO SISTEMA REAL-TIME OTIMIZADO - Sem "piscar"
+    // 🦊 FIREFOX: Detecção de navegador para comportamento específico
+    const browser = detectBrowser();
+    
+    if (browser.isFirefox) {
+      console.log('🦊 FIREFOX DETECTADO: Usando modo polling silencioso (sem real-time)');
+      
+      // 🔄 FIREFOX: Apenas polling silencioso a cada 30 segundos
+      const firefoxPollingInterval = setInterval(() => {
+        console.log('🔄 FIREFOX: Polling silencioso...');
+        loadTasks();
+      }, 30000); // 30 segundos
+      
+      setIsRealTimeConnected(false);
+      
+      return () => {
+        clearInterval(firefoxPollingInterval);
+        console.log('🧹 FIREFOX: Limpando polling silencioso');
+      };
+    }
+    
+    // 🚀 OUTROS NAVEGADORES: Sistema real-time otimizado
     let channel: any = null;
     
     console.log('🔄 Configurando sistema real-time otimizado (sem piscar)...');
@@ -238,32 +256,20 @@ export const useTaskManager = () => {
             console.log('✅ Sistema real-time otimizado conectado!');
               setIsRealTimeConnected(true);
               
-              // 🦊 FIREFOX: Não mostrar notificação de sistema otimizado para evitar piscar
-              const browser = detectBrowser();
-              if (!browser.isFirefox) {
-                toast({
-                  title: "⚡ Sistema Otimizado",
-                  description: "Atualizações instantâneas sem piscar ativadas!",
-                  duration: 3000
-                });
-              } else {
-                console.log('🦊 FIREFOX: Modo silencioso - real-time conectado sem notificação');
-              }
+              toast({
+                title: "⚡ Sistema Otimizado",
+                description: "Atualizações instantâneas sem piscar ativadas!",
+                duration: 3000
+              });
             } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
             console.warn('🔒 Real-time desconectado:', status);
               setIsRealTimeConnected(false);
               
-              // 🦊 FIREFOX: Não mostrar notificação de fallback para evitar piscar
-              const browser = detectBrowser();
-              if (!browser.isFirefox) {
-                toast({
-                  title: "🔄 Modo Fallback",
-                  description: "Atualizações a cada 5 minutos",
-                  duration: 3000
-                });
-              } else {
-                console.log('🦊 FIREFOX: Modo silencioso - sem notificação de fallback');
-              }
+              toast({
+                title: "🔄 Modo Fallback",
+                description: "Atualizações a cada 5 minutos",
+                duration: 3000
+              });
             }
           });
         
@@ -281,7 +287,7 @@ export const useTaskManager = () => {
         clearTimeout(fallbackRefreshRef.current);
       }
     };
-  }, [currentUser, handleTaskInsert, handleTaskUpdate, handleTaskDelete, setupFallbackRefresh, toast]);
+  }, [currentUser]);
 
   useEffect(() => {
     filterTasks();
