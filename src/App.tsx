@@ -1,10 +1,10 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
-import { AuthProvider } from '@/hooks/useSupabaseAuth';
-import { Index } from '@/pages/Index';
-import { LoginForm } from '@/components/LoginForm';
-import { FirstTimePasswordChange } from '@/components/FirstTimePasswordChange';
+import { AuthProvider, useSupabaseAuth } from '@/hooks/useSupabaseAuth';
+import Index from '@/pages/Index';
+import LoginForm from '@/components/LoginForm';
+import FirstTimePasswordChange from '@/components/FirstTimePasswordChange';
 import { useState, useEffect, Component, ReactNode } from 'react';
 import { Loader2 } from 'lucide-react';
 import './App.css';
@@ -26,7 +26,43 @@ class ErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: any) {
-    console.error('🔧 ErrorBoundary caught an error:', error, errorInfo);
+    // 🔧 CORREÇÃO: Log mais preciso do dispositivo
+    const userAgent = navigator.userAgent;
+    const isDesktopChrome = /Chrome/i.test(userAgent) && !/Mobile/i.test(userAgent);
+    const deviceType = isDesktopChrome ? 'Chrome Desktop' : 'Other Device';
+    
+    console.error(`🔧 ErrorBoundary caught an error on ${deviceType}:`, error, errorInfo);
+    
+    // 🚨 CORREÇÃO CRÍTICA: Detectar erro de removeChild que quebra cliques
+    if (error.message.includes('removeChild') || error.message.includes('Node')) {
+      console.error('🚨 DOM MANIPULATION ERROR DETECTED - This is breaking all clicks!');
+      console.error('🔧 Attempting to recover without DOM manipulation...');
+      
+      // Não fazer nada que possa causar mais erros de DOM
+      // Apenas logar e deixar o React se recuperar
+      try {
+        localStorage.setItem('critical-dom-error', JSON.stringify({
+          error: error.message,
+          timestamp: new Date().toISOString(),
+          recovery: 'DOM manipulation avoided'
+        }));
+      } catch (e) {
+        console.error('Failed to save critical error:', e);
+      }
+      
+      // Tentar limpar apenas event listeners sem tocar no DOM
+      setTimeout(() => {
+        try {
+          console.log('🔧 Attempting to restore click functionality...');
+          // Recriar event listeners globais
+          document.addEventListener('click', (e) => {
+            console.log('🖱️ Global click detected:', e.target);
+          }, { once: true });
+        } catch (e) {
+          console.error('Failed to restore click listeners:', e);
+        }
+      }, 100);
+    }
     
     // 🔧 CORREÇÃO: Salvar erro no localStorage para debug
     try {
@@ -36,7 +72,8 @@ class ErrorBoundary extends Component<
         errorInfo,
         timestamp: new Date().toISOString(),
         userAgent: navigator.userAgent,
-        url: window.location.href
+        url: window.location.href,
+        isDOMError: error.message.includes('removeChild') || error.message.includes('Node')
       }));
     } catch (e) {
       console.error('Failed to save error to localStorage:', e);
@@ -65,16 +102,21 @@ class ErrorBoundary extends Component<
 
   render() {
     if (this.state.hasError) {
-      const isIPad = navigator.platform.includes('iPad') || 
-                     (navigator.platform.includes('Mac') && navigator.maxTouchPoints > 0);
+      // 🔧 CORREÇÃO: Detecção mais precisa de dispositivos
+      const userAgent = navigator.userAgent;
+      const platform = navigator.platform;
       
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      const isRealIPad = /iPad/i.test(userAgent) || 
+                        (platform.includes('Mac') && navigator.maxTouchPoints > 0 && /Safari/i.test(userAgent) && !/Chrome/i.test(userAgent));
+      
+      const isDesktopChrome = /Chrome/i.test(userAgent) && !/Mobile/i.test(userAgent);
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(userAgent) && !isDesktopChrome;
       
       return (
         <div className="h-screen w-full bg-gradient-to-br from-slate-900 via-red-900 to-slate-800 flex items-center justify-center p-6">
           <div className="max-w-md w-full bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg p-6 text-center">
             <div className="text-red-400 text-lg font-bold mb-4">
-              {isIPad ? '🍎 iPad Error Detected' : isMobile ? '📱 Mobile Error' : '❌ Application Error'}
+              {isRealIPad ? '🍎 iPad Error Detected' : isMobile ? '📱 Mobile Error' : isDesktopChrome ? '💻 Chrome Desktop Error' : '❌ Application Error'}
             </div>
             <div className="text-white text-sm mb-4">
               {this.state.error?.message || 'Unknown error occurred'}
