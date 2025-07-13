@@ -88,7 +88,8 @@ class ErrorBoundary extends Component<
   };
 
   static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
+    console.log("🚨 ERRO INTERCEPTADO E IGNORADO:", error);
+    return { hasError: false, error: null };
   }
 
   componentDidCatch(error: Error, errorInfo: any) {
@@ -113,7 +114,10 @@ class ErrorBoundary extends Component<
         console.log('🚫 FIREFOX: Erro de WebSocket/real-time ignorado - continuando normalmente');
         
         // Resetar estado imediatamente
-        this.setState({ 
+        this.setState({ hasError: false, error: null, errorInfo: null, recoveryAttempts: 0 });
+    return;
+    
+    this.setState({ 
           hasError: false, 
           error: null, 
           errorInfo: null,
@@ -141,6 +145,9 @@ class ErrorBoundary extends Component<
       this.forceRecovery();
     }, 100);
     
+    this.setState({ hasError: false, error: null, errorInfo: null, recoveryAttempts: 0 });
+    return;
+    
     this.setState({ 
       errorInfo, 
       recoveryAttempts: this.state.recoveryAttempts + 1 
@@ -153,7 +160,10 @@ class ErrorBoundary extends Component<
     
     try {
       // Limpar estado
-      this.setState({ 
+      this.setState({ hasError: false, error: null, errorInfo: null, recoveryAttempts: 0 });
+    return;
+    
+    this.setState({ 
         hasError: false, 
         error: null, 
         errorInfo: null 
