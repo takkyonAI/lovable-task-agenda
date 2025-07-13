@@ -102,19 +102,23 @@ class ErrorBoundary extends Component<
     if (browser.isFirefox) {
       console.log('🦊 FIREFOX DETECTADO - Aplicando correções específicas');
       
-      // Tratar erro NS_ERROR_CONTENT_BLOCKED
-      if (errorMessage.includes('NS_ERROR_CONTENT_BLOCKED')) {
-        console.log('🚫 ERRO CSP FIREFOX - WebSocket bloqueado');
+      // Ignorar TODOS os erros relacionados a WebSocket/real-time no Firefox
+      if (errorMessage.includes('NS_ERROR_CONTENT_BLOCKED') ||
+          errorMessage.includes('WebSocket') ||
+          errorMessage.includes('desabilitado no Firefox') ||
+          errorMessage.includes('EventSource') ||
+          errorMessage.includes('real-time') ||
+          errorMessage.includes('supabase')) {
         
-        // Não tratar como erro crítico, apenas log
-        setTimeout(() => {
-          console.log('🔄 FIREFOX: Continuando sem WebSocket real-time');
-          this.setState({ 
-            hasError: false, 
-            error: null, 
-            errorInfo: null 
-          });
-        }, 500);
+        console.log('🚫 FIREFOX: Erro de WebSocket/real-time ignorado - continuando normalmente');
+        
+        // Resetar estado imediatamente
+        this.setState({ 
+          hasError: false, 
+          error: null, 
+          errorInfo: null,
+          recoveryAttempts: 0
+        });
         return;
       }
     }
