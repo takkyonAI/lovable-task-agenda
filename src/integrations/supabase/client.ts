@@ -18,8 +18,9 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     params: {
       eventsPerSecond: 10,
     },
-    heartbeatIntervalMs: 15000, // Reduced for more frequent checks
-    reconnectAfterMs: (tries: number) => Math.min(tries * 1000, 10000), // Faster reconnection
+    // 🚫 DESABILITADO: Configurações agressivas removidas para evitar piscar
+    // heartbeatIntervalMs: 15000, // Reduced for more frequent checks
+    // reconnectAfterMs: (tries: number) => Math.min(tries * 1000, 10000), // Faster reconnection
     logger: (level: any, message: string, data?: any) => {
       console.log(`[Supabase Realtime ${level}]`, message, data);
     },

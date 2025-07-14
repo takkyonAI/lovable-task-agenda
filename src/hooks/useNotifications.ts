@@ -254,21 +254,26 @@ export const useNotifications = () => {
     };
   }, [currentUser]);
 
-  // Verificações periódicas
+  // 🚫 DESABILITADO: Verificações periódicas - Causavam piscar das notificações
   useEffect(() => {
     if (!currentUser) return;
 
-    // Verificar imediatamente
-    checkOverdueTasks();
-    checkPendingTasks();
+    // 🚫 DESABILITADO: Verificações imediatas removidas
+    // checkOverdueTasks();
+    // checkPendingTasks();
 
-    // Verificar a cada 30 minutos
-    const interval = setInterval(() => {
-      checkOverdueTasks();
-      checkPendingTasks();
-    }, 30 * 60 * 1000);
+    // 🚫 DESABILITADO: Interval removido para evitar piscar
+    // const interval = setInterval(() => {
+    //   checkOverdueTasks();
+    //   checkPendingTasks();
+    // }, 30 * 60 * 1000);
 
-    return () => clearInterval(interval);
+    console.log('🚫 NOTIFICAÇÕES: Verificações periódicas DESABILITADAS para evitar piscar');
+
+    // Retornar função vazia
+    return () => {
+      console.log('🧹 NOTIFICAÇÕES: Cleanup - sem intervals para limpar');
+    };
   }, [currentUser]);
 
   // Solicitar permissão automaticamente
