@@ -171,6 +171,9 @@ const TaskManager = () => {
     
     console.log('📊 STATS CLICK: Filtrando por status:', status);
     
+    // 🔧 CORREÇÃO: Marcar que é um clique em stats card
+    (window as any).isStatsCardClick = true;
+    
     setSelectedStatus(status);
     // Limpar outros filtros avançados para focar apenas no status
     setSelectedUser('all');
@@ -179,6 +182,11 @@ const TaskManager = () => {
     
     // Log para debug
     console.log('✅ STATS CLICK: Filtro aplicado com sucesso');
+    
+    // Limpar flag após um breve delay
+    setTimeout(() => {
+      (window as any).isStatsCardClick = false;
+    }, 100);
   };
 
   // Função para calcular altura dinâmica baseada na quantidade de tarefas
@@ -651,21 +659,28 @@ const TaskManager = () => {
         
         // 2. Adicionar listener global APENAS para casos extremos (não para cards de estatísticas)
         const emergencyClickHandler = (e) => {
+          // 🔧 CORREÇÃO: Verificar se é um clique em stats card primeiro
+          if ((window as any).isStatsCardClick) {
+            console.log('�� EMERGENCY HANDLER: Flag de stats card ativa - DESABILITANDO handler');
+            return; // Desabilita completamente o handler
+          }
+          
           // 🔧 CORREÇÃO: Verificar se é um card de estatísticas primeiro
           const isStatsCard = e.target.closest('[data-stats-card]') || 
                              e.target.closest('.stats-card') ||
                              (e.target.className && e.target.className.includes('stats-card'));
           
-          if (isStatsCard) {
-            console.log('📊 EMERGENCY HANDLER: Clique em card de estatísticas - permitindo React handler');
-            return; // Permitir que o React handler processe
+          // 🔧 CORREÇÃO: Adicionar lógica para desabilitar o handler para cards de estatísticas
+          if (isStatsCard && (window as any).isStatsCardClick) {
+            console.log('📊 EMERGENCY HANDLER: Clique em card de estatísticas (stats-card) - desabilitando handler');
+            return; // Desabilita o handler para cards de estatísticas
           }
           
           // 🔧 CORREÇÃO: Verificar se é um elemento filho de card de estatísticas
           const parentCard = e.target.closest('[data-stats-card]');
           if (parentCard) {
-            console.log('📊 EMERGENCY HANDLER: Clique em elemento filho de card de estatísticas - permitindo React handler');
-            return; // Permitir que o React handler processe
+            console.log('📊 EMERGENCY HANDLER: Clique em elemento filho de card de estatísticas - DESABILITANDO handler');
+            return; // Desabilita completamente o handler
           }
           
           // 🔧 CORREÇÃO: Verificar se é um elemento de estatísticas pelo className
@@ -674,8 +689,8 @@ const TaskManager = () => {
                                 (classList.includes('text-yellow-400') || classList.includes('text-green-400') || classList.includes('text-white'));
           
           if (isStatsElement) {
-            console.log('📊 EMERGENCY HANDLER: Elemento de estatísticas detectado - permitindo React handler');
-            return; // Permitir que o React handler processe
+            console.log('📊 EMERGENCY HANDLER: Elemento de estatísticas detectado - DESABILITANDO handler');
+            return; // Desabilita completamente o handler
           }
           
           // 🔧 CORREÇÃO: Verificar se é um card content das estatísticas
@@ -686,8 +701,29 @@ const TaskManager = () => {
                                 e.target.textContent?.includes('Performance'));
           
           if (isCardContent) {
-            console.log('📊 EMERGENCY HANDLER: Card content de estatísticas detectado - permitindo React handler');
-            return; // Permitir que o React handler processe
+            console.log('📊 EMERGENCY HANDLER: Card content de estatísticas detectado - DESABILITANDO handler');
+            return; // Desabilita completamente o handler
+          }
+          
+          // 🔧 CORREÇÃO: Verificar se o texto contém números das estatísticas
+          const textContent = e.target.textContent || '';
+          const hasStatsNumbers = /^\d+$/.test(textContent.trim()) && 
+                                 (textContent === '18' || textContent === '160' || textContent === '179' || parseInt(textContent) > 0);
+          
+          if (hasStatsNumbers) {
+            console.log('📊 EMERGENCY HANDLER: Número de estatísticas detectado - DESABILITANDO handler');
+            return; // Desabilita completamente o handler
+          }
+          
+          // 🔧 CORREÇÃO: Verificar se é um elemento com classes de estatísticas
+          const hasStatClasses = classList.includes('text-slate-400') || 
+                                 classList.includes('text-sm') || 
+                                 classList.includes('font-medium') ||
+                                 classList.includes('CardContent');
+          
+          if (hasStatClasses && (textContent.includes('Total') || textContent.includes('Pendentes') || textContent.includes('Concluídas'))) {
+            console.log('📊 EMERGENCY HANDLER: Elemento com classes de estatísticas detectado - DESABILITANDO handler');
+            return; // Desabilita completamente o handler
           }
           
           // Apenas processar cliques em tarefas reais (com data-task-id)
