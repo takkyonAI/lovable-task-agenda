@@ -20,6 +20,9 @@ import { formatDateToBR, formatTimeToBR, isSameDay, getTodayBR, getWeekDaysBR, g
 import { NewTask, Task, EditTask } from '@/types/task';
 import { useUserProfiles } from '@/hooks/useUserProfiles';
 
+// 🔧 FLAG: desativar diagnóstico avançado de cliques em produção
+const ENABLE_ADVANCED_CLICK_DIAGNOSTIC = false;
+
 const TaskManager = () => {
   const { 
     tasks, 
@@ -802,6 +805,7 @@ const TaskManager = () => {
 
   // 🔧 DIAGNÓSTICO AUTOMÁTICO AVANÇADO: Sistema melhorado para detectar problemas de cliques
   useEffect(() => {
+    if (!ENABLE_ADVANCED_CLICK_DIAGNOSTIC) return; // 🚫 Desativado em produção
     const runAdvancedClickDiagnostic = () => {
       console.log('🔧 === DIAGNÓSTICO AVANÇADO DE CLIQUES - TaskManager ===');
       console.log('⏰ Timestamp:', new Date().toISOString());
