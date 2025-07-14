@@ -521,6 +521,16 @@ export const useTaskManager = () => {
   };
 
   const filterTasks = async () => {
+    console.log('🔍 FILTER TASKS: Iniciando filtragem...');
+    console.log('🔍 FILTER TASKS: Estados atuais:', {
+      totalTasks: tasks.length,
+      activeFilter,
+      selectedUser,
+      selectedAccessLevel,
+      selectedPriority,
+      selectedStatus
+    });
+
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const weekStart = new Date(today);
@@ -528,6 +538,7 @@ export const useTaskManager = () => {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
     let filtered = tasks;
+    console.log('🔍 FILTER TASKS: Tarefas iniciais:', filtered.length);
 
     // Filtro temporal
     switch (activeFilter) {
@@ -537,6 +548,7 @@ export const useTaskManager = () => {
           const taskDate = new Date(task.due_date);
           return taskDate >= today && taskDate < new Date(today.getTime() + 24 * 60 * 60 * 1000);
         });
+        console.log('🔍 FILTER TASKS: Após filtro temporal (today):', filtered.length);
         break;
       case 'week':
         filtered = filtered.filter(task => {
@@ -545,6 +557,7 @@ export const useTaskManager = () => {
           const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
           return taskDate >= weekStart && taskDate < weekEnd;
         });
+        console.log('🔍 FILTER TASKS: Após filtro temporal (week):', filtered.length);
         break;
       case 'month':
         filtered = filtered.filter(task => {
@@ -553,16 +566,25 @@ export const useTaskManager = () => {
           const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
           return taskDate >= monthStart && taskDate < monthEnd;
         });
+        console.log('🔍 FILTER TASKS: Após filtro temporal (month):', filtered.length);
         break;
       default:
+        console.log('🔍 FILTER TASKS: Após filtro temporal (all):', filtered.length);
         break;
     }
 
     // Filtro por usuário (apenas tarefas atribuídas)
     if (selectedUser !== 'all') {
+      const beforeUserFilter = filtered.length;
       filtered = filtered.filter(task => 
         task.assigned_users.includes(selectedUser)
       );
+      console.log('🔍 FILTER TASKS: Após filtro de usuário:', {
+        before: beforeUserFilter,
+        after: filtered.length,
+        selectedUser,
+        tarefasComUsuario: filtered.map(t => ({ id: t.id, title: t.title, assigned_users: t.assigned_users }))
+      });
     }
 
     // Filtro por nível de acesso (apenas tarefas atribuídas)
@@ -575,9 +597,16 @@ export const useTaskManager = () => {
 
         if (userProfiles) {
           const userIds = userProfiles.map(profile => profile.user_id);
+          const beforeAccessFilter = filtered.length;
           filtered = filtered.filter(task => 
             task.assigned_users.some(userId => userIds.includes(userId))
           );
+          console.log('🔍 FILTER TASKS: Após filtro de nível de acesso:', {
+            before: beforeAccessFilter,
+            after: filtered.length,
+            selectedAccessLevel,
+            userIds
+          });
         }
       } catch (error) {
         console.error('Erro ao filtrar por nível de acesso:', error);
@@ -586,13 +615,33 @@ export const useTaskManager = () => {
 
     // Filtro por prioridade
     if (selectedPriority !== 'all') {
+      const beforePriorityFilter = filtered.length;
       filtered = filtered.filter(task => task.priority === selectedPriority);
+      console.log('🔍 FILTER TASKS: Após filtro de prioridade:', {
+        before: beforePriorityFilter,
+        after: filtered.length,
+        selectedPriority
+      });
     }
 
     // Filtro por status
     if (selectedStatus !== 'all') {
+      const beforeStatusFilter = filtered.length;
       filtered = filtered.filter(task => task.status === selectedStatus);
+      console.log('🔍 FILTER TASKS: Após filtro de status:', {
+        before: beforeStatusFilter,
+        after: filtered.length,
+        selectedStatus
+      });
     }
+
+    console.log('🔍 FILTER TASKS: Resultado final:', {
+      total: filtered.length,
+      pendentes: filtered.filter(t => t.status === 'pendente').length,
+      concluidas: filtered.filter(t => t.status === 'concluida').length,
+      emAndamento: filtered.filter(t => t.status === 'em_andamento').length,
+      canceladas: filtered.filter(t => t.status === 'cancelada').length
+    });
 
     setFilteredTasks(filtered);
   };

@@ -345,6 +345,23 @@ const TaskManager = () => {
   };
 
   const handleTaskClick = (task: Task) => {
+    // 🔧 CORREÇÃO: Verificar se o clique foi em um stats card
+    const isStatsCardClick = (
+      // Verificar flags globais
+      (window as any).isStatsCardClick === true ||
+      (window as any).disableEmergencyHandler === true ||
+      // Verificar se o elemento clicado é um stats card
+      document.querySelector('[data-stats-card="true"]:hover') ||
+      document.querySelector('[data-stats-safe="true"]:hover') ||
+      document.querySelector('[data-emergency-safe="true"]:hover')
+    );
+    
+    if (isStatsCardClick) {
+      console.log('🚫 TASK CLICK: Clique em stats card detectado - IGNORANDO abertura de modal');
+      return; // Não abrir modal de tarefa
+    }
+    
+    console.log('✅ TASK CLICK: Abrindo modal para tarefa:', task.title);
     setSelectedTask(task);
     setIsTaskDetailsOpen(true);
   };
