@@ -677,34 +677,56 @@ const TaskManager = () => {
             return; // Desabilita completamente o handler
           }
           
-          // 🔧 CORREÇÃO: Verificar se é um card de estatísticas primeiro
-          const isStatsCard = e.target.closest('[data-stats-card]') || 
-                             e.target.closest('.stats-card') ||
-                             (e.target.className && e.target.className.includes('stats-card'));
+          // 🔧 CORREÇÃO ULTRA-ROBUSTA: Verificar se é um elemento dentro de um card de estatísticas
+          const statsCardParent = e.target.closest('[data-stats-card]');
+          if (statsCardParent) {
+            console.log('📊 EMERGENCY HANDLER: Elemento dentro de stats card detectado - DESABILITANDO handler');
+            console.log('📊 STATS CARD PARENT:', statsCardParent);
+            return;
+          }
           
-          if (isStatsCard) {
-            console.log('�� EMERGENCY HANDLER: Card de estatísticas detectado - DESABILITANDO handler');
+          // 🔧 CORREÇÃO: Verificar se é um card de estatísticas por classe
+          const statsCardByClass = e.target.closest('.cursor-pointer.hover\\:bg-slate-800\\/70');
+          if (statsCardByClass) {
+            const hasStatsContent = statsCardByClass.textContent?.match(/(Total|Pendentes|Concluídas|Performance)/);
+            if (hasStatsContent) {
+              console.log('📊 EMERGENCY HANDLER: Card de estatísticas por classe detectado - DESABILITANDO handler');
+              return;
+            }
+          }
+          
+          // 🔧 CORREÇÃO: Verificar se o elemento tem classes específicas de números de estatísticas
+          const elementClasses = e.target.className || '';
+          const isStatsNumber = elementClasses.includes('text-3xl') && elementClasses.includes('font-bold') && 
+                               (elementClasses.includes('text-yellow-400') || elementClasses.includes('text-green-400') || 
+                                elementClasses.includes('text-white') || elementClasses.includes('text-blue-400'));
+          
+          if (isStatsNumber) {
+            console.log('📊 EMERGENCY HANDLER: Número de estatísticas detectado - DESABILITANDO handler');
             return;
           }
           
           // 🔧 CORREÇÃO: Verificar se contém texto "Pendentes" ou "Concluídas"
           const textContent = e.target.textContent;
-          if (textContent && (textContent.includes('Pendentes') || textContent.includes('Concluídas') || textContent.includes('Total'))) {
+          if (textContent && (textContent.includes('Pendentes') || textContent.includes('Concluídas') || textContent.includes('Total') || textContent.includes('Performance'))) {
             console.log('📊 EMERGENCY HANDLER: Texto de stats detectado - DESABILITANDO handler');
             return;
           }
           
-          // 🔧 CORREÇÃO: Verificar se é um elemento com classe relacionada a stats
+          // 🔧 CORREÇÃO: Verificar se é um número isolado (provável indicador de stats)
+          if (textContent && /^\d+$/.test(textContent.trim()) && parseInt(textContent.trim()) > 0) {
+            console.log('📊 EMERGENCY HANDLER: Número isolado detectado (provável stats) - DESABILITANDO handler');
+            return;
+          }
+          
+          // 🔧 CORREÇÃO: Verificar se é um elemento com classe relacionada a stats por hierarquia
           const element = e.target;
-          if (element.className && (
-            element.className.includes('justify-between') ||
-            element.className.includes('bg-white') ||
-            element.className.includes('rounded-lg') ||
-            element.className.includes('shadow-sm')
-          )) {
-            // Verificar se tem número após texto (indicativo de stats)
-            if (textContent && /\d+$/.test(textContent)) {
-              console.log('📊 EMERGENCY HANDLER: Padrão de stats detectado - DESABILITANDO handler');
+          if (element.parentElement) {
+            const parentClasses = element.parentElement.className || '';
+            const grandParentClasses = element.parentElement.parentElement?.className || '';
+            
+            if (parentClasses.includes('justify-between') || grandParentClasses.includes('bg-slate-800/50')) {
+              console.log('📊 EMERGENCY HANDLER: Elemento filho de stats card detectado - DESABILITANDO handler');
               return;
             }
           }
