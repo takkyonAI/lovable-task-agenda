@@ -165,12 +165,20 @@ const TaskManager = () => {
   };
 
   // Handler para clique nos cards de estatísticas
-  const handleStatsClick = (status: 'all' | 'pendente' | 'concluida') => {
+  const handleStatsClick = (e: React.MouseEvent, status: 'all' | 'pendente' | 'concluida') => {
+    e.stopPropagation(); // Prevenir event bubbling
+    e.preventDefault(); // Prevenir ação padrão
+    
+    console.log('📊 STATS CLICK: Filtrando por status:', status);
+    
     setSelectedStatus(status);
     // Limpar outros filtros avançados para focar apenas no status
     setSelectedUser('all');
     setSelectedAccessLevel('all');
     setSelectedPriority('all');
+    
+    // Log para debug
+    console.log('✅ STATS CLICK: Filtro aplicado com sucesso');
   };
 
   // Função para calcular altura dinâmica baseada na quantidade de tarefas
@@ -718,6 +726,21 @@ const TaskManager = () => {
           const clickableElements = ['BUTTON', 'A', 'DIV'];
           if (clickableElements.includes(e.target.tagName)) {
             const classList = e.target.className || '';
+            
+            // 🔧 CORREÇÃO: Não interceptar cliques em cards de estatísticas
+            const isStatsCard = e.target.closest('[data-stats-card]') || 
+                               e.target.closest('.stats-card') ||
+                               classList.includes('stats-card') ||
+                               (e.target.textContent && 
+                                (e.target.textContent.includes('Total') || 
+                                 e.target.textContent.includes('Pendentes') || 
+                                 e.target.textContent.includes('Concluídas') || 
+                                 e.target.textContent.includes('Performance')));
+            
+            if (isStatsCard) {
+              console.log('📊 EMERGENCY HANDLER: Ignorando clique em card de estatísticas');
+              return; // Não interceptar cliques em cards de estatísticas
+            }
             
             if (classList.includes('cursor-pointer') || classList.includes('task-card')) {
               console.log('🔧 Elemento clicável detectado, forçando ação');
@@ -1288,7 +1311,8 @@ const TaskManager = () => {
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <Card 
             className="bg-slate-800/50 border-slate-700/50 cursor-pointer hover:bg-slate-800/70 transition-colors"
-            onClick={() => handleStatsClick('all')}
+            onClick={(e) => handleStatsClick(e, 'all')}
+            data-stats-card
           >
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -1305,7 +1329,8 @@ const TaskManager = () => {
 
           <Card 
             className="bg-slate-800/50 border-slate-700/50 cursor-pointer hover:bg-slate-800/70 transition-colors"
-            onClick={() => handleStatsClick('pendente')}
+            onClick={(e) => handleStatsClick(e, 'pendente')}
+            data-stats-card
           >
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -1322,7 +1347,8 @@ const TaskManager = () => {
 
           <Card 
             className="bg-slate-800/50 border-slate-700/50 cursor-pointer hover:bg-slate-800/70 transition-colors"
-            onClick={() => handleStatsClick('concluida')}
+            onClick={(e) => handleStatsClick(e, 'concluida')}
+            data-stats-card
           >
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
