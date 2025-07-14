@@ -27,12 +27,84 @@
     // 🚀 DEPLOY VERSION
     console.log('🚀 DEPLOY VERSION: ULTRA-ROBUSTA-v2-2025-01-14-15:00:00');
   </script>
+  
+  <!-- 🛡️ PRE-EMERGENCY PROTECTION - MUST RUN BEFORE emergency-fix.js -->
+  <script>
+    console.log('🛡️ PRE-EMERGENCY: Proteção instalada antes do emergency-fix.js');
+    
+    // Global flag to mark stats cards as safe
+    window.STATS_CARDS_SAFE = true;
+    window.EMERGENCY_HANDLER_DISABLED = false;
+    
+    // Function to mark stats cards
+    function markStatsCardsSafe() {
+      const statsCards = document.querySelectorAll('[data-testid="stats-card"], .stats-card, [class*="stats"], [class*="card"]');
+      statsCards.forEach(card => {
+        card.setAttribute('data-stats-safe', 'true');
+        card.setAttribute('data-emergency-safe', 'true');
+        card.classList.add('stats-card-safe');
+      });
+      
+      // Also mark by text content
+      const elementsWithNumbers = document.querySelectorAll('p, div, span');
+      elementsWithNumbers.forEach(el => {
+        const text = el.textContent?.trim();
+        if (text && /^\d+$/.test(text) && text.length <= 3) {
+          const parent = el.closest('[class*="card"], [class*="stats"], [data-testid*="card"]');
+          if (parent) {
+            parent.setAttribute('data-stats-safe', 'true');
+            parent.setAttribute('data-emergency-safe', 'true');
+            parent.classList.add('stats-card-safe');
+          }
+        }
+      });
+    }
+    
+    // Run immediately
+    markStatsCardsSafe();
+    
+    // Run when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', markStatsCardsSafe);
+    }
+    
+    // Run periodically to catch dynamically added cards
+    setInterval(markStatsCardsSafe, 1000);
+    
+    // Override emergency handler if it exists
+    const originalAddEventListener = EventTarget.prototype.addEventListener;
+    EventTarget.prototype.addEventListener = function(type, listener, options) {
+      if (type === 'click' && listener.toString().includes('emergency')) {
+        console.log('🛡️ PRE-EMERGENCY: Interceptando listener de emergência');
+        const safeListener = function(event) {
+          const target = event.target;
+          const isStatsCard = target.closest('[data-stats-safe="true"], [data-emergency-safe="true"], .stats-card-safe');
+          
+          if (isStatsCard) {
+            console.log('🛡️ PRE-EMERGENCY: Clique em stats card bloqueado do emergency handler');
+            event.stopImmediatePropagation();
+            event.preventDefault();
+            return false;
+          }
+          
+          return listener.call(this, event);
+        };
+        
+        return originalAddEventListener.call(this, type, safeListener, options);
+      }
+      
+      return originalAddEventListener.call(this, type, listener, options);
+    };
+    
+    console.log('✅ PRE-EMERGENCY: Proteção instalada com sucesso');
+  </script>
+  
   <script src="/emergency-fix.js"></script>
   <script src="/fix-websocket-csp.js"></script>
   
   <!-- 🔧 CORREÇÃO ULTRA-ROBUSTA PARA TELA ROXA -->
   <script src="/fix-purple-screen.js"></script>
-  <script type="module" crossorigin src="/assets/index-BJB-WEC0.js"></script>
+  <script type="module" crossorigin src="/assets/index-C-cbI1lT.js"></script>
   <link rel="stylesheet" crossorigin href="/assets/index-B03gGytB.css">
 </head>
 <body>
