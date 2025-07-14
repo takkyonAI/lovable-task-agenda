@@ -758,6 +758,141 @@ const TaskManager = () => {
     };
   }, [tasks, setSelectedTask, setIsTaskDetailsOpen, setIsCreateDialogOpen, setIsDiagnosticOpen]);
 
+  // 🔧 CORREÇÃO: Adicionar tratamento específico para erro DOM que causa tela roxa
+  useEffect(() => {
+    const handleDOMError = (error: any) => {
+      if (error.message && error.message.includes('removeChild')) {
+        console.warn('🔧 CORREÇÃO DOM: Erro removeChild detectado - forçando limpeza de estilo');
+        
+        // Forçar limpeza de estilos que podem estar causando a tela roxa
+        const bodyEl = document.body;
+        if (bodyEl) {
+          bodyEl.style.background = '';
+          bodyEl.style.backgroundColor = '';
+          bodyEl.classList.remove('bg-purple-600', 'bg-purple-500', 'bg-purple-700');
+        }
+        
+        // Verificar se algum elemento está com fundo roxo incorreto
+        const elementsWithPurple = document.querySelectorAll('[class*="bg-purple"]:not([class*="bg-purple-500/20"]):not([class*="data-[state=active]"])');
+        elementsWithPurple.forEach(el => {
+          console.warn('🔧 CORREÇÃO: Removendo fundo roxo incorreto de:', el);
+          el.classList.remove('bg-purple-600', 'bg-purple-500', 'bg-purple-700');
+        });
+        
+        // Verificar se o container principal está com problema
+        const mainContainer = document.querySelector('.min-h-screen');
+        if (mainContainer) {
+          mainContainer.classList.remove('bg-purple-600', 'bg-purple-500', 'bg-purple-700');
+        }
+        
+        return true; // Indica que o erro foi tratado
+      }
+      return false;
+    };
+
+    // Adicionar handler para erros DOM
+    const originalError = window.onerror;
+    window.onerror = (message, source, lineno, colno, error) => {
+      if (handleDOMError(error)) {
+        return true; // Prevenir propagação do erro
+      }
+      return originalError ? originalError(message, source, lineno, colno, error) : false;
+    };
+
+    // Adicionar handler para promise rejections
+    const originalUnhandledRejection = window.onunhandledrejection;
+    window.onunhandledrejection = (event: PromiseRejectionEvent) => {
+      if (handleDOMError(event.reason)) {
+        event.preventDefault();
+        return;
+      }
+      if (originalUnhandledRejection) {
+        return originalUnhandledRejection.call(window, event);
+      }
+    };
+
+    // Cleanup
+    return () => {
+      window.onerror = originalError;
+      window.onunhandledrejection = originalUnhandledRejection;
+    };
+  }, []);
+
+  // 🔧 CORREÇÃO FILTROS: Interceptar mudanças de filtro para prevenir tela roxa
+  const handleUserFilterChange = (userId: string) => {
+    console.log('🔧 FILTRO USUÁRIO: Aplicando filtro para usuário:', userId);
+    
+    // Verificar se a tela está roxa antes de aplicar filtro
+    const bodyStyle = window.getComputedStyle(document.body);
+    const hasIncorrectPurple = bodyStyle.backgroundColor.includes('147, 51, 234') || // purple-600
+                               bodyStyle.backgroundColor.includes('168, 85, 247') || // purple-500
+                               bodyStyle.backgroundColor.includes('126, 34, 206');   // purple-700
+    
+    if (hasIncorrectPurple) {
+      console.warn('🔧 CORREÇÃO: Tela roxa detectada antes do filtro - corrigindo');
+      document.body.style.background = '';
+      document.body.style.backgroundColor = '';
+    }
+    
+    // Aplicar filtro normalmente
+    setSelectedUser(userId);
+    
+    // Verificar após aplicar filtro
+    setTimeout(() => {
+      const bodyStyleAfter = window.getComputedStyle(document.body);
+      const hasIncorrectPurpleAfter = bodyStyleAfter.backgroundColor.includes('147, 51, 234') || 
+                                      bodyStyleAfter.backgroundColor.includes('168, 85, 247') || 
+                                      bodyStyleAfter.backgroundColor.includes('126, 34, 206');
+      
+      if (hasIncorrectPurpleAfter) {
+        console.warn('🔧 CORREÇÃO: Tela roxa detectada após filtro - corrigindo');
+        document.body.style.background = '';
+        document.body.style.backgroundColor = '';
+        
+        // Forçar re-render limpando o filtro e reaplicando
+        const tempUser = selectedUser;
+        setSelectedUser('all');
+        setTimeout(() => {
+          setSelectedUser(tempUser);
+        }, 100);
+      }
+    }, 100);
+  };
+
+  // 🔧 CORREÇÃO FILTROS: Interceptar mudanças de filtro de nível para prevenir tela roxa
+  const handleAccessLevelFilterChange = (level: string) => {
+    console.log('🔧 FILTRO NÍVEL: Aplicando filtro para nível:', level);
+    
+    // Verificar se a tela está roxa antes de aplicar filtro
+    const bodyStyle = window.getComputedStyle(document.body);
+    const hasIncorrectPurple = bodyStyle.backgroundColor.includes('147, 51, 234') || 
+                               bodyStyle.backgroundColor.includes('168, 85, 247') || 
+                               bodyStyle.backgroundColor.includes('126, 34, 206');
+    
+    if (hasIncorrectPurple) {
+      console.warn('🔧 CORREÇÃO: Tela roxa detectada antes do filtro de nível - corrigindo');
+      document.body.style.background = '';
+      document.body.style.backgroundColor = '';
+    }
+    
+    // Aplicar filtro normalmente
+    setSelectedAccessLevel(level);
+    
+    // Verificar após aplicar filtro
+    setTimeout(() => {
+      const bodyStyleAfter = window.getComputedStyle(document.body);
+      const hasIncorrectPurpleAfter = bodyStyleAfter.backgroundColor.includes('147, 51, 234') || 
+                                      bodyStyleAfter.backgroundColor.includes('168, 85, 247') || 
+                                      bodyStyleAfter.backgroundColor.includes('126, 34, 206');
+      
+      if (hasIncorrectPurpleAfter) {
+        console.warn('🔧 CORREÇÃO: Tela roxa detectada após filtro de nível - corrigindo');
+        document.body.style.background = '';
+        document.body.style.backgroundColor = '';
+      }
+    }, 100);
+  };
+
   // 🔧 DIAGNÓSTICO AUTOMÁTICO AVANÇADO: Sistema melhorado para detectar problemas de cliques
   useEffect(() => {
     const runAdvancedClickDiagnostic = () => {
@@ -1140,9 +1275,9 @@ const TaskManager = () => {
         {/* Filtros avançados */}
         <AdvancedTaskFilters
           selectedUser={selectedUser}
-          onUserChange={setSelectedUser}
+          onUserChange={handleUserFilterChange}
           selectedAccessLevel={selectedAccessLevel}
-          onAccessLevelChange={setSelectedAccessLevel}
+          onAccessLevelChange={handleAccessLevelFilterChange}
           selectedPriority={selectedPriority}
           onPriorityChange={setSelectedPriority}
           userProfiles={userProfiles}
