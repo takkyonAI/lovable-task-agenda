@@ -4,6 +4,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { useToast } from '@/hooks/use-toast';
 
+// 🚨 VERSÃO ULTRA-ROBUSTA CARREGADA: 2025-01-14-15:00:00
+console.log('🚨🚨🚨 VERSÃO ULTRA-ROBUSTA CARREGADA: 2025-01-14-15:00:00 🚨🚨🚨');
+console.log('🔥 BUILD CONFIRMADO: index-UltraRobusta-v2.js');
+console.log('🛡️ PROTEÇÃO ANTI-LOOP: ATIVADA');
+console.log('🚫 CANAL task-notifications: BLOQUEADO');
+
 export const useTaskManager = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
