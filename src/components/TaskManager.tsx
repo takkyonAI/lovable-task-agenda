@@ -121,9 +121,13 @@ const TaskManager = () => {
         }
       };
       
-      updateTimeAgo();
-      const interval = setInterval(updateTimeAgo, 1000);
-      return () => clearInterval(interval);
+      // 🚫 DESABILITADO: Interval removido para evitar piscar
+      updateTimeAgo(); // Executar apenas uma vez
+      // const interval = setInterval(updateTimeAgo, 1000);
+      // return () => clearInterval(interval);
+      
+      console.log('🚫 REAL-TIME STATUS: Interval DESABILITADO para evitar piscar');
+      return () => {};
     }, [lastUpdateTime]);
 
     return (
@@ -741,14 +745,16 @@ const TaskManager = () => {
       }, 2000); // Aguardar 2 segundos para garantir renderização
     };
     
-    // Executar correção direta
+    // Executar correção direta apenas uma vez
     forceClickFunctionality();
     
-    // Re-executar quando tasks mudarem
-    const interval = setInterval(forceClickFunctionality, 10000); // A cada 10 segundos
+    // 🚫 DESABILITADO: Interval removido para evitar piscar das notificações
+    // const interval = setInterval(forceClickFunctionality, 10000); // A cada 10 segundos
+    
+    console.log('🚫 FORCE CLICK: Interval DESABILITADO para evitar piscar');
     
     return () => {
-      clearInterval(interval);
+      console.log('🧹 FORCE CLICK: Cleanup - sem intervals para limpar');
     };
   }, [tasks, setSelectedTask, setIsTaskDetailsOpen, setIsCreateDialogOpen, setIsDiagnosticOpen]);
 

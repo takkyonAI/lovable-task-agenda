@@ -192,6 +192,27 @@ const setupGlobalErrorHandling = () => {
 const LoadingScreen = () => {
   const browser = detectBrowser();
   
+  // 🚫 DESABILITADO: LoadingTime interval removido para evitar piscar
+  // const [loadingTime, setLoadingTime] = useState(0);
+  // const [showReloadButton, setShowReloadButton] = useState(false);
+
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     setLoadingTime(prev => prev + 1);
+  //   }, 1000);
+
+  //   const reloadTimeout = setTimeout(() => {
+  //     setShowReloadButton(true);
+  //   }, 15000);
+
+  //   return () => {
+  //     clearInterval(interval);
+  //     clearTimeout(reloadTimeout);
+  //   };
+  // }, []);
+  
+  console.log('🚫 LOADING SCREEN: Intervals DESABILITADOS para evitar piscar');
+  
   return (
     <div className="h-screen w-full bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex items-center justify-center">
       <div className="text-center">
