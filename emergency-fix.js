@@ -140,6 +140,29 @@
     document.addEventListener('click', function(event) {
       console.log('🖱️ EMERGÊNCIA: Clique detectado:', event.target.tagName, event.target.className);
       
+      // 🔧 CORREÇÃO: Verificar se é um clique em card de estatísticas
+      const isStatsCardClick = (
+        // Verificar se emergency handler está desabilitado
+        window.disableEmergencyHandler === true ||
+        // Verificar se é um clique em stats card
+        window.isStatsCardClick === true ||
+        // Verificar se é um elemento dentro de um card de estatísticas
+        event.target.closest('[data-stats-card]') ||
+        // Verificar por texto específico
+        (event.target.textContent && event.target.textContent.match(/(Total|Pendentes|Concluídas|Performance)/)) ||
+        // Verificar por classes específicas de números de estatísticas
+        (event.target.className && event.target.className.includes('text-3xl') && event.target.className.includes('font-bold')) ||
+        // Verificar se é um número isolado (provável indicador de stats)
+        (event.target.textContent && /^\d+$/.test(event.target.textContent.trim()) && parseInt(event.target.textContent.trim()) > 0) ||
+        // Verificar se é um elemento dentro de um card de estatísticas por hierarquia
+        (event.target.closest('.bg-slate-800\\/50') && event.target.closest('.bg-slate-800\\/50').textContent?.match(/(Total|Pendentes|Concluídas|Performance)/))
+      );
+      
+      if (isStatsCardClick) {
+        console.log('📊 EMERGÊNCIA: Clique em stats card detectado - IGNORANDO');
+        return; // Não processar clique em stats card
+      }
+      
       // Verificar se é um botão
       if (event.target.tagName === 'BUTTON' || event.target.closest('button')) {
         console.log('🔧 EMERGÊNCIA: Botão clicado, verificando funcionalidade');

@@ -166,42 +166,31 @@ const TaskManager = () => {
 
   // Handler para clique nos cards de estatísticas
   const handleStatsClick = (e: React.MouseEvent, status: 'all' | 'pendente' | 'concluida') => {
-    e.stopPropagation(); // Prevenir event bubbling
-    e.preventDefault(); // Prevenir ação padrão
-    
-    // 🔧 CORREÇÃO ULTRA-ESPECÍFICA v2: Adicionada detecção específica para classes dos logs
+    e.stopPropagation();
+    e.preventDefault();
+
+    // Log detalhado
     console.log('📊 STATS CLICK: Filtrando por status:', status, '- Timestamp:', new Date().toISOString());
     console.log('📊 STATS CLICK: Elemento clicado:', e.target);
     console.log('📊 STATS CLICK: Classes do elemento:', (e.target as HTMLElement).className);
-    
-    // 🔧 CORREÇÃO: Marcar que é um clique em stats card
+
+    // Marcar que é um clique em stats card (limpa imediatamente após o clique)
     (window as any).isStatsCardClick = true;
-    
-    // 🔧 CORREÇÃO: Desabilitar emergency handler por 3 segundos (aumentado)
     (window as any).disableEmergencyHandler = true;
-    setTimeout(() => {
-      (window as any).disableEmergencyHandler = false;
-      console.log('📊 STATS CLICK: Emergency handler reabilitado');
-    }, 3000);
-    
-    // 🔧 CORREÇÃO: Aplicar filtro com delay para garantir que não seja interceptado
-    setTimeout(() => {
-      console.log('📊 STATS CLICK: Aplicando filtro para status:', status);
-      setSelectedStatus(status);
-      
-      // Limpar outros filtros avançados para focar apenas no status
-      setSelectedUser('all');
-      setSelectedAccessLevel('all');
-      setSelectedPriority('all');
-      
-      console.log('✅ STATS CLICK: Filtro aplicado com sucesso para status:', status);
-    }, 100);
-    
-    // 🔧 CORREÇÃO: Limpar flag após 2 segundos (aumentado)
+
+    // Aplicar filtro imediatamente
+    setSelectedStatus(status);
+    setSelectedUser('all');
+    setSelectedAccessLevel('all');
+    setSelectedPriority('all');
+    console.log('✅ STATS CLICK: Filtro aplicado com sucesso para status:', status);
+
+    // Limpar flags globais imediatamente após o clique
     setTimeout(() => {
       (window as any).isStatsCardClick = false;
-      console.log('📊 STATS CLICK: Flag de stats card limpa');
-    }, 2000);
+      (window as any).disableEmergencyHandler = false;
+      console.log('📊 STATS CLICK: Flags globais limpas');
+    }, 100);
   };
 
   // Função para calcular altura dinâmica baseada na quantidade de tarefas
