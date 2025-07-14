@@ -201,56 +201,61 @@ export const useNotifications = () => {
     }
   };
 
-  // Monitorar novas tarefas atribuídas em tempo real
+  // 🚫 DESABILITADO TEMPORARIAMENTE: Monitorar novas tarefas atribuídas em tempo real
+  // CAUSA RAIZ: Conflito com useTaskManager.ts - ambos escutam mudanças na tabela 'tasks'
+  // Isso estava causando múltiplas conexões real-time e o problema das 40 notificações
   useEffect(() => {
     if (!currentUser) return;
 
-    const channel = supabase
-      .channel('task-notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tasks'
-        },
-        async (payload) => {
-          console.log('Mudança em tarefa:', payload);
-          
-          // Verificar se esta tarefa é relevante para o usuário atual
-          const task = payload.new as any;
-          if (task && task.assigned_users && task.assigned_users.includes(currentUser.user_id)) {
-            // Se é uma nova tarefa atribuída
-            if (payload.eventType === 'INSERT') {
-              addNotification({
-                title: 'Nova Tarefa Atribuída!',
-                message: `Você foi atribuído à tarefa: "${task.title}"`,
-                type: 'task_assigned',
-                taskId: task.id
-              });
-            }
-            // Se é uma atualização que adiciona o usuário
-            else if (payload.eventType === 'UPDATE') {
-              const oldTask = payload.old as any;
-              const wasAssigned = oldTask?.assigned_users?.includes(currentUser.user_id);
-              const isNowAssigned = task.assigned_users.includes(currentUser.user_id);
-              
-              if (!wasAssigned && isNowAssigned) {
-                addNotification({
-                  title: 'Nova Tarefa Atribuída!',
-                  message: `Você foi atribuído à tarefa: "${task.title}"`,
-                  type: 'task_assigned',
-                  taskId: task.id
-                });
-              }
-            }
-          }
-        }
-      )
-      .subscribe();
+    console.log('🚫 useNotifications: Canal real-time DESABILITADO para evitar conflitos');
+    
+    // TODO: Reintegrar notificações via useTaskManager.ts para evitar conflitos
+    // const channel = supabase
+    //   .channel('task-notifications')
+    //   .on(
+    //     'postgres_changes',
+    //     {
+    //       event: '*',
+    //       schema: 'public',
+    //       table: 'tasks'
+    //     },
+    //     async (payload) => {
+    //       console.log('Mudança em tarefa:', payload);
+    //       
+    //       // Verificar se esta tarefa é relevante para o usuário atual
+    //       const task = payload.new as any;
+    //       if (task && task.assigned_users && task.assigned_users.includes(currentUser.user_id)) {
+    //         // Se é uma nova tarefa atribuída
+    //         if (payload.eventType === 'INSERT') {
+    //           addNotification({
+    //             title: 'Nova Tarefa Atribuída!',
+    //             message: `Você foi atribuído à tarefa: "${task.title}"`,
+    //             type: 'task_assigned',
+    //             taskId: task.id
+    //           });
+    //         }
+    //         // Se é uma atualização que adiciona o usuário
+    //         else if (payload.eventType === 'UPDATE') {
+    //           const oldTask = payload.old as any;
+    //           const wasAssigned = oldTask?.assigned_users?.includes(currentUser.user_id);
+    //           const isNowAssigned = task.assigned_users.includes(currentUser.user_id);
+    //           
+    //           if (!wasAssigned && isNowAssigned) {
+    //             addNotification({
+    //               title: 'Nova Tarefa Atribuída!',
+    //               message: `Você foi atribuído à tarefa: "${task.title}"`,
+    //               type: 'task_assigned',
+    //               taskId: task.id
+    //             });
+    //           }
+    //         }
+    //       }
+    //     }
+    //   )
+    //   .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      // supabase.removeChannel(channel); // Comentado pois canal foi desabilitado
     };
   }, [currentUser]);
 

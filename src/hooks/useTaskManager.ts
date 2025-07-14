@@ -269,8 +269,6 @@ export const useTaskManager = () => {
     }
     
     // 🛡️ SOLUÇÃO ANTI-PISCAR: Controle de debounce para evitar reconexões múltiplas
-    const setupDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    
     // Cancelar setup anterior se existir
     if (setupDebounceRef.current) {
       clearTimeout(setupDebounceRef.current);
