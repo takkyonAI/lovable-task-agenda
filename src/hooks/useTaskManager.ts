@@ -235,6 +235,17 @@ export const useTaskManager = () => {
   useEffect(() => {
     const timestamp = Date.now();
     console.log(`🔄 useEffect EXECUTADO em: ${new Date(timestamp).toLocaleTimeString()}`);
+    console.log(`🔍 DEBUG: currentUser.user_id = ${currentUser?.user_id || 'null'}`);
+    
+    // Detectar execuções múltiplas rápidas
+    const lastExecution = (window as any).lastUseEffectExecution || 0;
+    const timeDiff = timestamp - lastExecution;
+    (window as any).lastUseEffectExecution = timestamp;
+    
+    if (timeDiff < 1000 && lastExecution > 0) {
+      console.warn(`⚠️ AVISO: useEffect executado ${timeDiff}ms após execução anterior!`);
+    }
+    
     loadTasks();
     
     // 🦊 FIREFOX: Verificar flag global definida pelo emergency-fix.js
@@ -370,6 +381,14 @@ export const useTaskManager = () => {
       notificationDebounceRef.current.clear();
     };
   }, [currentUser]); // Apenas currentUser como dependência
+  
+  // 🔍 DEBUG: Contador de execuções do useEffect
+  const executionCountRef = useRef(0);
+  useEffect(() => {
+    executionCountRef.current++;
+    console.log(`🔢 DEBUG: useEffect executado ${executionCountRef.current} vezes`);
+    console.log('🔍 DEBUG: currentUser mudou para:', currentUser?.user_id || 'null');
+  }, [currentUser]);
 
   // 🚫 DESABILITADO: Fallback removido para evitar piscar das notificações
   // useEffect(() => {

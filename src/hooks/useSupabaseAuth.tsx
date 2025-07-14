@@ -110,6 +110,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }, 100);
         } else {
           // 🚪 LOGOUT: Limpar dados do usuário
+          console.log('🔄 AUTH DEBUG: Limpando currentUser (logout)');
           setCurrentUser(null);
         }
         
