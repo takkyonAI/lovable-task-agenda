@@ -171,29 +171,37 @@ const TaskManager = () => {
     
     // 🔧 CORREÇÃO ULTRA-ESPECÍFICA v2: Adicionada detecção específica para classes dos logs
     console.log('📊 STATS CLICK: Filtrando por status:', status, '- Timestamp:', new Date().toISOString());
+    console.log('📊 STATS CLICK: Elemento clicado:', e.target);
+    console.log('📊 STATS CLICK: Classes do elemento:', (e.target as HTMLElement).className);
     
     // 🔧 CORREÇÃO: Marcar que é um clique em stats card
     (window as any).isStatsCardClick = true;
     
-    // 🔧 CORREÇÃO: Desabilitar emergency handler por 2 segundos
+    // 🔧 CORREÇÃO: Desabilitar emergency handler por 3 segundos (aumentado)
     (window as any).disableEmergencyHandler = true;
     setTimeout(() => {
       (window as any).disableEmergencyHandler = false;
-    }, 2000);
+      console.log('📊 STATS CLICK: Emergency handler reabilitado');
+    }, 3000);
     
-    setSelectedStatus(status);
-    // Limpar outros filtros avançados para focar apenas no status
-    setSelectedUser('all');
-    setSelectedAccessLevel('all');
-    setSelectedPriority('all');
+    // 🔧 CORREÇÃO: Aplicar filtro com delay para garantir que não seja interceptado
+    setTimeout(() => {
+      console.log('📊 STATS CLICK: Aplicando filtro para status:', status);
+      setSelectedStatus(status);
+      
+      // Limpar outros filtros avançados para focar apenas no status
+      setSelectedUser('all');
+      setSelectedAccessLevel('all');
+      setSelectedPriority('all');
+      
+      console.log('✅ STATS CLICK: Filtro aplicado com sucesso para status:', status);
+    }, 100);
     
-    // Log para debug
-    console.log('✅ STATS CLICK: Filtro aplicado com sucesso');
-    
-    // 🔧 CORREÇÃO: Limpar flag após 1 segundo
+    // 🔧 CORREÇÃO: Limpar flag após 2 segundos (aumentado)
     setTimeout(() => {
       (window as any).isStatsCardClick = false;
-    }, 1000);
+      console.log('📊 STATS CLICK: Flag de stats card limpa');
+    }, 2000);
   };
 
   // Função para calcular altura dinâmica baseada na quantidade de tarefas
@@ -668,7 +676,7 @@ const TaskManager = () => {
         const emergencyClickHandler = (e) => {
           // 🔧 CORREÇÃO: Verificar se emergency handler está desabilitado
           if ((window as any).disableEmergencyHandler) {
-            console.log('�� EMERGENCY HANDLER: Desabilitado temporariamente');
+            console.log('📊 EMERGENCY HANDLER: Desabilitado temporariamente');
             return;
           }
           
@@ -678,9 +686,17 @@ const TaskManager = () => {
             return; // Desabilita completamente o handler
           }
           
+          // 🔧 CORREÇÃO ULTRA-ROBUSTA: Verificar se é um elemento dentro de um card de estatísticas
+          const statsCardParent = e.target.closest('[data-stats-card]');
+          if (statsCardParent) {
+            console.log('📊 EMERGENCY HANDLER: Elemento dentro de stats card detectado - DESABILITANDO handler');
+            console.log('📊 STATS CARD PARENT:', statsCardParent);
+            return;
+          }
+          
           // 🔧 CORREÇÃO ULTRA-ESPECÍFICA: Verificar texto específico que aparece nos logs
           const textContent = e.target.textContent || '';
-          if (textContent.includes('Pendentes') || textContent.includes('Concluídas') || textContent.includes('Total')) {
+          if (textContent.includes('Pendentes') || textContent.includes('Concluídas') || textContent.includes('Total') || textContent.includes('Performance')) {
             console.log('📊 EMERGENCY HANDLER: Texto específico de stats detectado - DESABILITANDO handler');
             console.log('📊 TEXTO DETECTADO:', textContent);
             return;
@@ -691,14 +707,6 @@ const TaskManager = () => {
           if (targetClasses.includes('flex items-center justify-between')) {
             console.log('📊 EMERGENCY HANDLER: Classe específica de stats detectada - DESABILITANDO handler');
             console.log('📊 CLASSES DETECTADAS:', targetClasses);
-            return;
-          }
-          
-          // 🔧 CORREÇÃO ULTRA-ROBUSTA: Verificar se é um elemento dentro de um card de estatísticas
-          const statsCardParent = e.target.closest('[data-stats-card]');
-          if (statsCardParent) {
-            console.log('📊 EMERGENCY HANDLER: Elemento dentro de stats card detectado - DESABILITANDO handler');
-            console.log('📊 STATS CARD PARENT:', statsCardParent);
             return;
           }
           
@@ -720,12 +728,6 @@ const TaskManager = () => {
           
           if (isStatsNumber) {
             console.log('📊 EMERGENCY HANDLER: Número de estatísticas detectado - DESABILITANDO handler');
-            return;
-          }
-          
-          // 🔧 CORREÇÃO: Verificar se contém texto "Pendentes" ou "Concluídas" (redundante mas necessário)
-          if (textContent && (textContent.includes('Pendentes') || textContent.includes('Concluídas') || textContent.includes('Total') || textContent.includes('Performance'))) {
-            console.log('📊 EMERGENCY HANDLER: Texto de stats detectado - DESABILITANDO handler');
             return;
           }
           
@@ -758,6 +760,27 @@ const TaskManager = () => {
           if (isStatsCardPattern) {
             console.log('📊 EMERGENCY HANDLER: Padrão completo de stats card detectado - DESABILITANDO handler');
             return;
+          }
+          
+          // 🔧 CORREÇÃO NOVA: Verificar se o elemento está dentro de um Card com CardContent
+          const cardContentParent = e.target.closest('[class*="p-6"]');
+          if (cardContentParent) {
+            const cardParent = cardContentParent.closest('[class*="bg-slate-800/50"]');
+            if (cardParent && cardParent.textContent?.match(/(Total|Pendentes|Concluídas|Performance)/)) {
+              console.log('📊 EMERGENCY HANDLER: Card de estatísticas por CardContent detectado - DESABILITANDO handler');
+              return;
+            }
+          }
+          
+          // 🔧 CORREÇÃO NOVA: Verificar se é um clique em qualquer elemento dentro de um card de estatísticas
+          let currentElement = e.target;
+          while (currentElement && currentElement !== document.body) {
+            const elementText = currentElement.textContent || '';
+            if (elementText.match(/(Total|Pendentes|Concluídas|Performance)/)) {
+              console.log('📊 EMERGENCY HANDLER: Elemento ancestral com texto de stats detectado - DESABILITANDO handler');
+              return;
+            }
+            currentElement = currentElement.parentElement;
           }
           
           console.log('🚨 CLIQUE DE EMERGÊNCIA DETECTADO:', {
