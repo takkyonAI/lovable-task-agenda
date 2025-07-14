@@ -233,6 +233,8 @@ export const useTaskManager = () => {
 
   // 🔄 SISTEMA DE REAL-TIME OTIMIZADO COM CONTROLE DE RECONEXÃO E NAVEGADOR
   useEffect(() => {
+    const timestamp = Date.now();
+    console.log(`🔄 useEffect EXECUTADO em: ${new Date(timestamp).toLocaleTimeString()}`);
     loadTasks();
     
     // 🦊 FIREFOX: Verificar flag global definida pelo emergency-fix.js
@@ -280,7 +282,8 @@ export const useTaskManager = () => {
         // 🎯 CORREÇÃO DEFINITIVA: Canal fixo sem timestamp para evitar múltiplas conexões
         const channelName = `tasks_optimized_${currentUser.user_id}`;
         
-        console.log(`🔗 Conectando no canal: ${channelName}`);
+        console.log(`🔗 ${new Date().toLocaleTimeString()}: Conectando no canal: ${channelName}`);
+        console.log(`🔍 DEBUG: setupDebounceRef ID: ${setupDebounceRef.current}`);
         
         channel = supabase
           .channel(channelName)
@@ -347,8 +350,9 @@ export const useTaskManager = () => {
     }, 100); // Debounce de 100ms para evitar múltiplas execuções
 
     return () => {
-      console.log(`🧹 Limpando sistema otimizado...`);
+      console.log(`🧹 ${new Date().toLocaleTimeString()}: Limpando sistema otimizado...`);
       if (setupDebounceRef.current) {
+        console.log(`🧹 Cancelando timeout: ${setupDebounceRef.current}`);
         clearTimeout(setupDebounceRef.current);
       }
       if (channel) {
