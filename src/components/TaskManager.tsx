@@ -1056,7 +1056,6 @@ const TaskManager = () => {
       console.log('🚀 Executando diagnósticos...');
       
       checkSavedErrors();
-      createAdvancedTestButton();
       setupErrorMonitoring();
       
       setTimeout(() => {
