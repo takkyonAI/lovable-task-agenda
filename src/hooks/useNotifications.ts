@@ -201,6 +201,49 @@ export const useNotifications = () => {
     }
   };
 
+  // 🚫 FORÇA DESABILITAÇÃO ULTRA-ROBUSTA: Bloquear completamente canal task-notifications
+  // SOLUÇÃO DEFINITIVA: Impedir qualquer tentativa de reabilitação automática
+  useEffect(() => {
+    if (!currentUser) return;
+
+    console.log('🚫 FORÇA DESABILITAÇÃO: useNotifications - Canal task-notifications BLOQUEADO PERMANENTEMENTE');
+    
+    // 🛡️ MONITORAMENTO: Verificar periodicamente se alguém está tentando reabilitar
+    const blockingInterval = setInterval(() => {
+      const supabaseClient = supabase as any;
+      if (supabaseClient._realtime) {
+        const existingChannels = supabaseClient._realtime.channels || [];
+        const taskNotificationChannels = existingChannels.filter((ch: any) => 
+          ch.topic?.includes('task-notifications')
+        );
+        
+        if (taskNotificationChannels.length > 0) {
+          console.warn(`🚫 FORÇA DESABILITAÇÃO: Detectados ${taskNotificationChannels.length} canais task-notifications - REMOVENDO IMEDIATAMENTE`);
+          taskNotificationChannels.forEach((ch: any) => {
+            try {
+              supabaseClient.removeChannel(ch);
+              console.log(`🗑️ Canal task-notifications removido: ${ch.topic}`);
+            } catch (error) {
+              console.warn(`⚠️ Erro ao remover canal task-notifications: ${error}`);
+            }
+          });
+        }
+      }
+    }, 1000); // Verificar a cada segundo
+
+    // 🚫 BLOQUEIO GLOBAL: Marcar flag global para impedir reabilitação
+    (window as any).TASK_NOTIFICATIONS_PERMANENTLY_DISABLED = true;
+    console.log('🚫 FLAG GLOBAL: task-notifications permanentemente desabilitado');
+    
+    return () => {
+      clearInterval(blockingInterval);
+      console.log('🧹 FORÇA DESABILITAÇÃO: Limpando monitoramento de bloqueio');
+      
+      // Manter flag global mesmo no cleanup
+      (window as any).TASK_NOTIFICATIONS_PERMANENTLY_DISABLED = true;
+    };
+  }, [currentUser]);
+
   // 🚫 DESABILITADO TEMPORARIAMENTE: Monitorar novas tarefas atribuídas em tempo real
   // CAUSA RAIZ: Conflito com useTaskManager.ts - ambos escutam mudanças na tabela 'tasks'
   // Isso estava causando múltiplas conexões real-time e o problema das 40 notificações
@@ -208,6 +251,12 @@ export const useNotifications = () => {
     if (!currentUser) return;
 
     console.log('🚫 useNotifications: Canal real-time DESABILITADO para evitar conflitos');
+    
+    // 🛡️ VALIDAÇÃO: Verificar se alguém está tentando reabilitar
+    if ((window as any).TASK_NOTIFICATIONS_PERMANENTLY_DISABLED !== true) {
+      console.warn('🚫 REFORÇANDO: Flag de desabilitação não estava definida - definindo agora');
+      (window as any).TASK_NOTIFICATIONS_PERMANENTLY_DISABLED = true;
+    }
     
     // TODO: Reintegrar notificações via useTaskManager.ts para evitar conflitos
     // const channel = supabase
@@ -256,6 +305,7 @@ export const useNotifications = () => {
 
     return () => {
       // supabase.removeChannel(channel); // Comentado pois canal foi desabilitado
+      console.log('🧹 useNotifications: Cleanup - canal já estava desabilitado');
     };
   }, [currentUser]);
 

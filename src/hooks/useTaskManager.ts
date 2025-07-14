@@ -237,22 +237,35 @@ export const useTaskManager = () => {
     console.log(`🔄 useEffect EXECUTADO em: ${new Date(timestamp).toLocaleTimeString()}`);
     console.log(`🔍 DEBUG: currentUser.user_id = ${currentUser?.user_id || 'null'}`);
     
-    // 🛡️ PROTEÇÃO ANTI-LOOP: Prevenir múltiplas execuções simultâneas
+    // 🛡️ PROTEÇÃO ANTI-LOOP ULTRA-ROBUSTA: Múltiplas validações
     const executionKey = `useTaskManager_${currentUser?.user_id || 'null'}`;
+    
+    // Validação 1: Verificar se já está executando
     if ((window as any)[executionKey] === true) {
       console.warn(`🚫 BLOQUEADO: useEffect já executando para usuário ${currentUser?.user_id}`);
       return;
     }
-    (window as any)[executionKey] = true;
     
-    // Detectar execuções múltiplas rápidas
+    // Validação 2: Verificar execuções muito rápidas
     const lastExecution = (window as any).lastUseEffectExecution || 0;
     const timeDiff = timestamp - lastExecution;
+    
+    if (timeDiff < 500 && lastExecution > 0) {
+      console.warn(`🚫 BLOQUEADO: useEffect executado muito rapidamente (${timeDiff}ms)`);
+      return;
+    }
+    
+    // Validação 3: Verificar currentUser válido
+    if (!currentUser?.user_id) {
+      console.warn(`🚫 BLOQUEADO: currentUser inválido`);
+      return;
+    }
+    
+    // Marcar como executando
+    (window as any)[executionKey] = true;
     (window as any).lastUseEffectExecution = timestamp;
     
-    if (timeDiff < 1000 && lastExecution > 0) {
-      console.warn(`⚠️ AVISO: useEffect executado ${timeDiff}ms após execução anterior!`);
-    }
+    console.log(`✅ EXECUTANDO: useEffect autorizado para usuário ${currentUser?.user_id}`);
     
     loadTasks();
     
@@ -274,6 +287,10 @@ export const useTaskManager = () => {
       return () => {
         window.removeEventListener('firefoxPollingUpdate', handleFirefoxPolling);
         console.log('🧹 FIREFOX: Removendo listener de polling');
+        
+        // Liberar flag
+        (window as any)[executionKey] = false;
+        console.log(`🔓 LIBERADO: Flag liberada para usuário ${currentUser?.user_id}`);
       };
     }
     
@@ -283,26 +300,56 @@ export const useTaskManager = () => {
     
     console.log(`🔄 Configurando sistema real-time otimizado (sem piscar)...`);
     
-    // Wait for auth before setting up real-time
-    if (!currentUser) {
-      console.log('⏳ Aguardando autenticação...');
-      return;
+    // 🛡️ FORÇA DESABILITAÇÃO: Bloquear completamente canal task-notifications
+    const supabaseClient = supabase as any;
+    if (supabaseClient._realtime) {
+      const existingChannels = supabaseClient._realtime.channels || [];
+      const taskNotificationChannels = existingChannels.filter((ch: any) => 
+        ch.topic?.includes('task-notifications')
+      );
+      
+      if (taskNotificationChannels.length > 0) {
+        console.warn(`🚫 FORÇA DESABILITAÇÃO: Removendo ${taskNotificationChannels.length} canais task-notifications`);
+        taskNotificationChannels.forEach((ch: any) => {
+          try {
+            supabaseClient.removeChannel(ch);
+            console.log(`🗑️ Canal removido: ${ch.topic}`);
+          } catch (error) {
+            console.warn(`⚠️ Erro ao remover canal: ${error}`);
+          }
+        });
+      }
     }
     
     // 🛡️ SOLUÇÃO ANTI-PISCAR: Controle de debounce para evitar reconexões múltiplas
-    // Cancelar setup anterior se existir
     if (setupDebounceRef.current) {
       clearTimeout(setupDebounceRef.current);
+      console.log(`🧹 Cancelando setup anterior: ${setupDebounceRef.current}`);
     }
     
     // Delay para evitar múltiplas execuções
     setupDebounceRef.current = setTimeout(() => {
       try {
-        // 🎯 CORREÇÃO DEFINITIVA: Canal fixo sem timestamp para evitar múltiplas conexões
+        // 🎯 CORREÇÃO DEFINITIVA: Canal fixo APENAS com user_id (SEM timestamp)
         const channelName = `tasks_optimized_${currentUser.user_id}`;
         
-        console.log(`🔗 ${new Date().toLocaleTimeString()}: Conectando no canal: ${channelName}`);
+        console.log(`🔗 ${new Date().toLocaleTimeString()}: Conectando no canal FIXO: ${channelName}`);
         console.log(`🔍 DEBUG: setupDebounceRef ID: ${setupDebounceRef.current}`);
+        
+        // 🛡️ VALIDAÇÃO: Verificar se já existe canal com esse nome
+        if (supabaseClient._realtime) {
+          const existingChannels = supabaseClient._realtime.channels || [];
+          const existingChannel = existingChannels.find((ch: any) => ch.topic === channelName);
+          
+          if (existingChannel) {
+            console.warn(`⚠️ CANAL JÁ EXISTE: ${channelName} - removendo antes de criar novo`);
+            try {
+              supabaseClient.removeChannel(existingChannel);
+            } catch (error) {
+              console.warn(`⚠️ Erro ao remover canal existente: ${error}`);
+            }
+          }
+        }
         
         channel = supabase
           .channel(channelName)
@@ -366,13 +413,12 @@ export const useTaskManager = () => {
         console.error(`❌ Erro ao configurar real-time:`, error);
         setIsRealTimeConnected(false);
       }
-    }, 100); // Debounce de 100ms para evitar múltiplas execuções
+    }, 100); // Debounce de 100ms
 
     return () => {
       console.log(`🧹 ${new Date().toLocaleTimeString()}: Limpando sistema otimizado...`);
       
       // 🛡️ PROTEÇÃO ANTI-LOOP: Liberar flag de execução
-      const executionKey = `useTaskManager_${currentUser?.user_id || 'null'}`;
       (window as any)[executionKey] = false;
       console.log(`🔓 LIBERADO: Flag de execução liberada para usuário ${currentUser?.user_id}`);
       
@@ -381,6 +427,7 @@ export const useTaskManager = () => {
         clearTimeout(setupDebounceRef.current);
       }
       if (channel) {
+        console.log(`🧹 Removendo canal: ${channel.topic}`);
         supabase.removeChannel(channel);
       }
       if (fallbackRefreshRef.current) {

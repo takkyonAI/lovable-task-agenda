@@ -32,3 +32,29 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     },
   },
 });
+
+// 🚫 FORÇA DESABILITAÇÃO ULTRA-ROBUSTA: Interceptar criação de canais task-notifications
+// SOLUÇÃO DEFINITIVA: Bloquear no nível do client do Supabase
+const originalChannel = supabase.channel;
+supabase.channel = function(channelName: string, ...args: any[]) {
+  // Verificar se é tentativa de criar canal task-notifications
+  if (channelName.includes('task-notifications')) {
+    console.warn(`🚫 BLOQUEADO: Tentativa de criar canal task-notifications interceptada: ${channelName}`);
+    console.warn(`🚫 MOTIVO: Canal task-notifications foi permanentemente desabilitado para evitar conflitos`);
+    
+    // Retornar canal fake que não faz nada
+    return {
+      on: () => ({ subscribe: () => ({ unsubscribe: () => {} }) }),
+      subscribe: () => ({ unsubscribe: () => {} }),
+      unsubscribe: () => {},
+      topic: channelName,
+      state: 'closed'
+    };
+  }
+  
+  // Para canais não-task-notifications, comportamento normal
+  return originalChannel.call(this, channelName, ...args);
+};
+
+console.log('🚫 SUPABASE CLIENT: Interceptação de task-notifications instalada');
+console.log('🛡️ SUPABASE CLIENT: Apenas canais tasks_optimized_* são permitidos');
