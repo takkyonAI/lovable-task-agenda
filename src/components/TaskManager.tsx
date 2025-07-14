@@ -623,65 +623,24 @@ const TaskManager = () => {
       
       // Aguardar um pouco para garantir que os componentes estão renderizados
       setTimeout(() => {
-        // 1. Adicionar event listeners nativos para task cards
-        const taskCards = document.querySelectorAll('[class*="cursor-pointer"]');
-        console.log(`🔧 Encontrados ${taskCards.length} elementos clicáveis`);
+        // 🔧 CORREÇÃO: DESABILITAR listener nativo agressivo que interfere com stats cards
+        console.log('🔧 CORREÇÃO: Listeners nativos agressivos DESABILITADOS para evitar interferência');
         
-        taskCards.forEach((card, index) => {
-          // Remover listeners antigos se existirem
-          const newCard = card.cloneNode(true);
-          card.parentNode?.replaceChild(newCard, card);
-          
-          // Adicionar novo listener nativo
-          newCard.addEventListener('click', (e) => {
-            console.log(`🖱️ CLIQUE NATIVO FUNCIONANDO - Card ${index}`);
-            
-            // Tentar encontrar dados da tarefa
-            const taskElement = e.currentTarget.closest('[data-task-id]') || e.currentTarget;
-            const taskId = taskElement.getAttribute('data-task-id');
-            
-            if (taskId) {
-              console.log(`🔧 Abrindo tarefa ${taskId}`);
-              // Encontrar a tarefa nos dados
-              const task = tasks.find(t => t.id === taskId);
-              if (task) {
-                setSelectedTask(task);
-                setIsTaskDetailsOpen(true);
-              }
-            } else {
-              console.log('⚠️ Task ID não encontrado, tentando fallback');
-              // Fallback: usar o primeiro card clicável
-              if (tasks.length > 0) {
-                setSelectedTask(tasks[0]);
-                setIsTaskDetailsOpen(true);
-              }
-            }
-          });
-        });
+        // 1. Apenas adicionar event listeners básicos para botões essenciais
+        const essentialButtons = document.querySelectorAll('button[title="Diagnóstico do Sistema"]');
+        console.log(`🔧 Encontrados ${essentialButtons.length} botões essenciais`);
         
-        // 2. Adicionar event listeners para botões
-        const buttons = document.querySelectorAll('button');
-        console.log(`🔧 Encontrados ${buttons.length} botões`);
-        
-        buttons.forEach((button, index) => {
+        essentialButtons.forEach((button, index) => {
           if (!button.getAttribute('data-native-listener')) {
             button.setAttribute('data-native-listener', 'true');
             
-            // Adicionar listener nativo como backup
             button.addEventListener('click', (e) => {
-              console.log(`🖱️ CLIQUE NATIVO EM BOTÃO ${index} - ${button.textContent?.substring(0, 20)}`);
+              console.log(`🖱️ CLIQUE NATIVO EM BOTÃO ESSENCIAL ${index} - ${button.textContent?.substring(0, 20)}`);
               
-              // Se o botão não está respondendo ao React, forçar ação
               if (!e.defaultPrevented) {
                 const buttonText = button.textContent?.toLowerCase() || '';
                 
-                // Identificar tipo de botão e forçar ação
-                if (buttonText.includes('criar') || buttonText.includes('nova')) {
-                  console.log('🔧 Forçando abertura de criar tarefa');
-                  setIsCreateDialogOpen(true);
-                } else if (buttonText.includes('filtro') || buttonText.includes('filter')) {
-                  console.log('🔧 Botão de filtro detectado');
-                } else if (buttonText.includes('debug') || buttonText.includes('diagnóstico')) {
+                if (buttonText.includes('debug') || buttonText.includes('diagnóstico')) {
                   console.log('🔧 Forçando abertura de diagnóstico');
                   setIsDiagnosticOpen(true);
                 }
@@ -690,69 +649,56 @@ const TaskManager = () => {
           }
         });
         
-        // 3. Adicionar event listeners para dropdowns/selects
-        const selects = document.querySelectorAll('select, [role="combobox"], [role="listbox"]');
-        console.log(`🔧 Encontrados ${selects.length} elementos select`);
-        
-        selects.forEach((select, index) => {
-          if (!select.getAttribute('data-native-listener')) {
-            select.setAttribute('data-native-listener', 'true');
-            
-            select.addEventListener('click', (e) => {
-              console.log(`🖱️ CLIQUE NATIVO EM SELECT ${index}`);
-              
-              // Forçar abertura do dropdown se não estiver funcionando
-              if (select.tagName === 'SELECT') {
-                select.focus();
-                select.click();
-              }
-            });
-            
-            select.addEventListener('change', (e) => {
-              console.log(`🔧 MUDANÇA NATIVA EM SELECT ${index}:`, e.target.value);
-            });
-          }
-        });
-        
-        // 4. Adicionar listener global de emergência
+        // 2. Adicionar listener global APENAS para casos extremos (não para cards de estatísticas)
         const emergencyClickHandler = (e) => {
-          console.log('🚨 CLIQUE DE EMERGÊNCIA DETECTADO:', {
-            target: e.target.tagName,
-            className: e.target.className,
-            text: e.target.textContent?.substring(0, 30)
-          });
+          // 🔧 CORREÇÃO: Verificar se é um card de estatísticas primeiro
+          const isStatsCard = e.target.closest('[data-stats-card]') || 
+                             e.target.closest('.stats-card') ||
+                             (e.target.className && e.target.className.includes('stats-card'));
           
-          // Se é um elemento que deveria ser clicável mas não está respondendo
-          const clickableElements = ['BUTTON', 'A', 'DIV'];
-          if (clickableElements.includes(e.target.tagName)) {
-            const classList = e.target.className || '';
-            
-            // 🔧 CORREÇÃO: Não interceptar cliques em cards de estatísticas
-            const isStatsCard = e.target.closest('[data-stats-card]') || 
-                               e.target.closest('.stats-card') ||
-                               classList.includes('stats-card') ||
-                               (e.target.textContent && 
-                                (e.target.textContent.includes('Total') || 
-                                 e.target.textContent.includes('Pendentes') || 
-                                 e.target.textContent.includes('Concluídas') || 
-                                 e.target.textContent.includes('Performance')));
-            
-            if (isStatsCard) {
-              console.log('📊 EMERGENCY HANDLER: Ignorando clique em card de estatísticas');
-              return; // Não interceptar cliques em cards de estatísticas
-            }
-            
-            if (classList.includes('cursor-pointer') || classList.includes('task-card')) {
-              console.log('🔧 Elemento clicável detectado, forçando ação');
-              
-              // Tentar encontrar dados da tarefa mais próxima
-              const taskData = e.target.closest('[data-task-id]');
-              if (taskData && tasks.length > 0) {
-                const taskId = taskData.getAttribute('data-task-id');
-                const task = tasks.find(t => t.id === taskId) || tasks[0];
-                setSelectedTask(task);
-                setIsTaskDetailsOpen(true);
-              }
+          if (isStatsCard) {
+            console.log('📊 EMERGENCY HANDLER: Clique em card de estatísticas - permitindo React handler');
+            return; // Permitir que o React handler processe
+          }
+          
+          // 🔧 CORREÇÃO: Verificar se é um elemento filho de card de estatísticas
+          const parentCard = e.target.closest('[data-stats-card]');
+          if (parentCard) {
+            console.log('📊 EMERGENCY HANDLER: Clique em elemento filho de card de estatísticas - permitindo React handler');
+            return; // Permitir que o React handler processe
+          }
+          
+          // 🔧 CORREÇÃO: Verificar se é um elemento de estatísticas pelo className
+          const classList = e.target.className || '';
+          const isStatsElement = classList.includes('text-3xl') && classList.includes('font-bold') && 
+                                (classList.includes('text-yellow-400') || classList.includes('text-green-400') || classList.includes('text-white'));
+          
+          if (isStatsElement) {
+            console.log('📊 EMERGENCY HANDLER: Elemento de estatísticas detectado - permitindo React handler');
+            return; // Permitir que o React handler processe
+          }
+          
+          // 🔧 CORREÇÃO: Verificar se é um card content das estatísticas
+          const isCardContent = e.target.closest('.bg-slate-800\\/50') && 
+                               (e.target.textContent?.includes('Total') || 
+                                e.target.textContent?.includes('Pendentes') || 
+                                e.target.textContent?.includes('Concluídas') || 
+                                e.target.textContent?.includes('Performance'));
+          
+          if (isCardContent) {
+            console.log('📊 EMERGENCY HANDLER: Card content de estatísticas detectado - permitindo React handler');
+            return; // Permitir que o React handler processe
+          }
+          
+          // Apenas processar cliques em tarefas reais (com data-task-id)
+          const taskData = e.target.closest('[data-task-id]');
+          if (taskData && tasks.length > 0) {
+            console.log('🔧 EMERGENCY HANDLER: Clique em tarefa real detectado');
+            const taskId = taskData.getAttribute('data-task-id');
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+              setSelectedTask(task);
+              setIsTaskDetailsOpen(true);
             }
           }
         };
@@ -763,16 +709,13 @@ const TaskManager = () => {
           document.addEventListener('click', emergencyClickHandler, true);
         }
         
-        console.log('✅ CORREÇÃO DIRETA DE CLIQUES APLICADA');
+        console.log('✅ CORREÇÃO DIRETA DE CLIQUES APLICADA (versão simplificada)');
         
       }, 2000); // Aguardar 2 segundos para garantir renderização
     };
     
     // Executar correção direta apenas uma vez
     forceClickFunctionality();
-    
-    // 🚫 DESABILITADO: Interval removido para evitar piscar das notificações
-    // const interval = setInterval(forceClickFunctionality, 10000); // A cada 10 segundos
     
     console.log('🚫 FORCE CLICK: Interval DESABILITADO para evitar piscar');
     
