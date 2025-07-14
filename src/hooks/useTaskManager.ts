@@ -380,7 +380,7 @@ export const useTaskManager = () => {
     }
 
     // 🚫 DESABILITADO: Sistema híbrido removido para evitar piscar
-    console.log(`🚫 ${browser.isChrome ? 'Chrome' : 'Navegador'}: Sistema híbrido DESABILITADO`);
+    // console.log(`🚫 ${browser.isChrome ? 'Chrome' : 'Navegador'}: Sistema híbrido DESABILITADO`);
 
     return () => {
       console.log(`🧹 ${browser.isChrome ? 'Chrome' : 'Navegador'}: Limpando sistema real-time...`);
@@ -398,7 +398,7 @@ export const useTaskManager = () => {
       notificationDebounceRef.current.forEach(timeoutId => clearTimeout(timeoutId));
       notificationDebounceRef.current.clear();
     };
-  }, [currentUser, connectionAttempts, lastConnectionTime, isRealTimeConnected, setupHybridSystem]);
+  }, [currentUser]); // 🚫 REMOVIDO: connectionAttempts, lastConnectionTime, isRealTimeConnected - causavam loop infinito!
 
   // 🚫 DESABILITADO: Fallback removido para evitar piscar das notificações
   // useEffect(() => {
