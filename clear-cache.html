@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Limpeza de Cache - Gerenciador de Tarefas</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1e293b;
+            color: #f8fafc;
+        }
+        .container {
+            background: #334155;
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid #475569;
+        }
+        h1 {
+            color: #60a5fa;
+            margin-bottom: 20px;
+        }
+        .btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+            display: block;
+            width: 100%;
+        }
+        .btn:hover {
+            background: #2563eb;
+        }
+        .info {
+            background: #1e40af;
+            border: 1px solid #3b82f6;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        .success {
+            background: #059669;
+            border: 1px solid #10b981;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Limpeza de Cache</h1>
+        <p>Se você está vendo a versão antiga do sistema, clique no botão abaixo para forçar a limpeza do cache:</p>
+        
+        <div class="info">
+            <strong>⚠️ Problema:</strong> O clique nos cards de estatísticas ainda abre modal ao invés de filtrar.<br>
+            <strong>✅ Solução:</strong> Limpar cache e recarregar a página.
+        </div>
+
+        <button class="btn" onclick="forceReload()">
+            🔄 Limpar Cache e Recarregar
+        </button>
+
+        <button class="btn" onclick="hardRefresh()">
+            🔃 Hard Refresh (Ctrl+Shift+R)
+        </button>
+
+        <button class="btn" onclick="clearAndRedirect()">
+            🏠 Limpar e Ir para Página Principal
+        </button>
+
+        <div class="success" id="success">
+            ✅ Cache limpo! Redirecionando...
+        </div>
+    </div>
+
+    <script>
+        function forceReload() {
+            console.log('🔄 Forçando limpeza de cache...');
+            
+            // Limpar localStorage
+            try {
+                localStorage.clear();
+                console.log('✅ LocalStorage limpo');
+            } catch (e) {
+                console.warn('⚠️ Erro ao limpar localStorage:', e);
+            }
+
+            // Limpar sessionStorage
+            try {
+                sessionStorage.clear();
+                console.log('✅ SessionStorage limpo');
+            } catch (e) {
+                console.warn('⚠️ Erro ao limpar sessionStorage:', e);
+            }
+
+            // Mostrar mensagem de sucesso
+            document.getElementById('success').style.display = 'block';
+            
+            // Recarregar com cache busting
+            setTimeout(() => {
+                window.location.reload(true);
+            }, 1500);
+        }
+
+        function hardRefresh() {
+            console.log('🔃 Executando hard refresh...');
+            
+            // Limpar storages
+            try {
+                localStorage.clear();
+                sessionStorage.clear();
+            } catch (e) {
+                console.warn('⚠️ Erro ao limpar storage:', e);
+            }
+
+            // Mostrar mensagem
+            document.getElementById('success').style.display = 'block';
+            
+            // Force reload sem cache
+            setTimeout(() => {
+                window.location.reload(true);
+            }, 1500);
+        }
+
+        function clearAndRedirect() {
+            console.log('🏠 Limpando e redirecionando...');
+            
+            // Limpar tudo
+            try {
+                localStorage.clear();
+                sessionStorage.clear();
+            } catch (e) {
+                console.warn('⚠️ Erro ao limpar storage:', e);
+            }
+
+            // Mostrar mensagem
+            document.getElementById('success').style.display = 'block';
+            
+            // Redirecionar para página principal com cache busting
+            setTimeout(() => {
+                const timestamp = Date.now();
+                window.location.href = `/?cache_bust=${timestamp}`;
+            }, 1500);
+        }
+    </script>
+</body>
+</html> 
