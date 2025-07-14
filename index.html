@@ -81,10 +81,21 @@
           const isStatsCard = target.closest('[data-stats-safe="true"], [data-emergency-safe="true"], .stats-card-safe');
           
           if (isStatsCard) {
-            console.log('🛡️ PRE-EMERGENCY: Clique em stats card bloqueado do emergency handler');
-            event.stopImmediatePropagation();
-            event.preventDefault();
-            return false;
+            console.log('🛡️ PRE-EMERGENCY: Clique em stats card detectado - PERMITINDO PASSAGEM PARA REACT');
+            // 🔧 CORREÇÃO: Não bloquear o clique, apenas marcar como seguro
+            // event.stopImmediatePropagation(); // REMOVIDO
+            // event.preventDefault(); // REMOVIDO
+            // return false; // REMOVIDO
+            
+            // Apenas marcar que é seguro e deixar o clique continuar
+            window.isStatsCardClick = true;
+            window.disableEmergencyHandler = true;
+            
+            // Limpar flags após um delay
+            setTimeout(() => {
+              window.isStatsCardClick = false;
+              window.disableEmergencyHandler = false;
+            }, 100);
           }
           
           return listener.call(this, event);
@@ -104,7 +115,7 @@
   
   <!-- 🔧 CORREÇÃO ULTRA-ROBUSTA PARA TELA ROXA -->
   <script src="/fix-purple-screen.js"></script>
-  <script type="module" crossorigin src="/assets/index-Cy59kY2o.js"></script>
+  <script type="module" crossorigin src="/assets/index-tATG5jk-.js"></script>
   <link rel="stylesheet" crossorigin href="/assets/index-B03gGytB.css">
 </head>
 <body>
