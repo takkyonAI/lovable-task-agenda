@@ -52,17 +52,22 @@
     let firefoxPollingInterval;
     
     const startFirefoxPolling = () => {
-      console.log('🔄 FIREFOX: Iniciando polling silencioso a cada 15 segundos');
+      console.log('🔄 FIREFOX: Iniciando polling inteligente a cada 2 minutos');
       
       firefoxPollingInterval = setInterval(() => {
-        console.log('🔄 FIREFOX: Polling silencioso executado');
-        
-        // Disparar evento personalizado para o React
-        const event = new CustomEvent('firefoxPollingUpdate', {
-          detail: { timestamp: Date.now() }
-        });
-        window.dispatchEvent(event);
-      }, 15000); // 15 segundos - mais frequente
+        // Só fazer polling se a aba estiver ativa
+        if (!document.hidden) {
+          console.log('🔄 FIREFOX: Polling inteligente executado');
+          
+          // Disparar evento personalizado para o React
+          const event = new CustomEvent('firefoxPollingUpdate', {
+            detail: { timestamp: Date.now() }
+          });
+          window.dispatchEvent(event);
+        } else {
+          console.log('🔄 FIREFOX: Aba inativa, pulando polling');
+        }
+      }, 120000); // 2 minutos - muito menos frequente
     };
     
     // 🚫 BLOQUEAR COMPLETAMENTE WEBSOCKET NO FIREFOX

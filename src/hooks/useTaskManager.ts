@@ -19,13 +19,17 @@ export const useTaskManager = () => {
   const [newTasksCount, setNewTasksCount] = useState(0);
   const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
   const [isRealTimeConnected, setIsRealTimeConnected] = useState(false);
+  const [connectionAttempts, setConnectionAttempts] = useState(0);
+  const [lastConnectionTime, setLastConnectionTime] = useState(0);
 
   const { currentUser } = useSupabaseAuth();
   const { toast } = useToast();
   
-  // Refs para evitar race conditions
+  // Refs para evitar race conditions e controlar timers
   const isLoadingRef = useRef(false);
   const fallbackRefreshRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const notificationDebounceRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   // 🔍 DETECÇÃO DE NAVEGADOR
   const detectBrowser = () => {
@@ -38,20 +42,23 @@ export const useTaskManager = () => {
     return { isFirefox, isChrome, isSafari, isEdge };
   };
 
-  // 🔄 OTIMIZAÇÃO: Fallback de refresh menos agressivo (apenas 1 timer)
-  const setupFallbackRefresh = useCallback(() => {
+  // 🔄 OTIMIZAÇÃO: Sistema de fallback inteligente (menos agressivo)
+  const setupIntelligentFallback = useCallback(() => {
     if (fallbackRefreshRef.current) {
       clearTimeout(fallbackRefreshRef.current);
     }
     
-    fallbackRefreshRef.current = setTimeout(() => {
-      console.log('🔄 Fallback refresh (5 minutos)...');
-      if (!isRealTimeConnected) {
-        loadTasks();
-      }
-      setupFallbackRefresh(); // Reagenda para 5 minutos
-    }, 300000); // 5 minutos - muito menos agressivo
-  }, [isRealTimeConnected]);
+    // Só configurar fallback se real-time estiver desconectado por mais de 1 minuto
+    if (!isRealTimeConnected && (Date.now() - lastConnectionTime) > 60000) {
+      fallbackRefreshRef.current = setTimeout(() => {
+        console.log('🔄 Fallback inteligente (10 minutos)...');
+        if (!isRealTimeConnected) {
+          loadTasks();
+        }
+        setupIntelligentFallback(); // Reagenda para 10 minutos
+      }, 600000); // 10 minutos - muito menos agressivo
+    }
+  }, [isRealTimeConnected, lastConnectionTime]);
 
   // 🎯 OTIMIZAÇÃO: Função para formatar tarefa do banco para o tipo Task
   const formatTaskFromDB = useCallback((taskData: any): Task => {
@@ -79,9 +86,19 @@ export const useTaskManager = () => {
     };
   }, []);
 
-  // 🔔 OTIMIZAÇÃO: Função para mostrar notificação de mudança sem causar refresh
-  const showTaskChangeNotification = useCallback((task: Task, eventType: 'INSERT' | 'UPDATE' | 'DELETE', isOwnAction: boolean = false) => {
-    if (!isOwnAction && currentUser) {
+  // 🔔 OTIMIZAÇÃO: Função para mostrar notificação com debounce (evita spam)
+  const showTaskChangeNotificationDebounced = useCallback((task: Task, eventType: 'INSERT' | 'UPDATE' | 'DELETE', isOwnAction: boolean = false) => {
+    if (isOwnAction || !currentUser) return;
+    
+    const notificationKey = `${task.id}-${eventType}`;
+    
+    // Cancelar notificação anterior se existir
+    if (notificationDebounceRef.current.has(notificationKey)) {
+      clearTimeout(notificationDebounceRef.current.get(notificationKey)!);
+    }
+    
+    // Agendar nova notificação com debounce de 2 segundos
+    const timeoutId = setTimeout(() => {
       const creatorName = task.created_by || 'Usuário';
       
       switch (eventType) {
@@ -89,27 +106,31 @@ export const useTaskManager = () => {
           toast({
             title: "📋 Nova Tarefa!",
             description: `"${task.title}" foi criada`,
-            duration: 3000
+            duration: 2000 // Reduzido para 2 segundos
           });
           setNewTasksCount(prev => prev + 1);
-          setTimeout(() => setNewTasksCount(prev => Math.max(0, prev - 1)), 8000);
+          setTimeout(() => setNewTasksCount(prev => Math.max(0, prev - 1)), 5000); // Reduzido para 5 segundos
           break;
         case 'UPDATE':
           toast({
             title: "✏️ Tarefa Atualizada",
             description: `"${task.title}" foi modificada`,
-            duration: 2000
+            duration: 1500 // Reduzido para 1.5 segundos
           });
           break;
         case 'DELETE':
           toast({
             title: "🗑️ Tarefa Removida",
             description: `"${task.title}" foi excluída`,
-            duration: 2000
+            duration: 1500 // Reduzido para 1.5 segundos
           });
           break;
       }
-    }
+      
+      notificationDebounceRef.current.delete(notificationKey);
+    }, 2000);
+    
+    notificationDebounceRef.current.set(notificationKey, timeoutId);
   }, [currentUser, toast]);
 
   // 🎯 OTIMIZAÇÃO: Handlers específicos para cada tipo de mudança (sem refresh completo)
@@ -131,31 +152,33 @@ export const useTaskManager = () => {
     
     // Mostrar notificação apenas se não foi criada pelo usuário atual
     const isOwnAction = currentUser?.user_id === newTask.created_by;
-    showTaskChangeNotification(newTask, 'INSERT', isOwnAction);
-  }, [formatTaskFromDB, currentUser, showTaskChangeNotification]);
+    showTaskChangeNotificationDebounced(newTask, 'INSERT', isOwnAction);
+  }, [formatTaskFromDB, currentUser, showTaskChangeNotificationDebounced]);
 
   const handleTaskUpdate = useCallback((updatedTaskData: any) => {
     const updatedTask = formatTaskFromDB(updatedTaskData);
     
     setTasks(prevTasks => {
-      const existingTaskIndex = prevTasks.findIndex(task => task.id === updatedTask.id);
-      if (existingTaskIndex === -1) {
-        console.log('🔄 Tarefa não encontrada para UPDATE, adicionando:', updatedTask.id);
-        return [updatedTask, ...prevTasks];
+      const updatedTasks = prevTasks.map(task => 
+        task.id === updatedTask.id ? updatedTask : task
+      );
+      
+      // Verificar se realmente houve mudança
+      const originalTask = prevTasks.find(task => task.id === updatedTask.id);
+      if (originalTask && JSON.stringify(originalTask) === JSON.stringify(updatedTask)) {
+        console.log('🔄 Tarefa não mudou, ignorando UPDATE:', updatedTask.id);
+        return prevTasks;
       }
       
-      // Atualizar apenas a tarefa específica sem mexer nas outras
-      const newTasks = [...prevTasks];
-      newTasks[existingTaskIndex] = updatedTask;
       console.log('✅ Atualizando tarefa:', updatedTask.title);
-      return newTasks;
+      return updatedTasks;
     });
     
-    // Mostrar notificação apenas se não foi uma ação própria
-    const isOwnAction = currentUser?.user_id === updatedTask.created_by || 
-                        currentUser?.user_id === updatedTask.edited_by;
-    showTaskChangeNotification(updatedTask, 'UPDATE', isOwnAction);
-  }, [formatTaskFromDB, currentUser, showTaskChangeNotification]);
+    // Mostrar notificação apenas se não foi editada pelo usuário atual
+    const isOwnAction = currentUser?.user_id === updatedTask.edited_by || 
+                        currentUser?.user_id === updatedTask.created_by;
+    showTaskChangeNotificationDebounced(updatedTask, 'UPDATE', isOwnAction);
+  }, [formatTaskFromDB, currentUser, showTaskChangeNotificationDebounced]);
 
   const handleTaskDelete = useCallback((deletedTaskData: any) => {
     const deletedTask = formatTaskFromDB(deletedTaskData);
@@ -166,10 +189,11 @@ export const useTaskManager = () => {
       return filteredTasks;
     });
     
-    // Mostrar notificação sempre para DELETE
-    showTaskChangeNotification(deletedTask, 'DELETE');
-  }, [formatTaskFromDB, showTaskChangeNotification]);
+    // Sempre mostrar notificação de exclusão (é importante)
+    showTaskChangeNotificationDebounced(deletedTask, 'DELETE', false);
+  }, [formatTaskFromDB, showTaskChangeNotificationDebounced]);
 
+  // 🔄 SISTEMA DE REAL-TIME OTIMIZADO COM CONTROLE DE RECONEXÃO
   useEffect(() => {
     loadTasks();
     
@@ -178,6 +202,7 @@ export const useTaskManager = () => {
       console.log('🦊 FIREFOX: Real-time desabilitado - usando polling via emergency-fix.js');
       
       setIsRealTimeConnected(false);
+      setLastConnectionTime(Date.now());
       
       // Escutar eventos de polling do emergency-fix.js
       const handleFirefoxPolling = () => {
@@ -193,10 +218,10 @@ export const useTaskManager = () => {
       };
     }
     
-    // 🚀 OUTROS NAVEGADORES: Sistema real-time otimizado
+    // 🚀 OUTROS NAVEGADORES: Sistema real-time otimizado com controle de reconexão
     let channel: any = null;
     
-    console.log('🔄 Configurando sistema real-time otimizado (sem piscar)...');
+    console.log('🔄 Configurando sistema real-time otimizado (anti-piscar)...');
     
     // Wait for auth before setting up real-time
     if (!currentUser) {
@@ -204,20 +229,35 @@ export const useTaskManager = () => {
       return;
     }
     
+    // Evitar reconexões muito frequentes
+    const now = Date.now();
+    if (connectionAttempts > 3 && (now - lastConnectionTime) < 30000) {
+      console.log('🚫 Muitas tentativas de reconexão, aguardando 30 segundos...');
+      
+      reconnectTimeoutRef.current = setTimeout(() => {
+        setConnectionAttempts(0);
+      }, 30000);
+      
+      return;
+    }
+    
     try {
-        channel = supabase
-        .channel(`tasks_optimized_${Date.now()}`)
-          .on(
-            'postgres_changes',
-            {
+      setConnectionAttempts(prev => prev + 1);
+      setLastConnectionTime(now);
+      
+      channel = supabase
+        .channel(`tasks_stable_${currentUser.user_id}_${now}`)
+        .on(
+          'postgres_changes',
+          {
             event: 'INSERT',
-              schema: 'public',
-              table: 'tasks'
-            },
-            (payload) => {
+            schema: 'public',
+            table: 'tasks'
+          },
+          (payload) => {
             console.log('🎯 Nova tarefa detectada:', payload.new);
-              setIsRealTimeConnected(true);
-              setLastUpdateTime(Date.now());
+            setIsRealTimeConnected(true);
+            setLastUpdateTime(Date.now());
             handleTaskInsert(payload.new);
           }
         )
@@ -247,47 +287,67 @@ export const useTaskManager = () => {
             setIsRealTimeConnected(true);
             setLastUpdateTime(Date.now());
             handleTaskDelete(payload.old);
-            }
-          )
-          .subscribe((status) => {
+          }
+        )
+        .subscribe((status) => {
           console.log('🔗 Status real-time:', status);
+          
+          if (status === 'SUBSCRIBED') {
+            console.log('✅ Sistema real-time estável conectado!');
+            setIsRealTimeConnected(true);
+            setConnectionAttempts(0);
+            setLastConnectionTime(Date.now());
             
-            if (status === 'SUBSCRIBED') {
-            console.log('✅ Sistema real-time otimizado conectado!');
-              setIsRealTimeConnected(true);
-              
+            // Notificação menos intrusiva
+            if (connectionAttempts > 1) {
               toast({
-                title: "⚡ Sistema Otimizado",
-                description: "Atualizações instantâneas sem piscar ativadas!",
-                duration: 3000
-              });
-            } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-            console.warn('🔒 Real-time desconectado:', status);
-              setIsRealTimeConnected(false);
-              
-              toast({
-                title: "🔄 Modo Fallback",
-                description: "Atualizações a cada 5 minutos",
-                duration: 3000
+                title: "⚡ Reconectado",
+                description: "Atualizações em tempo real reestabelecidas",
+                duration: 2000
               });
             }
-          });
+          } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+            console.warn('🔒 Real-time desconectado:', status);
+            setIsRealTimeConnected(false);
+            
+            // Só mostrar notificação se estava conectado antes
+            if (isRealTimeConnected) {
+              toast({
+                title: "🔄 Modo Offline",
+                description: "Usando dados locais",
+                duration: 2000
+              });
+            }
+          }
+        });
         
-      } catch (error) {
+    } catch (error) {
       console.error('❌ Erro ao configurar real-time:', error);
-        setIsRealTimeConnected(false);
-        }
+      setIsRealTimeConnected(false);
+    }
 
     return () => {
-      console.log('🧹 Limpando sistema otimizado...');
+      console.log('🧹 Limpando sistema real-time...');
       if (channel) {
         supabase.removeChannel(channel);
       }
       if (fallbackRefreshRef.current) {
         clearTimeout(fallbackRefreshRef.current);
       }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      
+      // Limpar debounce de notificações
+      notificationDebounceRef.current.forEach(timeoutId => clearTimeout(timeoutId));
+      notificationDebounceRef.current.clear();
     };
-  }, [currentUser]);
+  }, [currentUser, connectionAttempts, lastConnectionTime, isRealTimeConnected]);
+
+  // Configurar fallback inteligente
+  useEffect(() => {
+    setupIntelligentFallback();
+  }, [setupIntelligentFallback]);
 
   useEffect(() => {
     filterTasks();
