@@ -237,6 +237,14 @@ export const useTaskManager = () => {
     console.log(`🔄 useEffect EXECUTADO em: ${new Date(timestamp).toLocaleTimeString()}`);
     console.log(`🔍 DEBUG: currentUser.user_id = ${currentUser?.user_id || 'null'}`);
     
+    // 🛡️ PROTEÇÃO ANTI-LOOP: Prevenir múltiplas execuções simultâneas
+    const executionKey = `useTaskManager_${currentUser?.user_id || 'null'}`;
+    if ((window as any)[executionKey] === true) {
+      console.warn(`🚫 BLOQUEADO: useEffect já executando para usuário ${currentUser?.user_id}`);
+      return;
+    }
+    (window as any)[executionKey] = true;
+    
     // Detectar execuções múltiplas rápidas
     const lastExecution = (window as any).lastUseEffectExecution || 0;
     const timeDiff = timestamp - lastExecution;
@@ -362,6 +370,12 @@ export const useTaskManager = () => {
 
     return () => {
       console.log(`🧹 ${new Date().toLocaleTimeString()}: Limpando sistema otimizado...`);
+      
+      // 🛡️ PROTEÇÃO ANTI-LOOP: Liberar flag de execução
+      const executionKey = `useTaskManager_${currentUser?.user_id || 'null'}`;
+      (window as any)[executionKey] = false;
+      console.log(`🔓 LIBERADO: Flag de execução liberada para usuário ${currentUser?.user_id}`);
+      
       if (setupDebounceRef.current) {
         console.log(`🧹 Cancelando timeout: ${setupDebounceRef.current}`);
         clearTimeout(setupDebounceRef.current);
