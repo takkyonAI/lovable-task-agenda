@@ -26,44 +26,31 @@
   
   const browser = detectBrowser();
   
-  // 🦊 CONFIGURAÇÕES ESPECÍFICAS PARA FIREFOX
-  if (browser.isFirefox) {
-    console.log('🦊 FIREFOX DETECTADO - Aplicando correções específicas');
+  // 🦊 FIREFOX: Detectar navegador e aplicar correções específicas
+  if (navigator.userAgent.toLowerCase().includes('firefox')) {
+    console.log('🦊 FIREFOX: Aplicando correções de emergência...');
     
-    // 🚫 DESABILITAR COMPLETAMENTE REAL-TIME NO FIREFOX
+    // Definir flag global para indicar que é Firefox
     window.FIREFOX_DISABLE_REALTIME = true;
     
-    // Interceptar erros específicos do Firefox
-    const originalConsoleError = console.error;
-    console.error = function(...args) {
-      const message = args.join(' ');
-      
-      // Filtrar erros NS_ERROR_CONTENT_BLOCKED
-      if (message.includes('NS_ERROR_CONTENT_BLOCKED')) {
-        console.warn('🚫 FIREFOX: WebSocket bloqueado por CSP - Continuando sem real-time');
-        return;
-      }
-      
-      // Outros erros passam normalmente
-      originalConsoleError.apply(console, args);
-    };
+    // 🚫 POLLING COMPLETAMENTE DESABILITADO - Causava piscar das notificações
+    console.log('🚫 FIREFOX: Polling COMPLETAMENTE DESABILITADO para evitar piscar');
     
-    // 🔄 IMPLEMENTAR POLLING SILENCIOSO PARA FIREFOX
-    let firefoxPollingInterval;
-    
-    const startFirefoxPolling = () => {
-      console.log('🔄 FIREFOX: Iniciando polling silencioso a cada 15 segundos');
-      
-      firefoxPollingInterval = setInterval(() => {
-        console.log('🔄 FIREFOX: Polling silencioso executado');
-        
-        // Disparar evento personalizado para o React
-        const event = new CustomEvent('firefoxPollingUpdate', {
-          detail: { timestamp: Date.now() }
-        });
-        window.dispatchEvent(event);
-      }, 15000); // 15 segundos - mais frequente
-    };
+    // Não configurar nenhum polling
+    // let firefoxPollingInterval;
+    // const startFirefoxPolling = () => {
+    //   console.log('🔄 FIREFOX: Iniciando polling silencioso a cada 15 segundos');
+    //   
+    //   firefoxPollingInterval = setInterval(() => {
+    //     console.log('🔄 FIREFOX: Polling silencioso executado');
+    //     
+    //     // Disparar evento personalizado para o React
+    //     const event = new CustomEvent('firefoxPollingUpdate', {
+    //       detail: { timestamp: Date.now() }
+    //     });
+    //     window.dispatchEvent(event);
+    //   }, 15000); // 15 segundos - mais frequente
+    // };
     
     // 🚫 BLOQUEAR COMPLETAMENTE WEBSOCKET NO FIREFOX
     if (window.WebSocket) {
@@ -84,15 +71,15 @@
       }
     }
     
-    // Iniciar polling após 5 segundos (dar tempo para React carregar)
-    setTimeout(startFirefoxPolling, 5000);
+    // 🚫 DESABILITADO: Não iniciar polling
+    // setTimeout(startFirefoxPolling, 5000);
     
-    // Limpar polling quando página for fechada
-    window.addEventListener('beforeunload', () => {
-      if (firefoxPollingInterval) {
-        clearInterval(firefoxPollingInterval);
-      }
-    });
+    // 🚫 DESABILITADO: Não configurar cleanup de polling
+    // window.addEventListener('beforeunload', () => {
+    //   if (firefoxPollingInterval) {
+    //     clearInterval(firefoxPollingInterval);
+    //   }
+    // });
   }
   
   // 1. INTERCEPTAR MÉTODOS DOM CRÍTICOS

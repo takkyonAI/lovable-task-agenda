@@ -106,62 +106,68 @@ export const useTaskManager = () => {
 
   // 🔔 OTIMIZAÇÃO: Função para mostrar notificação com debounce e filtro por navegador
   const showTaskChangeNotificationDebounced = useCallback((task: Task, eventType: 'INSERT' | 'UPDATE' | 'DELETE', isOwnAction: boolean = false) => {
-    if (isOwnAction || !currentUser) return;
+    // 🚫 DESABILITADO: Sistema de notificações completamente desabilitado para evitar piscar
+    console.log(`🚫 NOTIFICAÇÃO DESABILITADA: ${eventType} para tarefa ${task.title}`);
+    return;
     
-    const browser = detectBrowser();
-    const notificationKey = `${task.id}-${eventType}`;
-    
-    // Cancelar notificação anterior se existir
-    if (notificationDebounceRef.current.has(notificationKey)) {
-      clearTimeout(notificationDebounceRef.current.get(notificationKey)!);
-    }
-    
-    // Configurar debounce específico por navegador
-    let debounceTime = 2000; // Padrão
-    let duration = 2000; // Padrão
-    
-    if (browser.isChrome) {
-      debounceTime = 1000; // Chrome: debounce mais rápido
-      duration = 1500; // Chrome: notificação mais rápida
-    } else if (browser.isSafari) {
-      debounceTime = 3000; // Safari: debounce mais lento
-      duration = 2500; // Safari: notificação mais longa
-    }
-    
-    // Agendar nova notificação com debounce
-    const timeoutId = setTimeout(() => {
-      const creatorName = task.created_by || 'Usuário';
-      
-      switch (eventType) {
-        case 'INSERT':
-          toast({
-            title: `📋 Nova Tarefa! ${browser.isChrome ? '(Chrome)' : ''}`,
-            description: `"${task.title}" foi criada`,
-            duration: duration
-          });
-          setNewTasksCount(prev => prev + 1);
-          setTimeout(() => setNewTasksCount(prev => Math.max(0, prev - 1)), duration + 2000);
-          break;
-        case 'UPDATE':
-          toast({
-            title: `✏️ Tarefa Atualizada ${browser.isChrome ? '(Chrome)' : ''}`,
-            description: `"${task.title}" foi modificada`,
-            duration: Math.floor(duration * 0.75)
-          });
-          break;
-        case 'DELETE':
-          toast({
-            title: `🗑️ Tarefa Removida ${browser.isChrome ? '(Chrome)' : ''}`,
-            description: `"${task.title}" foi excluída`,
-            duration: Math.floor(duration * 0.75)
-          });
-          break;
-      }
-      
-      notificationDebounceRef.current.delete(notificationKey);
-    }, debounceTime);
-    
-    notificationDebounceRef.current.set(notificationKey, timeoutId);
+    // Código original comentado
+    // if (isOwnAction || !currentUser) return;
+    // 
+    // const browser = detectBrowser();
+    // const notificationKey = `${task.id}-${eventType}`;
+    // 
+    // // Cancelar notificação anterior se existir
+    // if (notificationDebounceRef.current.has(notificationKey)) {
+    //   clearTimeout(notificationDebounceRef.current.get(notificationKey)!);
+    // }
+    // 
+    // // Configurar debounce específico por navegador
+    // let debounceTime = 2000; // Padrão
+    // let duration = 2000; // Padrão
+    // 
+    // if (browser.isChrome) {
+    //   debounceTime = 1000; // Chrome: debounce mais rápido
+    //   duration = 1500; // Chrome: notificação mais rápida
+    // } else if (browser.isSafari) {
+    //   debounceTime = 3000; // Safari: debounce mais lento
+    //   duration = 2500; // Safari: notificação mais longa
+    // }
+    // 
+    // // Agendar nova notificação com debounce
+    // const timeoutId = setTimeout(() => {
+    //   const creatorName = task.created_by || 'Usuário';
+    //   
+    //   switch (eventType) {
+    //     case 'INSERT':
+    //       toast({
+    //         title: `📋 Nova Tarefa! ${browser.isChrome ? '(Chrome)' : ''}`,
+    //         description: `"${task.title}" foi criada`,
+    //         duration: duration
+    //       });
+    //       setNewTasksCount(prev => prev + 1);
+    //       // 🚫 DESABILITADO: setTimeout aninhado removido para evitar piscar
+    //       // setTimeout(() => setNewTasksCount(prev => Math.max(0, prev - 1)), duration + 2000);
+    //       break;
+    //     case 'UPDATE':
+    //       toast({
+    //         title: `✏️ Tarefa Atualizada ${browser.isChrome ? '(Chrome)' : ''}`,
+    //         description: `"${task.title}" foi modificada`,
+    //         duration: Math.floor(duration * 0.75)
+    //       });
+    //       break;
+    //     case 'DELETE':
+    //       toast({
+    //         title: `🗑️ Tarefa Removida ${browser.isChrome ? '(Chrome)' : ''}`,
+    //         description: `"${task.title}" foi excluída`,
+    //         duration: Math.floor(duration * 0.75)
+    //       });
+    //       break;
+    //   }
+    //   
+    //   notificationDebounceRef.current.delete(notificationKey);
+    // }, debounceTime);
+    // 
+    // notificationDebounceRef.current.set(notificationKey, timeoutId);
   }, [currentUser, toast]);
 
   // 🎯 OTIMIZAÇÃO: Handlers específicos para cada tipo de mudança (sem refresh completo)
