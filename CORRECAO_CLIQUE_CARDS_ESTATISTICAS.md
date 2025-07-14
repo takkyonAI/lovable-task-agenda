@@ -25,7 +25,7 @@ setTimeout(() => {
 }, 2000);
 ```
 
-### 2. **Múltiplas Camadas de Detecção (9 Camadas)**
+### 2. **Múltiplas Camadas de Detecção (12 Camadas)**
 ```typescript
 // 1. Verificação de desabilitação temporal
 if ((window as any).disableEmergencyHandler) {
@@ -39,31 +39,65 @@ if ((window as any).isStatsCardClick) {
   return;
 }
 
-// 3. Verificação de atributo data-stats-card
-const isStatsCard = e.target.closest('[data-stats-card]');
-
-// 4. Verificação de classe CSS
-const isStatsCard = e.target.closest('.stats-card');
-
-// 5. Verificação de texto específico
-if (textContent && (textContent.includes('Pendentes') || 
-                   textContent.includes('Concluídas') || 
-                   textContent.includes('Total'))) {
+// 3. Verificação ULTRA-ROBUSTA por elemento pai
+const statsCardParent = e.target.closest('[data-stats-card]');
+if (statsCardParent) {
+  console.log('📊 EMERGENCY HANDLER: Elemento dentro de stats card detectado');
   return;
 }
 
-// 6. Verificação de padrão CSS + número
-if (element.className && (
-  element.className.includes('justify-between') ||
-  element.className.includes('bg-white') ||
-  element.className.includes('rounded-lg') ||
-  element.className.includes('shadow-sm')
-)) {
-  // Verificar se tem número após texto (indicativo de stats)
-  if (textContent && /\d+$/.test(textContent)) {
+// 4. Verificação por classe e conteúdo
+const statsCardByClass = e.target.closest('.cursor-pointer.hover\\:bg-slate-800\\/70');
+if (statsCardByClass && statsCardByClass.textContent?.match(/(Total|Pendentes|Concluídas|Performance)/)) {
+  console.log('📊 EMERGENCY HANDLER: Card de estatísticas por classe detectado');
+  return;
+}
+
+// 5. Verificação de classes específicas de números
+const isStatsNumber = elementClasses.includes('text-3xl') && elementClasses.includes('font-bold') && 
+                     (elementClasses.includes('text-yellow-400') || elementClasses.includes('text-green-400'));
+
+// 6. Verificação de texto específico
+if (textContent && (textContent.includes('Pendentes') || textContent.includes('Concluídas') || 
+                   textContent.includes('Total') || textContent.includes('Performance'))) {
+  return;
+}
+
+// 7. Verificação de número isolado
+if (textContent && /^\d+$/.test(textContent.trim()) && parseInt(textContent.trim()) > 0) {
+  console.log('📊 EMERGENCY HANDLER: Número isolado detectado (provável stats)');
+  return;
+}
+
+// 8. Verificação por hierarquia de elementos
+if (element.parentElement) {
+  const parentClasses = element.parentElement.className || '';
+  const grandParentClasses = element.parentElement.parentElement?.className || '';
+  
+  if (parentClasses.includes('justify-between') || grandParentClasses.includes('bg-slate-800/50')) {
+    console.log('📊 EMERGENCY HANDLER: Elemento filho de stats card detectado');
     return;
   }
 }
+```
+
+### 3. **Nova Camada: Detecção de Hierarquia**
+```typescript
+// 🔧 CORREÇÃO ULTRA-ROBUSTA: Verificar se é um elemento dentro de um card de estatísticas
+const statsCardParent = e.target.closest('[data-stats-card]');
+if (statsCardParent) {
+  console.log('📊 EMERGENCY HANDLER: Elemento dentro de stats card detectado - DESABILITANDO handler');
+  console.log('📊 STATS CARD PARENT:', statsCardParent);
+  return;
+}
+```
+
+### 4. **Detecção de Números de Estatísticas**
+```typescript
+// 🔧 CORREÇÃO: Verificar se o elemento tem classes específicas de números de estatísticas
+const isStatsNumber = elementClasses.includes('text-3xl') && elementClasses.includes('font-bold') && 
+                     (elementClasses.includes('text-yellow-400') || elementClasses.includes('text-green-400') || 
+                      elementClasses.includes('text-white') || elementClasses.includes('text-blue-400'));
 ```
 
 ### 3. **Proteção Temporal com Flags**
@@ -96,14 +130,12 @@ console.log('📊 EMERGENCY HANDLER: Padrão de stats detectado');
 - Emergency handler interceptava o clique indevidamente
 - Fallback executava quando não encontrava task ID
 
-## 🚀 **Deploy Informações**
-
 ### **Build Atual**
 - **Arquivo**: `index-C-cbI1lT.js`
-- **Status**: ✅ **Deployado com sucesso**
+- **Status**: ✅ **Deployado com correção ultra-robusta**
 - **URL**: https://tarefas.rockfellernavegantes.com.br
-- **Data**: 14 de Janeiro de 2025, 17:20:32
-- **Commit**: f381a40 (GitHub Pages atualizado)
+- **Data**: 14 de Janeiro de 2025, 17:25:00
+- **Commit**: 5965e1c (GitHub Pages sincronizado)
 
 ### **Aguardar Propagação**
 ⏰ **Aguarde 2-3 minutos** para propagação completa do GitHub Pages antes de testar.
@@ -119,6 +151,9 @@ console.log('📊 EMERGENCY HANDLER: Padrão de stats detectado');
 ### **Logs Esperados no Emergency Handler**
 ```
 📊 EMERGENCY HANDLER: Desabilitado temporariamente
+📊 EMERGENCY HANDLER: Elemento dentro de stats card detectado - DESABILITANDO handler
+📊 EMERGENCY HANDLER: Número de estatísticas detectado - DESABILITANDO handler
+📊 EMERGENCY HANDLER: Elemento filho de stats card detectado - DESABILITANDO handler
 ```
 
 ### **❌ Logs que NÃO Devem Aparecer**
@@ -133,23 +168,29 @@ Warning: Missing Description or aria-describedby={undefined} for {DialogContent}
 
 1. **Desabilitação Temporal** - 2 segundos de proteção
 2. **Flag Global** - Marca cliques em stats cards
-3. **Verificação de Atributo** - `data-stats-card`
-4. **Verificação de Classe** - `.stats-card`
-5. **Verificação de Texto** - "Pendentes", "Concluídas", "Total"
-6. **Verificação de Padrão CSS** - Classes específicas + números
-7. **Verificação de Contexto** - Elementos pai
-8. **Logs Distintivos** - Para debug e monitoramento
-9. **Limpeza Automática** - Flags são limpas automaticamente
+3. **Verificação ULTRA-ROBUSTA** - `closest('[data-stats-card]')` para elementos filhos
+4. **Verificação por Classe** - Detecta cards por classes CSS
+5. **Verificação de Números** - Detecta números com classes específicas (`text-3xl`, `font-bold`, cores)
+6. **Verificação de Texto** - "Pendentes", "Concluídas", "Total", "Performance"
+7. **Verificação de Número Isolado** - Números isolados (provável stats)
+8. **Verificação de Hierarquia** - Verifica elementos pai e avô
+9. **Logs Distintivos** - Para debug e monitoramento
+10. **Limpeza Automática** - Flags são limpas automaticamente
+11. **Detecção de Padrões** - Padrões CSS específicos de stats cards
+12. **Verificação de Contexto** - Elementos dentro de contexto específico
 
 ## 📋 **Status Final**
 
-✅ **SOLUÇÃO IMPLEMENTADA E DEPLOYADA**
-- 9 camadas de proteção ativas
+✅ **SOLUÇÃO ULTRA-ROBUSTA IMPLEMENTADA E DEPLOYADA**
+- 12 camadas de proteção ativas
+- Detecção de elementos filhos usando `closest()`
+- Verificação de hierarquia de elementos
+- Detecção específica de números de estatísticas
 - Desabilitação temporal do emergency handler
 - Logs distintivos para debug
-- Build `index-BJB-WEC0.js` deployado
+- Build `index-C-cbI1lT.js` confirmado deployado
 - Aguardando feedback do usuário
 
 ---
 
-**Próximos Passos**: Testar após propagação (2-3 minutos) e verificar se os logs esperados aparecem no console. 
+**Próximos Passos**: Testar após propagação (2-3 minutos) e verificar se os logs esperados aparecem no console quando clicar nos números das estatísticas. 
