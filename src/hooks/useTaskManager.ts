@@ -30,6 +30,7 @@ export const useTaskManager = () => {
   const fallbackRefreshRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const notificationDebounceRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const setupDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 🔍 DETECÇÃO DE NAVEGADOR
   const detectBrowser = () => {
@@ -259,7 +260,7 @@ export const useTaskManager = () => {
     const browser = detectBrowser();
     let channel: any = null;
     
-    console.log(`🔄 Configurando sistema real-time para ${browser.isChrome ? 'Chrome' : browser.isSafari ? 'Safari' : 'navegador'}`);
+    console.log(`🔄 Configurando sistema real-time otimizado (sem piscar)...`);
     
     // Wait for auth before setting up real-time
     if (!currentUser) {
@@ -267,123 +268,91 @@ export const useTaskManager = () => {
       return;
     }
     
-    // Configurações específicas por navegador para reconexão
-    let maxAttempts = 3;
-    let reconnectDelay = 30000;
+    // 🛡️ SOLUÇÃO ANTI-PISCAR: Controle de debounce para evitar reconexões múltiplas
+    const setupDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     
-    if (browser.isChrome) {
-      maxAttempts = 5; // Chrome: mais tentativas
-      reconnectDelay = 15000; // Chrome: delay menor
-    } else if (browser.isSafari) {
-      maxAttempts = 2; // Safari: menos tentativas
-      reconnectDelay = 45000; // Safari: delay maior
+    // Cancelar setup anterior se existir
+    if (setupDebounceRef.current) {
+      clearTimeout(setupDebounceRef.current);
     }
     
-    // Evitar reconexões muito frequentes
-    const now = Date.now();
-    if (connectionAttempts > maxAttempts && (now - lastConnectionTime) < reconnectDelay) {
-      console.log(`🚫 ${browser.isChrome ? 'Chrome' : browser.isSafari ? 'Safari' : 'Navegador'}: Muitas tentativas de reconexão, aguardando ${reconnectDelay/1000}s...`);
-      
-      reconnectTimeoutRef.current = setTimeout(() => {
-        setConnectionAttempts(0);
-      }, reconnectDelay);
-      
-      return;
-    }
-    
-    try {
-      setConnectionAttempts(prev => prev + 1);
-      setLastConnectionTime(now);
-      
-      // Nome do canal específico por navegador
-      const channelName = `tasks_${browser.isChrome ? 'chrome' : browser.isSafari ? 'safari' : 'other'}_${currentUser.user_id}_${now}`;
-      
-      channel = supabase
-        .channel(channelName)
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'tasks'
-          },
-          (payload) => {
-            console.log(`🎯 ${browser.isChrome ? 'Chrome' : 'Navegador'}: Nova tarefa detectada:`, payload.new);
-            setIsRealTimeConnected(true);
-            setLastUpdateTime(Date.now());
-            handleTaskInsert(payload.new);
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'tasks'
-          },
-          (payload) => {
-            console.log(`🎯 ${browser.isChrome ? 'Chrome' : 'Navegador'}: Tarefa atualizada:`, payload.new);
-            setIsRealTimeConnected(true);
-            setLastUpdateTime(Date.now());
-            handleTaskUpdate(payload.new);
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'DELETE',
-            schema: 'public',
-            table: 'tasks'
-          },
-          (payload) => {
-            console.log(`🎯 ${browser.isChrome ? 'Chrome' : 'Navegador'}: Tarefa excluída:`, payload.old);
-            setIsRealTimeConnected(true);
-            setLastUpdateTime(Date.now());
-            handleTaskDelete(payload.old);
-          }
-        )
-        .subscribe((status) => {
-          console.log(`�� ${browser.isChrome ? 'Chrome' : 'Navegador'}: Status real-time:`, status);
-          
-          if (status === 'SUBSCRIBED') {
-            console.log(`✅ ${browser.isChrome ? 'Chrome' : 'Navegador'}: Sistema real-time estável conectado!`);
-            setIsRealTimeConnected(true);
-            setConnectionAttempts(0);
-            setLastConnectionTime(Date.now());
-            
-            // Notificação menos intrusiva e específica por navegador
-            if (connectionAttempts > 1) {
-              toast({
-                title: `⚡ ${browser.isChrome ? 'Chrome' : 'Navegador'}: Reconectado`,
-                description: "Atualizações em tempo real reestabelecidas",
-                duration: browser.isChrome ? 1500 : 2000
-              });
-            }
-          } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-            console.warn(`🔒 ${browser.isChrome ? 'Chrome' : 'Navegador'}: Real-time desconectado:`, status);
-            setIsRealTimeConnected(false);
-            
-            // Só mostrar notificação se estava conectado antes
-            if (isRealTimeConnected) {
-              toast({
-                title: `🔄 ${browser.isChrome ? 'Chrome' : 'Navegador'}: Modo Offline`,
-                description: "Usando dados locais",
-                duration: browser.isChrome ? 1500 : 2000
-              });
-            }
-          }
-        });
+    // Delay para evitar múltiplas execuções
+    setupDebounceRef.current = setTimeout(() => {
+      try {
+        // 🎯 CORREÇÃO DEFINITIVA: Canal fixo sem timestamp para evitar múltiplas conexões
+        const channelName = `tasks_optimized_${currentUser.user_id}`;
         
-    } catch (error) {
-      console.error(`❌ ${browser.isChrome ? 'Chrome' : 'Navegador'}: Erro ao configurar real-time:`, error);
-      setIsRealTimeConnected(false);
-    }
-
-    // 🚫 DESABILITADO: Sistema híbrido removido para evitar piscar
-    // console.log(`🚫 ${browser.isChrome ? 'Chrome' : 'Navegador'}: Sistema híbrido DESABILITADO`);
+        console.log(`🔗 Conectando no canal: ${channelName}`);
+        
+        channel = supabase
+          .channel(channelName)
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'tasks'
+            },
+            (payload) => {
+              console.log(`🎯 ${browser.isChrome ? 'Chrome' : 'Navegador'}: Nova tarefa detectada:`, payload.new);
+              setIsRealTimeConnected(true);
+              setLastUpdateTime(Date.now());
+              handleTaskInsert(payload.new);
+            }
+          )
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'tasks'
+            },
+            (payload) => {
+              console.log(`🎯 ${browser.isChrome ? 'Chrome' : 'Navegador'}: Tarefa atualizada:`, payload.new);
+              setIsRealTimeConnected(true);
+              setLastUpdateTime(Date.now());
+              handleTaskUpdate(payload.new);
+            }
+          )
+          .on(
+            'postgres_changes',
+            {
+              event: 'DELETE',
+              schema: 'public',
+              table: 'tasks'
+            },
+            (payload) => {
+              console.log(`🎯 ${browser.isChrome ? 'Chrome' : 'Navegador'}: Tarefa excluída:`, payload.old);
+              setIsRealTimeConnected(true);
+              setLastUpdateTime(Date.now());
+              handleTaskDelete(payload.old);
+            }
+          )
+          .subscribe((status) => {
+            console.log(`🔗 Status real-time: ${status}`);
+            
+            if (status === 'SUBSCRIBED') {
+              console.log(`✅ Sistema real-time otimizado conectado!`);
+              setIsRealTimeConnected(true);
+              setConnectionAttempts(0);
+              setLastConnectionTime(Date.now());
+            } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+              console.warn(`🔒 Real-time desconectado: ${status}`);
+              setIsRealTimeConnected(false);
+            }
+          });
+          
+      } catch (error) {
+        console.error(`❌ Erro ao configurar real-time:`, error);
+        setIsRealTimeConnected(false);
+      }
+    }, 100); // Debounce de 100ms para evitar múltiplas execuções
 
     return () => {
-      console.log(`🧹 ${browser.isChrome ? 'Chrome' : 'Navegador'}: Limpando sistema real-time...`);
+      console.log(`🧹 Limpando sistema otimizado...`);
+      if (setupDebounceRef.current) {
+        clearTimeout(setupDebounceRef.current);
+      }
       if (channel) {
         supabase.removeChannel(channel);
       }
@@ -398,7 +367,7 @@ export const useTaskManager = () => {
       notificationDebounceRef.current.forEach(timeoutId => clearTimeout(timeoutId));
       notificationDebounceRef.current.clear();
     };
-  }, [currentUser]); // 🚫 REMOVIDO: connectionAttempts, lastConnectionTime, isRealTimeConnected - causavam loop infinito!
+  }, [currentUser]); // Apenas currentUser como dependência
 
   // 🚫 DESABILITADO: Fallback removido para evitar piscar das notificações
   // useEffect(() => {
