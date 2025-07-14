@@ -174,6 +174,12 @@ const TaskManager = () => {
     // 🔧 CORREÇÃO: Marcar que é um clique em stats card
     (window as any).isStatsCardClick = true;
     
+    // 🔧 CORREÇÃO: Desabilitar emergency handler por 2 segundos
+    (window as any).disableEmergencyHandler = true;
+    setTimeout(() => {
+      (window as any).disableEmergencyHandler = false;
+    }, 2000);
+    
     setSelectedStatus(status);
     // Limpar outros filtros avançados para focar apenas no status
     setSelectedUser('all');
@@ -183,10 +189,10 @@ const TaskManager = () => {
     // Log para debug
     console.log('✅ STATS CLICK: Filtro aplicado com sucesso');
     
-    // Limpar flag após um breve delay
+    // 🔧 CORREÇÃO: Limpar flag após 1 segundo
     setTimeout(() => {
       (window as any).isStatsCardClick = false;
-    }, 100);
+    }, 1000);
   };
 
   // Função para calcular altura dinâmica baseada na quantidade de tarefas
@@ -659,9 +665,15 @@ const TaskManager = () => {
         
         // 2. Adicionar listener global APENAS para casos extremos (não para cards de estatísticas)
         const emergencyClickHandler = (e) => {
+          // 🔧 CORREÇÃO: Verificar se emergency handler está desabilitado
+          if ((window as any).disableEmergencyHandler) {
+            console.log('�� EMERGENCY HANDLER: Desabilitado temporariamente');
+            return;
+          }
+          
           // 🔧 CORREÇÃO: Verificar se é um clique em stats card primeiro
           if ((window as any).isStatsCardClick) {
-            console.log('�� EMERGENCY HANDLER: Flag de stats card ativa - DESABILITANDO handler');
+            console.log('📊 EMERGENCY HANDLER: Flag de stats card ativa - DESABILITANDO handler');
             return; // Desabilita completamente o handler
           }
           
@@ -670,71 +682,59 @@ const TaskManager = () => {
                              e.target.closest('.stats-card') ||
                              (e.target.className && e.target.className.includes('stats-card'));
           
-          // 🔧 CORREÇÃO: Adicionar lógica para desabilitar o handler para cards de estatísticas
-          if (isStatsCard && (window as any).isStatsCardClick) {
-            console.log('📊 EMERGENCY HANDLER: Clique em card de estatísticas (stats-card) - desabilitando handler');
-            return; // Desabilita o handler para cards de estatísticas
+          if (isStatsCard) {
+            console.log('�� EMERGENCY HANDLER: Card de estatísticas detectado - DESABILITANDO handler');
+            return;
           }
           
-          // 🔧 CORREÇÃO: Verificar se é um elemento filho de card de estatísticas
-          const parentCard = e.target.closest('[data-stats-card]');
-          if (parentCard) {
-            console.log('📊 EMERGENCY HANDLER: Clique em elemento filho de card de estatísticas - DESABILITANDO handler');
-            return; // Desabilita completamente o handler
+          // 🔧 CORREÇÃO: Verificar se contém texto "Pendentes" ou "Concluídas"
+          const textContent = e.target.textContent;
+          if (textContent && (textContent.includes('Pendentes') || textContent.includes('Concluídas') || textContent.includes('Total'))) {
+            console.log('📊 EMERGENCY HANDLER: Texto de stats detectado - DESABILITANDO handler');
+            return;
           }
           
-          // 🔧 CORREÇÃO: Verificar se é um elemento de estatísticas pelo className
-          const classList = e.target.className || '';
-          const isStatsElement = classList.includes('text-3xl') && classList.includes('font-bold') && 
-                                (classList.includes('text-yellow-400') || classList.includes('text-green-400') || classList.includes('text-white'));
-          
-          if (isStatsElement) {
-            console.log('📊 EMERGENCY HANDLER: Elemento de estatísticas detectado - DESABILITANDO handler');
-            return; // Desabilita completamente o handler
+          // 🔧 CORREÇÃO: Verificar se é um elemento com classe relacionada a stats
+          const element = e.target;
+          if (element.className && (
+            element.className.includes('justify-between') ||
+            element.className.includes('bg-white') ||
+            element.className.includes('rounded-lg') ||
+            element.className.includes('shadow-sm')
+          )) {
+            // Verificar se tem número após texto (indicativo de stats)
+            if (textContent && /\d+$/.test(textContent)) {
+              console.log('📊 EMERGENCY HANDLER: Padrão de stats detectado - DESABILITANDO handler');
+              return;
+            }
           }
           
-          // 🔧 CORREÇÃO: Verificar se é um card content das estatísticas
-          const isCardContent = e.target.closest('.bg-slate-800\\/50') && 
-                               (e.target.textContent?.includes('Total') || 
-                                e.target.textContent?.includes('Pendentes') || 
-                                e.target.textContent?.includes('Concluídas') || 
-                                e.target.textContent?.includes('Performance'));
+          console.log('🚨 CLIQUE DE EMERGÊNCIA DETECTADO:', {
+            target: e.target.tagName,
+            className: e.target.className,
+            text: e.target.textContent?.substring(0, 50) || ''
+          });
           
-          if (isCardContent) {
-            console.log('📊 EMERGENCY HANDLER: Card content de estatísticas detectado - DESABILITANDO handler');
-            return; // Desabilita completamente o handler
-          }
+          // Se chegou até aqui, é um clique que precisa de tratamento de emergência
+          const taskCards = document.querySelectorAll('[data-task-id]');
           
-          // 🔧 CORREÇÃO: Verificar se o texto contém números das estatísticas
-          const textContent = e.target.textContent || '';
-          const hasStatsNumbers = /^\d+$/.test(textContent.trim()) && 
-                                 (textContent === '18' || textContent === '160' || textContent === '179' || parseInt(textContent) > 0);
-          
-          if (hasStatsNumbers) {
-            console.log('📊 EMERGENCY HANDLER: Número de estatísticas detectado - DESABILITANDO handler');
-            return; // Desabilita completamente o handler
-          }
-          
-          // 🔧 CORREÇÃO: Verificar se é um elemento com classes de estatísticas
-          const hasStatClasses = classList.includes('text-slate-400') || 
-                                 classList.includes('text-sm') || 
-                                 classList.includes('font-medium') ||
-                                 classList.includes('CardContent');
-          
-          if (hasStatClasses && (textContent.includes('Total') || textContent.includes('Pendentes') || textContent.includes('Concluídas'))) {
-            console.log('📊 EMERGENCY HANDLER: Elemento com classes de estatísticas detectado - DESABILITANDO handler');
-            return; // Desabilita completamente o handler
-          }
-          
-          // Apenas processar cliques em tarefas reais (com data-task-id)
-          const taskData = e.target.closest('[data-task-id]');
-          if (taskData && tasks.length > 0) {
-            console.log('🔧 EMERGENCY HANDLER: Clique em tarefa real detectado');
-            const taskId = taskData.getAttribute('data-task-id');
-            const task = tasks.find(t => t.id === taskId);
-            if (task) {
-              setSelectedTask(task);
-              setIsTaskDetailsOpen(true);
+          if (taskCards.length > 0) {
+            console.log('🖱️ CLIQUE NATIVO FUNCIONANDO - Card 1');
+            const firstCard = taskCards[0] as HTMLElement;
+            const taskId = firstCard.dataset.taskId;
+            
+            if (taskId) {
+              console.log('✅ Task ID encontrado:', taskId);
+              const task = tasks.find(t => t.id === taskId);
+              if (task) {
+                handleTaskClick(task);
+              }
+            } else {
+              console.log('⚠️ Task ID não encontrado, tentando fallback');
+              // Fallback apenas se não for um stats card
+              if (tasks.length > 0) {
+                handleTaskClick(tasks[0]);
+              }
             }
           }
         };
