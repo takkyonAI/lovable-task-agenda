@@ -169,6 +169,7 @@ const TaskManager = () => {
     e.stopPropagation(); // Prevenir event bubbling
     e.preventDefault(); // Prevenir ação padrão
     
+    // 🔧 CORREÇÃO ULTRA-ESPECÍFICA v2: Adicionada detecção específica para classes dos logs
     console.log('📊 STATS CLICK: Filtrando por status:', status);
     
     // 🔧 CORREÇÃO: Marcar que é um clique em stats card
@@ -677,6 +678,22 @@ const TaskManager = () => {
             return; // Desabilita completamente o handler
           }
           
+          // 🔧 CORREÇÃO ULTRA-ESPECÍFICA: Verificar texto específico que aparece nos logs
+          const textContent = e.target.textContent || '';
+          if (textContent.includes('Pendentes') || textContent.includes('Concluídas') || textContent.includes('Total')) {
+            console.log('📊 EMERGENCY HANDLER: Texto específico de stats detectado - DESABILITANDO handler');
+            console.log('📊 TEXTO DETECTADO:', textContent);
+            return;
+          }
+          
+          // 🔧 CORREÇÃO ULTRA-ESPECÍFICA: Verificar classe específica que aparece nos logs
+          const targetClasses = e.target.className || '';
+          if (targetClasses.includes('flex items-center justify-between')) {
+            console.log('📊 EMERGENCY HANDLER: Classe específica de stats detectada - DESABILITANDO handler');
+            console.log('📊 CLASSES DETECTADAS:', targetClasses);
+            return;
+          }
+          
           // 🔧 CORREÇÃO ULTRA-ROBUSTA: Verificar se é um elemento dentro de um card de estatísticas
           const statsCardParent = e.target.closest('[data-stats-card]');
           if (statsCardParent) {
@@ -706,8 +723,7 @@ const TaskManager = () => {
             return;
           }
           
-          // 🔧 CORREÇÃO: Verificar se contém texto "Pendentes" ou "Concluídas"
-          const textContent = e.target.textContent;
+          // 🔧 CORREÇÃO: Verificar se contém texto "Pendentes" ou "Concluídas" (redundante mas necessário)
           if (textContent && (textContent.includes('Pendentes') || textContent.includes('Concluídas') || textContent.includes('Total') || textContent.includes('Performance'))) {
             console.log('📊 EMERGENCY HANDLER: Texto de stats detectado - DESABILITANDO handler');
             return;
@@ -729,6 +745,19 @@ const TaskManager = () => {
               console.log('📊 EMERGENCY HANDLER: Elemento filho de stats card detectado - DESABILITANDO handler');
               return;
             }
+          }
+          
+          // 🔧 CORREÇÃO ULTRA-ESPECÍFICA: Verificar se é um card de estatísticas pelo padrão completo
+          const isStatsCardPattern = (
+            targetClasses.includes('bg-slate-800/50') ||
+            targetClasses.includes('cursor-pointer') ||
+            element.closest('.bg-slate-800\\/50') ||
+            element.closest('[data-stats-card]')
+          );
+          
+          if (isStatsCardPattern) {
+            console.log('📊 EMERGENCY HANDLER: Padrão completo de stats card detectado - DESABILITANDO handler');
+            return;
           }
           
           console.log('🚨 CLIQUE DE EMERGÊNCIA DETECTADO:', {
