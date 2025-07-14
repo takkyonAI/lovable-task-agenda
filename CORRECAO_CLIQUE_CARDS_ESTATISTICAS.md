@@ -99,10 +99,11 @@ console.log('📊 EMERGENCY HANDLER: Padrão de stats detectado');
 ## 🚀 **Deploy Informações**
 
 ### **Build Atual**
-- **Arquivo**: `index-BJB-WEC0.js`
+- **Arquivo**: `index-C-cbI1lT.js`
 - **Status**: ✅ **Deployado com sucesso**
 - **URL**: https://tarefas.rockfellernavegantes.com.br
-- **Data**: 14 de Janeiro de 2025, 17:16:35
+- **Data**: 14 de Janeiro de 2025, 17:20:32
+- **Commit**: f381a40 (GitHub Pages atualizado)
 
 ### **Aguardar Propagação**
 ⏰ **Aguarde 2-3 minutos** para propagação completa do GitHub Pages antes de testar.
