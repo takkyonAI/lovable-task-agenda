@@ -170,7 +170,7 @@ const TaskManager = () => {
     e.preventDefault(); // Prevenir ação padrão
     
     // 🔧 CORREÇÃO ULTRA-ESPECÍFICA v2: Adicionada detecção específica para classes dos logs
-    console.log('📊 STATS CLICK: Filtrando por status:', status);
+    console.log('📊 STATS CLICK: Filtrando por status:', status, '- Timestamp:', new Date().toISOString());
     
     // 🔧 CORREÇÃO: Marcar que é um clique em stats card
     (window as any).isStatsCardClick = true;
