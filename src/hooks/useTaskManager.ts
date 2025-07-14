@@ -50,87 +50,33 @@ export const useTaskManager = () => {
     return { isFirefox, isChrome, isSafari, isEdge };
   };
 
-  // 🔄 SISTEMA HÍBRIDO: Combina real-time com polling inteligente
+  // 🔄 SISTEMA HÍBRIDO: DESABILITADO - Causava piscar das notificações
   const setupHybridSystem = useCallback(() => {
     const browser = detectBrowser();
     
-    // 🌐 CHROME: Sistema híbrido mais robusto
-    if (browser.isChrome) {
-      console.log('🌐 CHROME: Configurando sistema híbrido real-time + polling');
-      
-      // Polling de backup a cada 3 minutos para Chrome
-      const chromeBackupInterval = setInterval(() => {
-        if (!document.hidden) {
-          console.log('🔄 CHROME: Backup polling executado');
-          loadTasks();
-        }
-      }, 180000); // 3 minutos
-      
-      // Monitorar qualidade da conexão real-time
-      const connectionQualityMonitor = setInterval(() => {
-        const timeSinceLastUpdate = Date.now() - lastUpdateTime;
-        
-        if (timeSinceLastUpdate > 300000 && isRealTimeConnected) { // 5 minutos sem updates
-          console.log('🚨 CHROME: Conexão real-time pode estar instável, forçando refresh');
-          setIsRealTimeConnected(false);
-          loadTasks();
-        }
-      }, 60000); // Verificar a cada 1 minuto
-      
-      return () => {
-        clearInterval(chromeBackupInterval);
-        clearInterval(connectionQualityMonitor);
-      };
-    }
+    // 🚫 DESABILITADO: Sistema híbrido removido para evitar piscar
+    console.log(`🚫 ${browser.isChrome ? 'Chrome' : 'Navegador'}: Sistema híbrido DESABILITADO - apenas real-time`);
     
-    // 🦊 FIREFOX: Sistema de polling otimizado
-    if (browser.isFirefox) {
-      console.log('🦊 FIREFOX: Sistema de polling otimizado');
-      return () => {}; // Já tratado pelo emergency-fix.js
-    }
-    
-    // 🍎 SAFARI: Sistema padrão com timeouts maiores
-    if (browser.isSafari) {
-      console.log('🍎 SAFARI: Sistema padrão com timeouts maiores');
-      return () => {};
-    }
-    
+    // Retornar função vazia - sem polling, sem backup, sem monitoramento
     return () => {};
-  }, [lastUpdateTime, isRealTimeConnected]);
+  }, []);
 
-  // 🔄 OTIMIZAÇÃO: Sistema de fallback inteligente com detecção de navegador
+  // 🔄 OTIMIZAÇÃO: Sistema de fallback DESABILITADO - Causava piscar
   const setupIntelligentFallback = useCallback(() => {
     const browser = detectBrowser();
     
+    // 🚫 DESABILITADO: Fallback removido para evitar piscar das notificações
+    console.log(`🚫 ${browser.isChrome ? 'Chrome' : 'Navegador'}: Fallback DESABILITADO - apenas real-time`);
+    
+    // Limpar qualquer timeout existente
     if (fallbackRefreshRef.current) {
       clearTimeout(fallbackRefreshRef.current);
+      fallbackRefreshRef.current = null;
     }
     
-    // Configurações específicas por navegador
-    let fallbackInterval = 600000; // 10 minutos padrão
-    let minDisconnectedTime = 60000; // 1 minuto padrão
-    
-    if (browser.isChrome) {
-      fallbackInterval = 300000; // 5 minutos para Chrome (mais frequente)
-      minDisconnectedTime = 30000; // 30 segundos para Chrome
-    } else if (browser.isSafari) {
-      fallbackInterval = 900000; // 15 minutos para Safari (menos frequente)
-      minDisconnectedTime = 120000; // 2 minutos para Safari
-    }
-    
-    // Só configurar fallback se real-time estiver desconectado por tempo suficiente
-    if (!isRealTimeConnected && (Date.now() - lastConnectionTime) > minDisconnectedTime) {
-      console.log(`🔄 Configurando fallback para ${browser.isChrome ? 'Chrome' : browser.isSafari ? 'Safari' : 'navegador'}: ${fallbackInterval/1000}s`);
-      
-      fallbackRefreshRef.current = setTimeout(() => {
-        console.log(`🔄 Fallback ${browser.isChrome ? 'Chrome' : browser.isSafari ? 'Safari' : 'padrão'} executado`);
-        if (!isRealTimeConnected) {
-          loadTasks();
-        }
-        setupIntelligentFallback(); // Reagenda
-      }, fallbackInterval);
-    }
-  }, [isRealTimeConnected, lastConnectionTime]);
+    // Não configurar nenhum fallback
+    return;
+  }, []);
 
   // 🎯 OTIMIZAÇÃO: Função para formatar tarefa do banco para o tipo Task
   const formatTaskFromDB = useCallback((taskData: any): Task => {
@@ -391,7 +337,7 @@ export const useTaskManager = () => {
           }
         )
         .subscribe((status) => {
-          console.log(`🔗 ${browser.isChrome ? 'Chrome' : 'Navegador'}: Status real-time:`, status);
+          console.log(`�� ${browser.isChrome ? 'Chrome' : 'Navegador'}: Status real-time:`, status);
           
           if (status === 'SUBSCRIBED') {
             console.log(`✅ ${browser.isChrome ? 'Chrome' : 'Navegador'}: Sistema real-time estável conectado!`);
@@ -427,8 +373,8 @@ export const useTaskManager = () => {
       setIsRealTimeConnected(false);
     }
 
-    // Configurar sistema híbrido
-    const hybridCleanup = setupHybridSystem();
+    // 🚫 DESABILITADO: Sistema híbrido removido para evitar piscar
+    console.log(`🚫 ${browser.isChrome ? 'Chrome' : 'Navegador'}: Sistema híbrido DESABILITADO`);
 
     return () => {
       console.log(`🧹 ${browser.isChrome ? 'Chrome' : 'Navegador'}: Limpando sistema real-time...`);
@@ -442,19 +388,16 @@ export const useTaskManager = () => {
         clearTimeout(reconnectTimeoutRef.current);
       }
       
-      // Limpar sistema híbrido
-      hybridCleanup();
-      
       // Limpar debounce de notificações
       notificationDebounceRef.current.forEach(timeoutId => clearTimeout(timeoutId));
       notificationDebounceRef.current.clear();
     };
   }, [currentUser, connectionAttempts, lastConnectionTime, isRealTimeConnected, setupHybridSystem]);
 
-  // Configurar fallback inteligente
-  useEffect(() => {
-    setupIntelligentFallback();
-  }, [setupIntelligentFallback]);
+  // 🚫 DESABILITADO: Fallback removido para evitar piscar das notificações
+  // useEffect(() => {
+  //   setupIntelligentFallback();
+  // }, [setupIntelligentFallback]);
 
   useEffect(() => {
     filterTasks();
