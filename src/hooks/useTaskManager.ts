@@ -39,24 +39,96 @@ export const useTaskManager = () => {
     const isSafari = userAgent.includes('safari') && !userAgent.includes('chrome');
     const isEdge = userAgent.includes('edge');
     
+    console.log('🔍 DETECÇÃO DE NAVEGADOR:', {
+      userAgent,
+      isFirefox,
+      isChrome,
+      isSafari,
+      isEdge
+    });
+    
     return { isFirefox, isChrome, isSafari, isEdge };
   };
 
-  // 🔄 OTIMIZAÇÃO: Sistema de fallback inteligente (menos agressivo)
+  // 🔄 SISTEMA HÍBRIDO: Combina real-time com polling inteligente
+  const setupHybridSystem = useCallback(() => {
+    const browser = detectBrowser();
+    
+    // 🌐 CHROME: Sistema híbrido mais robusto
+    if (browser.isChrome) {
+      console.log('🌐 CHROME: Configurando sistema híbrido real-time + polling');
+      
+      // Polling de backup a cada 3 minutos para Chrome
+      const chromeBackupInterval = setInterval(() => {
+        if (!document.hidden) {
+          console.log('🔄 CHROME: Backup polling executado');
+          loadTasks();
+        }
+      }, 180000); // 3 minutos
+      
+      // Monitorar qualidade da conexão real-time
+      const connectionQualityMonitor = setInterval(() => {
+        const timeSinceLastUpdate = Date.now() - lastUpdateTime;
+        
+        if (timeSinceLastUpdate > 300000 && isRealTimeConnected) { // 5 minutos sem updates
+          console.log('🚨 CHROME: Conexão real-time pode estar instável, forçando refresh');
+          setIsRealTimeConnected(false);
+          loadTasks();
+        }
+      }, 60000); // Verificar a cada 1 minuto
+      
+      return () => {
+        clearInterval(chromeBackupInterval);
+        clearInterval(connectionQualityMonitor);
+      };
+    }
+    
+    // 🦊 FIREFOX: Sistema de polling otimizado
+    if (browser.isFirefox) {
+      console.log('🦊 FIREFOX: Sistema de polling otimizado');
+      return () => {}; // Já tratado pelo emergency-fix.js
+    }
+    
+    // 🍎 SAFARI: Sistema padrão com timeouts maiores
+    if (browser.isSafari) {
+      console.log('🍎 SAFARI: Sistema padrão com timeouts maiores');
+      return () => {};
+    }
+    
+    return () => {};
+  }, [lastUpdateTime, isRealTimeConnected]);
+
+  // 🔄 OTIMIZAÇÃO: Sistema de fallback inteligente com detecção de navegador
   const setupIntelligentFallback = useCallback(() => {
+    const browser = detectBrowser();
+    
     if (fallbackRefreshRef.current) {
       clearTimeout(fallbackRefreshRef.current);
     }
     
-    // Só configurar fallback se real-time estiver desconectado por mais de 1 minuto
-    if (!isRealTimeConnected && (Date.now() - lastConnectionTime) > 60000) {
+    // Configurações específicas por navegador
+    let fallbackInterval = 600000; // 10 minutos padrão
+    let minDisconnectedTime = 60000; // 1 minuto padrão
+    
+    if (browser.isChrome) {
+      fallbackInterval = 300000; // 5 minutos para Chrome (mais frequente)
+      minDisconnectedTime = 30000; // 30 segundos para Chrome
+    } else if (browser.isSafari) {
+      fallbackInterval = 900000; // 15 minutos para Safari (menos frequente)
+      minDisconnectedTime = 120000; // 2 minutos para Safari
+    }
+    
+    // Só configurar fallback se real-time estiver desconectado por tempo suficiente
+    if (!isRealTimeConnected && (Date.now() - lastConnectionTime) > minDisconnectedTime) {
+      console.log(`🔄 Configurando fallback para ${browser.isChrome ? 'Chrome' : browser.isSafari ? 'Safari' : 'navegador'}: ${fallbackInterval/1000}s`);
+      
       fallbackRefreshRef.current = setTimeout(() => {
-        console.log('🔄 Fallback inteligente (10 minutos)...');
+        console.log(`🔄 Fallback ${browser.isChrome ? 'Chrome' : browser.isSafari ? 'Safari' : 'padrão'} executado`);
         if (!isRealTimeConnected) {
           loadTasks();
         }
-        setupIntelligentFallback(); // Reagenda para 10 minutos
-      }, 600000); // 10 minutos - muito menos agressivo
+        setupIntelligentFallback(); // Reagenda
+      }, fallbackInterval);
     }
   }, [isRealTimeConnected, lastConnectionTime]);
 
@@ -86,10 +158,11 @@ export const useTaskManager = () => {
     };
   }, []);
 
-  // 🔔 OTIMIZAÇÃO: Função para mostrar notificação com debounce (evita spam)
+  // 🔔 OTIMIZAÇÃO: Função para mostrar notificação com debounce e filtro por navegador
   const showTaskChangeNotificationDebounced = useCallback((task: Task, eventType: 'INSERT' | 'UPDATE' | 'DELETE', isOwnAction: boolean = false) => {
     if (isOwnAction || !currentUser) return;
     
+    const browser = detectBrowser();
     const notificationKey = `${task.id}-${eventType}`;
     
     // Cancelar notificação anterior se existir
@@ -97,38 +170,50 @@ export const useTaskManager = () => {
       clearTimeout(notificationDebounceRef.current.get(notificationKey)!);
     }
     
-    // Agendar nova notificação com debounce de 2 segundos
+    // Configurar debounce específico por navegador
+    let debounceTime = 2000; // Padrão
+    let duration = 2000; // Padrão
+    
+    if (browser.isChrome) {
+      debounceTime = 1000; // Chrome: debounce mais rápido
+      duration = 1500; // Chrome: notificação mais rápida
+    } else if (browser.isSafari) {
+      debounceTime = 3000; // Safari: debounce mais lento
+      duration = 2500; // Safari: notificação mais longa
+    }
+    
+    // Agendar nova notificação com debounce
     const timeoutId = setTimeout(() => {
       const creatorName = task.created_by || 'Usuário';
       
       switch (eventType) {
         case 'INSERT':
           toast({
-            title: "📋 Nova Tarefa!",
+            title: `📋 Nova Tarefa! ${browser.isChrome ? '(Chrome)' : ''}`,
             description: `"${task.title}" foi criada`,
-            duration: 2000 // Reduzido para 2 segundos
+            duration: duration
           });
           setNewTasksCount(prev => prev + 1);
-          setTimeout(() => setNewTasksCount(prev => Math.max(0, prev - 1)), 5000); // Reduzido para 5 segundos
+          setTimeout(() => setNewTasksCount(prev => Math.max(0, prev - 1)), duration + 2000);
           break;
         case 'UPDATE':
           toast({
-            title: "✏️ Tarefa Atualizada",
+            title: `✏️ Tarefa Atualizada ${browser.isChrome ? '(Chrome)' : ''}`,
             description: `"${task.title}" foi modificada`,
-            duration: 1500 // Reduzido para 1.5 segundos
+            duration: Math.floor(duration * 0.75)
           });
           break;
         case 'DELETE':
           toast({
-            title: "🗑️ Tarefa Removida",
+            title: `🗑️ Tarefa Removida ${browser.isChrome ? '(Chrome)' : ''}`,
             description: `"${task.title}" foi excluída`,
-            duration: 1500 // Reduzido para 1.5 segundos
+            duration: Math.floor(duration * 0.75)
           });
           break;
       }
       
       notificationDebounceRef.current.delete(notificationKey);
-    }, 2000);
+    }, debounceTime);
     
     notificationDebounceRef.current.set(notificationKey, timeoutId);
   }, [currentUser, toast]);
@@ -193,7 +278,7 @@ export const useTaskManager = () => {
     showTaskChangeNotificationDebounced(deletedTask, 'DELETE', false);
   }, [formatTaskFromDB, showTaskChangeNotificationDebounced]);
 
-  // 🔄 SISTEMA DE REAL-TIME OTIMIZADO COM CONTROLE DE RECONEXÃO
+  // 🔄 SISTEMA DE REAL-TIME OTIMIZADO COM CONTROLE DE RECONEXÃO E NAVEGADOR
   useEffect(() => {
     loadTasks();
     
@@ -219,9 +304,10 @@ export const useTaskManager = () => {
     }
     
     // 🚀 OUTROS NAVEGADORES: Sistema real-time otimizado com controle de reconexão
+    const browser = detectBrowser();
     let channel: any = null;
     
-    console.log('🔄 Configurando sistema real-time otimizado (anti-piscar)...');
+    console.log(`🔄 Configurando sistema real-time para ${browser.isChrome ? 'Chrome' : browser.isSafari ? 'Safari' : 'navegador'}`);
     
     // Wait for auth before setting up real-time
     if (!currentUser) {
@@ -229,14 +315,26 @@ export const useTaskManager = () => {
       return;
     }
     
+    // Configurações específicas por navegador para reconexão
+    let maxAttempts = 3;
+    let reconnectDelay = 30000;
+    
+    if (browser.isChrome) {
+      maxAttempts = 5; // Chrome: mais tentativas
+      reconnectDelay = 15000; // Chrome: delay menor
+    } else if (browser.isSafari) {
+      maxAttempts = 2; // Safari: menos tentativas
+      reconnectDelay = 45000; // Safari: delay maior
+    }
+    
     // Evitar reconexões muito frequentes
     const now = Date.now();
-    if (connectionAttempts > 3 && (now - lastConnectionTime) < 30000) {
-      console.log('🚫 Muitas tentativas de reconexão, aguardando 30 segundos...');
+    if (connectionAttempts > maxAttempts && (now - lastConnectionTime) < reconnectDelay) {
+      console.log(`🚫 ${browser.isChrome ? 'Chrome' : browser.isSafari ? 'Safari' : 'Navegador'}: Muitas tentativas de reconexão, aguardando ${reconnectDelay/1000}s...`);
       
       reconnectTimeoutRef.current = setTimeout(() => {
         setConnectionAttempts(0);
-      }, 30000);
+      }, reconnectDelay);
       
       return;
     }
@@ -245,8 +343,11 @@ export const useTaskManager = () => {
       setConnectionAttempts(prev => prev + 1);
       setLastConnectionTime(now);
       
+      // Nome do canal específico por navegador
+      const channelName = `tasks_${browser.isChrome ? 'chrome' : browser.isSafari ? 'safari' : 'other'}_${currentUser.user_id}_${now}`;
+      
       channel = supabase
-        .channel(`tasks_stable_${currentUser.user_id}_${now}`)
+        .channel(channelName)
         .on(
           'postgres_changes',
           {
@@ -255,7 +356,7 @@ export const useTaskManager = () => {
             table: 'tasks'
           },
           (payload) => {
-            console.log('🎯 Nova tarefa detectada:', payload.new);
+            console.log(`🎯 ${browser.isChrome ? 'Chrome' : 'Navegador'}: Nova tarefa detectada:`, payload.new);
             setIsRealTimeConnected(true);
             setLastUpdateTime(Date.now());
             handleTaskInsert(payload.new);
@@ -269,7 +370,7 @@ export const useTaskManager = () => {
             table: 'tasks'
           },
           (payload) => {
-            console.log('🎯 Tarefa atualizada:', payload.new);
+            console.log(`🎯 ${browser.isChrome ? 'Chrome' : 'Navegador'}: Tarefa atualizada:`, payload.new);
             setIsRealTimeConnected(true);
             setLastUpdateTime(Date.now());
             handleTaskUpdate(payload.new);
@@ -283,51 +384,54 @@ export const useTaskManager = () => {
             table: 'tasks'
           },
           (payload) => {
-            console.log('🎯 Tarefa excluída:', payload.old);
+            console.log(`🎯 ${browser.isChrome ? 'Chrome' : 'Navegador'}: Tarefa excluída:`, payload.old);
             setIsRealTimeConnected(true);
             setLastUpdateTime(Date.now());
             handleTaskDelete(payload.old);
           }
         )
         .subscribe((status) => {
-          console.log('🔗 Status real-time:', status);
+          console.log(`🔗 ${browser.isChrome ? 'Chrome' : 'Navegador'}: Status real-time:`, status);
           
           if (status === 'SUBSCRIBED') {
-            console.log('✅ Sistema real-time estável conectado!');
+            console.log(`✅ ${browser.isChrome ? 'Chrome' : 'Navegador'}: Sistema real-time estável conectado!`);
             setIsRealTimeConnected(true);
             setConnectionAttempts(0);
             setLastConnectionTime(Date.now());
             
-            // Notificação menos intrusiva
+            // Notificação menos intrusiva e específica por navegador
             if (connectionAttempts > 1) {
               toast({
-                title: "⚡ Reconectado",
+                title: `⚡ ${browser.isChrome ? 'Chrome' : 'Navegador'}: Reconectado`,
                 description: "Atualizações em tempo real reestabelecidas",
-                duration: 2000
+                duration: browser.isChrome ? 1500 : 2000
               });
             }
           } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-            console.warn('🔒 Real-time desconectado:', status);
+            console.warn(`🔒 ${browser.isChrome ? 'Chrome' : 'Navegador'}: Real-time desconectado:`, status);
             setIsRealTimeConnected(false);
             
             // Só mostrar notificação se estava conectado antes
             if (isRealTimeConnected) {
               toast({
-                title: "🔄 Modo Offline",
+                title: `🔄 ${browser.isChrome ? 'Chrome' : 'Navegador'}: Modo Offline`,
                 description: "Usando dados locais",
-                duration: 2000
+                duration: browser.isChrome ? 1500 : 2000
               });
             }
           }
         });
         
     } catch (error) {
-      console.error('❌ Erro ao configurar real-time:', error);
+      console.error(`❌ ${browser.isChrome ? 'Chrome' : 'Navegador'}: Erro ao configurar real-time:`, error);
       setIsRealTimeConnected(false);
     }
 
+    // Configurar sistema híbrido
+    const hybridCleanup = setupHybridSystem();
+
     return () => {
-      console.log('🧹 Limpando sistema real-time...');
+      console.log(`🧹 ${browser.isChrome ? 'Chrome' : 'Navegador'}: Limpando sistema real-time...`);
       if (channel) {
         supabase.removeChannel(channel);
       }
@@ -338,11 +442,14 @@ export const useTaskManager = () => {
         clearTimeout(reconnectTimeoutRef.current);
       }
       
+      // Limpar sistema híbrido
+      hybridCleanup();
+      
       // Limpar debounce de notificações
       notificationDebounceRef.current.forEach(timeoutId => clearTimeout(timeoutId));
       notificationDebounceRef.current.clear();
     };
-  }, [currentUser, connectionAttempts, lastConnectionTime, isRealTimeConnected]);
+  }, [currentUser, connectionAttempts, lastConnectionTime, isRealTimeConnected, setupHybridSystem]);
 
   // Configurar fallback inteligente
   useEffect(() => {
