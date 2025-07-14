@@ -1179,7 +1179,7 @@ const TaskManager = () => {
           <Card 
             className="bg-slate-800/50 border-slate-700/50 cursor-pointer hover:bg-slate-800/70 transition-colors"
             onClick={(e) => handleStatsClick(e, 'all')}
-            data-stats-card
+            data-stats-card="true"
           >
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -1197,7 +1197,7 @@ const TaskManager = () => {
           <Card 
             className="bg-slate-800/50 border-slate-700/50 cursor-pointer hover:bg-slate-800/70 transition-colors"
             onClick={(e) => handleStatsClick(e, 'pendente')}
-            data-stats-card
+            data-stats-card="true"
           >
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -1215,7 +1215,7 @@ const TaskManager = () => {
           <Card 
             className="bg-slate-800/50 border-slate-700/50 cursor-pointer hover:bg-slate-800/70 transition-colors"
             onClick={(e) => handleStatsClick(e, 'concluida')}
-            data-stats-card
+            data-stats-card="true"
           >
             <CardContent className="p-6">
               <div className="flex items-center justify-between">

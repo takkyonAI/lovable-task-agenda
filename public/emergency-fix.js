@@ -141,51 +141,52 @@
       console.log('🖱️ EMERGÊNCIA: Clique detectado:', event.target.tagName, event.target.className);
       
       // 🔧 CORREÇÃO: Verificar se é um clique em card de estatísticas
-      const isStatsCardClick = (
-        // Verificar se emergency handler está desabilitado
-        window.disableEmergencyHandler === true ||
-        // Verificar se é um clique em stats card
-        window.isStatsCardClick === true ||
-        // Verificar se é um elemento dentro de um card de estatísticas
-        event.target.closest('[data-stats-card]') ||
-        // Verificar por texto específico
-        (event.target.textContent && event.target.textContent.match(/(Total|Pendentes|Concluídas|Performance)/)) ||
-        // Verificar por classes específicas de números de estatísticas
-        (event.target.className && event.target.className.includes('text-3xl') && event.target.className.includes('font-bold')) ||
-        // Verificar se é um número isolado (provável indicador de stats)
-        (event.target.textContent && /^\d+$/.test(event.target.textContent.trim()) && parseInt(event.target.textContent.trim()) > 0) ||
-        // Verificar se é um elemento dentro de um card de estatísticas por hierarquia
-        (event.target.closest('.bg-slate-800\\/50') && event.target.closest('.bg-slate-800\\/50').textContent?.match(/(Total|Pendentes|Concluídas|Performance)/))
-      );
-      
+      let isStatsCardClick = false;
+      try {
+        // Heurística ultra robusta: data-stats-card, data-stats-safe, data-emergency-safe, classe, texto
+        const el = event.target;
+        if (
+          el.closest && (
+            el.closest('[data-stats-card="true"]') ||
+            el.closest('[data-stats-safe="true"]') ||
+            el.closest('[data-emergency-safe="true"]') ||
+            (typeof el.className === 'string' && (
+              el.className.includes('stats') || el.className.includes('card')
+            ))
+          )
+        ) {
+          isStatsCardClick = true;
+        }
+      } catch (err) {
+        console.error('EMERGENCY-FIX: Erro ao detectar stats card:', err);
+      }
       if (isStatsCardClick) {
         console.log('📊 EMERGÊNCIA: Clique em stats card detectado - IGNORANDO PROCESSAMENTO DE EMERGÊNCIA');
-        // NÃO fazer return aqui - permitir que o evento continue para o React
-        // Apenas não processar a lógica de emergência
-      } else {
-        // Verificar se é um botão
-        if (event.target.tagName === 'BUTTON' || event.target.closest('button')) {
-          console.log('🔧 EMERGÊNCIA: Botão clicado, verificando funcionalidade');
-          
-          // Para Firefox, adicionar delay extra
-          if (browser.isFirefox) {
-            setTimeout(() => {
-              console.log('🦊 FIREFOX: Processando clique com delay');
-            }, 100);
-          }
-        }
+        return; // Não processa emergência, deixa o React agir
+      }
+      
+      // Verificar se é um botão
+      if (event.target.tagName === 'BUTTON' || event.target.closest('button')) {
+        console.log('🔧 EMERGÊNCIA: Botão clicado, verificando funcionalidade');
         
-        // Verificar se clique em tarefa
-        const taskCard = event.target.closest('[data-task-id]');
-        if (taskCard) {
-          const taskId = taskCard.getAttribute('data-task-id');
-          console.log('📋 EMERGÊNCIA: Clique em tarefa detectado:', taskId);
-          
-          // Tentar encontrar handler React
-          const reactHandler = taskCard.onclick || taskCard._reactInternalFiber;
-          if (reactHandler) {
-            console.log('⚛️ EMERGÊNCIA: Handler React encontrado, executando');
-          }
+        // Para Firefox, adicionar delay extra
+        if (browser.isFirefox) {
+          setTimeout(() => {
+            console.log('🦊 FIREFOX: Processando clique com delay');
+          }, 100);
+        }
+      }
+      
+      // Verificar se clique em tarefa
+      const taskCard = event.target.closest('[data-task-id]');
+      if (taskCard) {
+        const taskId = taskCard.getAttribute('data-task-id');
+        console.log('📋 EMERGÊNCIA: Clique em tarefa detectado:', taskId);
+        
+        // Tentar encontrar handler React
+        const reactHandler = taskCard.onclick || taskCard._reactInternalFiber;
+        if (reactHandler) {
+          console.log('⚛️ EMERGÊNCIA: Handler React encontrado, executando');
         }
       }
     }, true); // Use capture phase
