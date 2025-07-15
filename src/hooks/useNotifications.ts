@@ -21,6 +21,9 @@ export const useNotifications = () => {
   const { currentUser } = useSupabaseAuth();
   const { toast } = useToast();
 
+  // 🚫 NOTIFICAÇÕES DESATIVADAS - Sistema desabilitado conforme solicitado
+  // para resolver problema de piscar na tela
+
   // Verificar suporte a notificações
   useEffect(() => {
     if ('Notification' in window) {
@@ -40,63 +43,16 @@ export const useNotifications = () => {
     return result === 'granted';
   };
 
-  // Enviar notificação nativa
+  // Enviar notificação nativa - DESATIVADO
   const sendNativeNotification = (title: string, options?: NotificationOptions) => {
-    if (!isSupported || permission !== 'granted') return;
-
-    const notification = new Notification(title, {
-      icon: '/rockfeller-favicon.png',
-      badge: '/rockfeller-favicon.png',
-      ...options
-    });
-
-    // Auto fechar após 5 segundos
-    setTimeout(() => notification.close(), 5000);
-
-    return notification;
+    // 🚫 DESATIVADO - Não enviar notificações nativas
+    return null;
   };
 
-  // Adicionar notificação à lista
+  // Adicionar notificação à lista - DESATIVADO
   const addNotification = (notification: Omit<NotificationData, 'id' | 'timestamp' | 'read'>) => {
-    const newNotification: NotificationData = {
-      ...notification,
-      id: Math.random().toString(36).substr(2, 9),
-      timestamp: new Date(),
-      read: false
-    };
-
-    setNotifications(prev => [newNotification, ...prev]);
-
-    // Enviar notificação nativa
-    sendNativeNotification(notification.title, {
-      body: notification.message,
-      tag: notification.type,
-      requireInteraction: true
-    });
-
-    // Mostrar toast com variante baseada no tipo
-    const getToastVariant = (type: string) => {
-      switch (type) {
-        case 'task_assigned':
-          return 'info';
-        case 'task_overdue':
-          return 'destructive';
-        case 'task_pending':
-          return 'warning';
-        default:
-          return 'default';
-      }
-    };
-
-    // Mostrar toast também com design melhorado
-    toast({
-      title: notification.title,
-      description: notification.message,
-      duration: 6000,
-      variant: getToastVariant(notification.type) as any
-    });
-
-    return newNotification.id;
+    // 🚫 DESATIVADO - Não adicionar notificações
+    return '';
   };
 
   // Marcar notificação como lida
@@ -127,156 +83,26 @@ export const useNotifications = () => {
     setNotifications([]);
   };
 
-  // Verificar tarefas vencidas
+  // Verificar tarefas vencidas - DESATIVADO
   const checkOverdueTasks = async () => {
-    if (!currentUser) return;
-
-    try {
-      const now = new Date().toISOString();
-      
-      const { data: overdueTasks, error } = await supabase
-        .from('tasks')
-        .select('*')
-        .contains('assigned_users', [currentUser.user_id])
-        .lt('due_date', now)
-        .neq('status', 'concluida')
-        .neq('status', 'cancelada');
-
-      if (error) {
-        console.error('Erro ao verificar tarefas vencidas:', error);
-        return;
-      }
-
-      overdueTasks?.forEach(task => {
-        const dueDateObj = new Date(task.due_date);
-        const daysOverdue = Math.floor((Date.now() - dueDateObj.getTime()) / (1000 * 60 * 60 * 24));
-        
-        addNotification({
-          title: 'Tarefa Vencida!',
-          message: `"${task.title}" venceu há ${daysOverdue} dia(s)`,
-          type: 'task_overdue',
-          taskId: task.id
-        });
-      });
-    } catch (error) {
-      console.error('Erro ao verificar tarefas vencidas:', error);
-    }
+    // 🚫 DESATIVADO - Não verificar tarefas vencidas
+    return;
   };
 
-  // Verificar tarefas próximas do vencimento
+  // Verificar tarefas próximas do vencimento - DESATIVADO
   const checkPendingTasks = async () => {
-    if (!currentUser) return;
-
-    try {
-      const now = new Date();
-      const fourHoursFromNow = new Date(now.getTime() + 4 * 60 * 60 * 1000);
-      
-      const { data: pendingTasks, error } = await supabase
-        .from('tasks')
-        .select('*')
-        .contains('assigned_users', [currentUser.user_id])
-        .gt('due_date', now.toISOString())
-        .lt('due_date', fourHoursFromNow.toISOString())
-        .neq('status', 'concluida')
-        .neq('status', 'cancelada');
-
-      if (error) {
-        console.error('Erro ao verificar tarefas próximas do vencimento:', error);
-        return;
-      }
-
-      pendingTasks?.forEach(task => {
-        const dueDateObj = new Date(task.due_date);
-        const hoursUntilDue = Math.floor((dueDateObj.getTime() - Date.now()) / (1000 * 60 * 60));
-        
-        addNotification({
-          title: 'Tarefa Próxima do Vencimento',
-          message: `"${task.title}" vence em ${hoursUntilDue}h`,
-          type: 'task_pending',
-          taskId: task.id
-        });
-      });
-    } catch (error) {
-      console.error('Erro ao verificar tarefas próximas do vencimento:', error);
-    }
+    // 🚫 DESATIVADO - Não verificar tarefas próximas do vencimento
+    return;
   };
 
-  // Monitorar novas tarefas atribuídas em tempo real
-  useEffect(() => {
-    if (!currentUser) return;
+  // 🚫 REAL-TIME DESATIVADO - Não monitorar mudanças em tempo real
+  // useEffect para monitoramento em tempo real foi completamente removido
 
-    const channel = supabase
-      .channel('task-notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tasks'
-        },
-        async (payload) => {
-          console.log('Mudança em tarefa:', payload);
-          
-          // Verificar se esta tarefa é relevante para o usuário atual
-          const task = payload.new as any;
-          if (task && task.assigned_users && task.assigned_users.includes(currentUser.user_id)) {
-            // Se é uma nova tarefa atribuída
-            if (payload.eventType === 'INSERT') {
-              addNotification({
-                title: 'Nova Tarefa Atribuída!',
-                message: `Você foi atribuído à tarefa: "${task.title}"`,
-                type: 'task_assigned',
-                taskId: task.id
-              });
-            }
-            // Se é uma atualização que adiciona o usuário
-            else if (payload.eventType === 'UPDATE') {
-              const oldTask = payload.old as any;
-              const wasAssigned = oldTask?.assigned_users?.includes(currentUser.user_id);
-              const isNowAssigned = task.assigned_users.includes(currentUser.user_id);
-              
-              if (!wasAssigned && isNowAssigned) {
-                addNotification({
-                  title: 'Nova Tarefa Atribuída!',
-                  message: `Você foi atribuído à tarefa: "${task.title}"`,
-                  type: 'task_assigned',
-                  taskId: task.id
-                });
-              }
-            }
-          }
-        }
-      )
-      .subscribe();
+  // 🚫 VERIFICAÇÕES PERIÓDICAS DESATIVADAS - Não fazer verificações automáticas
+  // useEffect com setInterval foi completamente removido
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [currentUser]);
-
-  // Verificações periódicas
-  useEffect(() => {
-    if (!currentUser) return;
-
-    // Verificar imediatamente
-    checkOverdueTasks();
-    checkPendingTasks();
-
-    // Verificar a cada 30 minutos
-    const interval = setInterval(() => {
-      checkOverdueTasks();
-      checkPendingTasks();
-    }, 30 * 60 * 1000);
-
-    return () => clearInterval(interval);
-  }, [currentUser]);
-
-  // Solicitar permissão automaticamente
-  useEffect(() => {
-    if (isSupported && permission === 'default') {
-      requestPermission();
-    }
-  }, [isSupported, permission]);
+  // 🚫 PERMISSÃO AUTOMÁTICA DESATIVADA - Não solicitar permissão automaticamente
+  // useEffect para solicitar permissão foi removido
 
   const unreadCount = notifications.filter(n => !n.read).length;
 

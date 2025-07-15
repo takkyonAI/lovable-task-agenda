@@ -15,34 +15,30 @@ export const useTaskManager = () => {
   const [selectedPriority, setSelectedPriority] = useState<'all' | 'baixa' | 'media' | 'urgente'>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'pendente' | 'em_andamento' | 'concluida' | 'cancelada'>('all');
   
-  // 🚀 OTIMIZAÇÕES REAL-TIME: Estados para controle de sincronização sem "piscar"
-  const [newTasksCount, setNewTasksCount] = useState(0);
+  // 🚀 SISTEMA SIMPLIFICADO: Apenas o essencial
   const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
-  const [isRealTimeConnected, setIsRealTimeConnected] = useState(false);
 
   const { currentUser } = useSupabaseAuth();
   const { toast } = useToast();
   
   // Refs para evitar race conditions
   const isLoadingRef = useRef(false);
-  const fallbackRefreshRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const refreshIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 🔄 OTIMIZAÇÃO: Fallback de refresh menos agressivo (apenas 1 timer)
-  const setupFallbackRefresh = useCallback(() => {
-    if (fallbackRefreshRef.current) {
-      clearTimeout(fallbackRefreshRef.current);
+  // 🔄 VERIFICAÇÃO SIMPLIFICADA: Apenas 1 minuto conforme solicitado
+  const setupSimpleRefresh = useCallback(() => {
+    if (refreshIntervalRef.current) {
+      clearTimeout(refreshIntervalRef.current);
     }
     
-    fallbackRefreshRef.current = setTimeout(() => {
-      console.log('🔄 Fallback refresh (5 minutos)...');
-      if (!isRealTimeConnected) {
-        loadTasks();
-      }
-      setupFallbackRefresh(); // Reagenda para 5 minutos
-    }, 300000); // 5 minutos - muito menos agressivo
-  }, [isRealTimeConnected]);
+    refreshIntervalRef.current = setTimeout(() => {
+      console.log('🔄 Verificação tarefas (1 minuto)...');
+      loadTasks();
+      setupSimpleRefresh(); // Reagenda para 1 minuto
+    }, 60000); // 1 minuto conforme solicitado
+  }, []);
 
-  // 🎯 OTIMIZAÇÃO: Função para formatar tarefa do banco para o tipo Task
+  // 🎯 Função para formatar tarefa do banco para o tipo Task
   const formatTaskFromDB = useCallback((taskData: any): Task => {
     // Map "alta" priority to "urgente" for backward compatibility
     let priority: 'baixa' | 'media' | 'urgente' = taskData.priority as 'baixa' | 'media' | 'urgente';
@@ -68,197 +64,18 @@ export const useTaskManager = () => {
     };
   }, []);
 
-  // 🔔 OTIMIZAÇÃO: Função para mostrar notificação de mudança sem causar refresh
-  const showTaskChangeNotification = useCallback((task: Task, eventType: 'INSERT' | 'UPDATE' | 'DELETE', isOwnAction: boolean = false) => {
-    if (!isOwnAction && currentUser) {
-      const creatorName = task.created_by || 'Usuário';
-      
-      switch (eventType) {
-        case 'INSERT':
-          toast({
-            title: "📋 Nova Tarefa!",
-            description: `"${task.title}" foi criada`,
-            duration: 3000
-          });
-          setNewTasksCount(prev => prev + 1);
-          setTimeout(() => setNewTasksCount(prev => Math.max(0, prev - 1)), 8000);
-          break;
-        case 'UPDATE':
-          toast({
-            title: "✏️ Tarefa Atualizada",
-            description: `"${task.title}" foi modificada`,
-            duration: 2000
-          });
-          break;
-        case 'DELETE':
-          toast({
-            title: "🗑️ Tarefa Removida",
-            description: `"${task.title}" foi excluída`,
-            duration: 2000
-          });
-          break;
-      }
-    }
-  }, [currentUser, toast]);
-
-  // 🎯 OTIMIZAÇÃO: Handlers específicos para cada tipo de mudança (sem refresh completo)
-  const handleTaskInsert = useCallback((newTaskData: any) => {
-    const newTask = formatTaskFromDB(newTaskData);
-    
-    setTasks(prevTasks => {
-      // Verificar se a tarefa já existe para evitar duplicatas
-      const existingTaskIndex = prevTasks.findIndex(task => task.id === newTask.id);
-      if (existingTaskIndex !== -1) {
-        console.log('🔄 Tarefa já existe, ignorando INSERT:', newTask.id);
-        return prevTasks;
-      }
-      
-      // Adicionar nova tarefa no início da lista (mais recente primeiro)
-      console.log('✅ Adicionando nova tarefa:', newTask.title);
-      return [newTask, ...prevTasks];
-    });
-    
-    // Mostrar notificação apenas se não foi criada pelo usuário atual
-    const isOwnAction = currentUser?.user_id === newTask.created_by;
-    showTaskChangeNotification(newTask, 'INSERT', isOwnAction);
-  }, [formatTaskFromDB, currentUser, showTaskChangeNotification]);
-
-  const handleTaskUpdate = useCallback((updatedTaskData: any) => {
-    const updatedTask = formatTaskFromDB(updatedTaskData);
-    
-    setTasks(prevTasks => {
-      const existingTaskIndex = prevTasks.findIndex(task => task.id === updatedTask.id);
-      if (existingTaskIndex === -1) {
-        console.log('🔄 Tarefa não encontrada para UPDATE, adicionando:', updatedTask.id);
-        return [updatedTask, ...prevTasks];
-      }
-      
-      // Atualizar apenas a tarefa específica sem mexer nas outras
-      const newTasks = [...prevTasks];
-      newTasks[existingTaskIndex] = updatedTask;
-      console.log('✅ Atualizando tarefa:', updatedTask.title);
-      return newTasks;
-    });
-    
-    // Mostrar notificação apenas se não foi uma ação própria
-    const isOwnAction = currentUser?.user_id === updatedTask.created_by || 
-                        currentUser?.user_id === updatedTask.edited_by;
-    showTaskChangeNotification(updatedTask, 'UPDATE', isOwnAction);
-  }, [formatTaskFromDB, currentUser, showTaskChangeNotification]);
-
-  const handleTaskDelete = useCallback((deletedTaskData: any) => {
-    const deletedTask = formatTaskFromDB(deletedTaskData);
-    
-    setTasks(prevTasks => {
-      const filteredTasks = prevTasks.filter(task => task.id !== deletedTask.id);
-      console.log('✅ Removendo tarefa:', deletedTask.title);
-      return filteredTasks;
-    });
-    
-    // Mostrar notificação sempre para DELETE
-    showTaskChangeNotification(deletedTask, 'DELETE');
-  }, [formatTaskFromDB, showTaskChangeNotification]);
-
+  // 🚀 SISTEMA SIMPLIFICADO - Apenas carregamento inicial e verificação a cada 1 minuto
   useEffect(() => {
     loadTasks();
-    // 🚫 DESATIVADO: Fallback refresh - removido para testar se resolve o problema de "piscar"
-    // setupFallbackRefresh();
+    setupSimpleRefresh();
     
-    // 🚀 NOVO SISTEMA REAL-TIME OTIMIZADO - Sem "piscar"
-    let channel: any = null;
-    
-    console.log('🔄 Configurando sistema real-time otimizado (sem piscar)...');
-    
-    // Wait for auth before setting up real-time
-    if (!currentUser) {
-      console.log('⏳ Aguardando autenticação...');
-      return;
-    }
-    
-    try {
-        channel = supabase
-        .channel(`tasks_optimized_${Date.now()}`)
-          .on(
-            'postgres_changes',
-            {
-            event: 'INSERT',
-              schema: 'public',
-              table: 'tasks'
-            },
-            (payload) => {
-            console.log('🎯 Nova tarefa detectada:', payload.new);
-              setIsRealTimeConnected(true);
-              setLastUpdateTime(Date.now());
-            handleTaskInsert(payload.new);
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'tasks'
-          },
-          (payload) => {
-            console.log('🎯 Tarefa atualizada:', payload.new);
-            setIsRealTimeConnected(true);
-            setLastUpdateTime(Date.now());
-            handleTaskUpdate(payload.new);
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'DELETE',
-            schema: 'public',
-            table: 'tasks'
-          },
-          (payload) => {
-            console.log('🎯 Tarefa excluída:', payload.old);
-            setIsRealTimeConnected(true);
-            setLastUpdateTime(Date.now());
-            handleTaskDelete(payload.old);
-            }
-          )
-          .subscribe((status) => {
-          console.log('🔗 Status real-time:', status);
-            
-            if (status === 'SUBSCRIBED') {
-            console.log('✅ Sistema real-time otimizado conectado!');
-              setIsRealTimeConnected(true);
-              
-              toast({
-              title: "⚡ Sistema Otimizado",
-              description: "Atualizações instantâneas sem piscar ativadas!",
-                duration: 3000
-              });
-            } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-            console.warn('🔒 Real-time desconectado:', status);
-              setIsRealTimeConnected(false);
-              
-            toast({
-              title: "🔄 Modo Fallback",
-              description: "Atualizações a cada 5 minutos",
-              duration: 3000
-            });
-            }
-          });
-        
-      } catch (error) {
-      console.error('❌ Erro ao configurar real-time:', error);
-        setIsRealTimeConnected(false);
-        }
-
     return () => {
-      console.log('🧹 Limpando sistema otimizado...');
-      if (channel) {
-        supabase.removeChannel(channel);
-      }
-      if (fallbackRefreshRef.current) {
-        clearTimeout(fallbackRefreshRef.current);
+      console.log('🧹 Limpando sistema simplificado...');
+      if (refreshIntervalRef.current) {
+        clearTimeout(refreshIntervalRef.current);
       }
     };
-  }, [currentUser, handleTaskInsert, handleTaskUpdate, handleTaskDelete, setupFallbackRefresh, toast]);
+  }, [currentUser, setupSimpleRefresh]);
 
   useEffect(() => {
     filterTasks();
@@ -298,6 +115,7 @@ export const useTaskManager = () => {
         const formattedTasks: Task[] = taskData.map(formatTaskFromDB);
         console.log('✅ Tarefas carregadas:', formattedTasks.length);
         setTasks(formattedTasks);
+        setLastUpdateTime(Date.now());
       }
     } catch (error) {
       console.error('Erro ao carregar tarefas:', error);
@@ -868,8 +686,6 @@ export const useTaskManager = () => {
     canDeleteTask,
     forceRefresh,
     // 🚀 MELHORIAS REAL-TIME: Novos estados exportados
-    newTasksCount,
-    isRealTimeConnected,
     lastUpdateTime
   };
 };
