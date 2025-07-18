@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, Filter, Calendar, Clock, Users, ShieldCheck, RefreshCw, Wifi, WifiOff, User, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
+import { Plus, Search, Filter, Calendar, Clock, Users, ShieldCheck, RefreshCw, Wifi, WifiOff, User, ChevronLeft, ChevronRight, CheckCircle, AlertTriangle } from 'lucide-react';
 import CreateTaskDialog from './task/CreateTaskDialog';
 import EditTaskDialog from './task/EditTaskDialog';
 import TaskCard from './task/TaskCard';
@@ -45,9 +45,6 @@ const TaskManager = () => {
     deleteTask,
     canDeleteTask,
     forceRefresh,
-    // 🚀 MELHORIAS REAL-TIME: Novos estados do sistema melhorado
-    newTasksCount,
-    isRealTimeConnected,
     lastUpdateTime
   } = useTaskManager();
 
@@ -124,27 +121,12 @@ const TaskManager = () => {
 
     return (
       <div className="flex items-center gap-2 text-sm text-gray-500">
-        {isRealTimeConnected ? (
-          <div className="flex items-center gap-1">
-            <Wifi className="w-4 h-4 text-green-500" />
-            <span className="text-green-600">Conectado</span>
-          </div>
-        ) : (
-          <div className="flex items-center gap-1">
-            <WifiOff className="w-4 h-4 text-red-500" />
-            <span className="text-red-600">Desconectado</span>
-          </div>
-        )}
+        <div className="flex items-center gap-1">
+          <Wifi className="w-4 h-4 text-green-500" />
+          <span className="text-green-600">Online</span>
+        </div>
         <span>•</span>
         <span>Última atualização: {timeAgo}</span>
-        {newTasksCount > 0 && (
-          <>
-            <span>•</span>
-            <Badge variant="secondary" className="bg-blue-500 text-white animate-pulse">
-              {newTasksCount} nova{newTasksCount !== 1 ? 's' : ''}
-            </Badge>
-          </>
-        )}
       </div>
     );
   };
@@ -716,17 +698,18 @@ const TaskManager = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-800/50 border-slate-700/50">
+          <Card 
+            className="bg-slate-800/50 border-slate-700/50 cursor-pointer hover:bg-slate-800/70 transition-colors"
+            onClick={() => setActiveFilter('overdue')}
+          >
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-400 text-sm font-medium">Performance</p>
-                  <p className="text-3xl font-bold text-blue-400">
-                    {filteredTasks.length > 0 ? Math.round((filteredTasks.filter(t => t.status === 'concluida').length / filteredTasks.length) * 100) : 0}%
-                  </p>
+                  <p className="text-slate-400 text-sm font-medium">🚨 Atrasadas</p>
+                  <p className="text-3xl font-bold text-red-400">{getFilterCount('overdue')}</p>
                 </div>
-                <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center">
-                  <Calendar className="w-6 h-6 text-blue-400" />
+                <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center">
+                  <AlertTriangle className="w-6 h-6 text-red-400" />
                 </div>
               </div>
             </CardContent>

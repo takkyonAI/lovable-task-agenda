@@ -67,7 +67,7 @@ export const useTaskManager = () => {
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [updatingTask, setUpdatingTask] = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'today' | 'week' | 'month' | 'overdue'>('all');
   const [selectedUser, setSelectedUser] = useState<string>('all');
   const [selectedAccessLevel, setSelectedAccessLevel] = useState<string>('all');
   const [selectedPriority, setSelectedPriority] = useState<'all' | 'baixa' | 'media' | 'urgente'>('all');
@@ -314,6 +314,17 @@ export const useTaskManager = () => {
           return taskDate >= monthStart && taskDate < monthEnd;
         });
         break;
+      case 'overdue':
+        // 🚨 FILTRO DE TAREFAS ATRASADAS
+        // Critério: due_date < agora E status não é 'concluida' nem 'cancelada'
+        filtered = filtered.filter(task => {
+          if (!task.due_date) return false;
+          const taskDate = new Date(task.due_date);
+          const isOverdue = taskDate < now;
+          const isNotCompleted = task.status !== 'concluida' && task.status !== 'cancelada';
+          return isOverdue && isNotCompleted;
+        });
+        break;
       default:
         break;
     }
@@ -364,7 +375,7 @@ export const useTaskManager = () => {
     setSelectedStatus('all');
   };
 
-  const getFilterCount = (filter: 'all' | 'today' | 'week' | 'month') => {
+  const getFilterCount = (filter: 'all' | 'today' | 'week' | 'month' | 'overdue') => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const weekStart = new Date(today);
@@ -393,6 +404,16 @@ export const useTaskManager = () => {
           const taskDate = new Date(task.due_date);
           const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
           return taskDate >= monthStart && taskDate < monthEnd;
+        }).length;
+      case 'overdue':
+        // 🚨 CONTADOR DE TAREFAS ATRASADAS
+        // Critério: due_date < agora E status não é 'concluida' nem 'cancelada'
+        return tasks.filter(task => {
+          if (!task.due_date) return false;
+          const taskDate = new Date(task.due_date);
+          const isOverdue = taskDate < now;
+          const isNotCompleted = task.status !== 'concluida' && task.status !== 'cancelada';
+          return isOverdue && isNotCompleted;
         }).length;
       default:
         return 0;
