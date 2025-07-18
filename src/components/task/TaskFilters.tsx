@@ -35,7 +35,7 @@ const TaskFilters: React.FC<TaskFiltersProps> = ({
             Mês ({getFilterCount('month')})
           </TabsTrigger>
           <TabsTrigger value="overdue" className="data-[state=active]:bg-red-600">
-            🚨 Atrasadas ({getFilterCount('overdue')})
+            Atrasadas ({getFilterCount('overdue')})
           </TabsTrigger>
         </TabsList>
       </Tabs>
