@@ -20,6 +20,8 @@ import { formatDateToBR, formatTimeToBR, isSameDay, getTodayBR, getWeekDaysBR, g
 import { NewTask, Task, EditTask } from '@/types/task';
 import { useUserProfiles } from '@/hooks/useUserProfiles';
 
+console.log("FORCE DEBUG: build atualizado", Date.now());
+
 const TaskManager = () => {
   const { 
     tasks, 
