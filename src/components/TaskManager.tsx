@@ -410,6 +410,12 @@ const TaskManager = () => {
   const weekDays = getWeekDaysBR(selectedDate);
   const monthDays = getMonthDaysBR(selectedDate);
 
+  useEffect(() => {
+    console.log("DEBUG: TaskManager montado");
+    console.log("DEBUG: Filtro ativo:", activeFilter);
+    console.log("DEBUG: Contagem de tarefas atrasadas:", getFilterCount('overdue'));
+  }, [activeFilter, getFilterCount]);
+
   // Renderização da visualização semanal
   const renderWeekView = () => (
     <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-4">
@@ -700,7 +706,10 @@ const TaskManager = () => {
 
           <Card 
             className="bg-slate-800/50 border-slate-700/50 cursor-pointer hover:bg-slate-800/70 transition-colors"
-            onClick={() => setActiveFilter('overdue')}
+            onClick={() => {
+              console.log("DEBUG: Card 'Atrasadas' clicado");
+              setActiveFilter('overdue');
+            }}
           >
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
