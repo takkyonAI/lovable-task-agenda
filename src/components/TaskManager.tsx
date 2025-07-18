@@ -1,3 +1,4 @@
+// 🔥 FORCE REBUILD: 1721334000 - Forçando Vite a gerar novo hash
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
