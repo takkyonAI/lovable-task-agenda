@@ -4,9 +4,9 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Filter } from 'lucide-react';
 
 interface TaskFiltersProps {
-  activeFilter: 'all' | 'today' | 'week' | 'month';
-  onFilterChange: (filter: 'all' | 'today' | 'week' | 'month') => void;
-  getFilterCount: (filter: 'all' | 'today' | 'week' | 'month') => number;
+  activeFilter: 'all' | 'today' | 'week' | 'month' | 'overdue';
+  onFilterChange: (filter: 'all' | 'today' | 'week' | 'month' | 'overdue') => void;
+  getFilterCount: (filter: 'all' | 'today' | 'week' | 'month' | 'overdue') => number;
 }
 
 const TaskFilters: React.FC<TaskFiltersProps> = ({
@@ -21,7 +21,7 @@ const TaskFilters: React.FC<TaskFiltersProps> = ({
         <span className="text-slate-300 text-sm font-medium">Filtrar por:</span>
       </div>
       <Tabs value={activeFilter} onValueChange={onFilterChange} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-slate-800/50 border-slate-700">
+        <TabsList className="grid w-full grid-cols-5 bg-slate-800/50 border-slate-700">
           <TabsTrigger value="all" className="data-[state=active]:bg-purple-600">
             Todas ({getFilterCount('all')})
           </TabsTrigger>
@@ -33,6 +33,9 @@ const TaskFilters: React.FC<TaskFiltersProps> = ({
           </TabsTrigger>
           <TabsTrigger value="month" className="data-[state=active]:bg-purple-600">
             Mês ({getFilterCount('month')})
+          </TabsTrigger>
+          <TabsTrigger value="overdue" className="data-[state=active]:bg-red-600">
+            🚨 Atrasadas ({getFilterCount('overdue')})
           </TabsTrigger>
         </TabsList>
       </Tabs>

@@ -8,6 +8,11 @@ export default {
 		"./app/**/*.{ts,tsx}",
 		"./src/**/*.{ts,tsx}",
 	],
+	safelist: [
+		'max-h-[200px]',
+		'max-h-[900px]',
+		'sm:max-h-[900px]',
+	],
 	prefix: "",
 	theme: {
 		container: {
@@ -92,5 +97,5 @@ export default {
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [require("tailwindcss-animate") as any],
 } satisfies Config;

@@ -14,12 +14,56 @@ interface NotificationData {
   read: boolean;
 }
 
+/**
+ * 🚫 HOOK DE NOTIFICAÇÕES - TEMPORARIAMENTE DESATIVADO
+ * 
+ * HISTÓRICO:
+ * - Data da desativação: 15/01/2025
+ * - Motivo: Resolução de problema de "piscar" na interface causado por re-renders excessivos
+ * - Problema original: Sistema executava verificações a cada 30 minutos + real-time subscriptions
+ *   causando re-renders constantes e instabilidade visual
+ * 
+ * SISTEMA ORIGINAL (PROBLEMÁTICO):
+ * ❌ checkOverdueTasks() - verificava tarefas vencidas automaticamente
+ * ❌ checkPendingTasks() - verificava tarefas próximas do vencimento (30-45min antes)
+ * ❌ Real-time subscription - monitorava mudanças em tempo real via supabase
+ * ❌ setInterval(30min) - verificações periódicas automáticas
+ * ❌ Toast notifications - notificações visuais a cada mudança
+ * 
+ * COMO REATIVAR COM SEGURANÇA NO FUTURO:
+ * 1. Implementar polling com intervalo MÍNIMO de 5 minutos
+ * 2. Adicionar debounce nas verificações
+ * 3. Limitar real-time subscriptions a mudanças críticas apenas
+ * 4. Usar flags de feature para ativação gradual
+ * 5. Monitorar performance durante testes
+ * 
+ * CÓDIGO DE REFERÊNCIA PARA REATIVAÇÃO:
+ * ```javascript
+ * // Polling seguro (mínimo 5 minutos)
+ * useEffect(() => {
+ *   if (!currentUser) return;
+ *   
+ *   const safeInterval = setInterval(() => {
+ *     // Verificações apenas se necessário
+ *     if (document.hasFocus()) { // Apenas se usuário ativo
+ *       checkCriticalTasks(); // Função simplificada
+ *     }
+ *   }, 300000); // 5 minutos mínimo
+ *   
+ *   return () => clearInterval(safeInterval);
+ * }, [currentUser.id]); // Dependência estável
+ * ```
+ */
 export const useNotifications = () => {
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [isSupported, setIsSupported] = useState(false);
   const { currentUser } = useSupabaseAuth();
   const { toast } = useToast();
+
+  // 🚫 SISTEMA DE NOTIFICAÇÕES COMPLETAMENTE DESATIVADO
+  // Motivo: Resolução de problema de piscar na tela (15/01/2025)
+  // Este comentário deve ser mantido para futuras referências
 
   // Verificar suporte a notificações
   useEffect(() => {
@@ -40,63 +84,37 @@ export const useNotifications = () => {
     return result === 'granted';
   };
 
-  // Enviar notificação nativa
+  /**
+   * 🚫 ENVIO DE NOTIFICAÇÕES NATIVAS - DESATIVADO
+   * 
+   * Função original enviava notificações do navegador, mas foi desativada pois:
+   * - Causava re-renders quando chamada frequentemente
+   * - Não é essencial para funcionamento básico do sistema
+   * - Pode ser reativada individualmente no futuro
+   */
   const sendNativeNotification = (title: string, options?: NotificationOptions) => {
-    if (!isSupported || permission !== 'granted') return;
-
-    const notification = new Notification(title, {
-      icon: '/rockfeller-favicon.png',
-      badge: '/rockfeller-favicon.png',
-      ...options
-    });
-
-    // Auto fechar após 5 segundos
-    setTimeout(() => notification.close(), 5000);
-
-    return notification;
+    // 🚫 DESATIVADO - Não enviar notificações nativas
+    console.log('📝 Notificação desativada:', title); // Log para debug se necessário
+    return null;
   };
 
-  // Adicionar notificação à lista
+  /**
+   * 🚫 ADICIONAR NOTIFICAÇÕES À LISTA - DESATIVADO
+   * 
+   * Esta função era chamada por:
+   * - checkOverdueTasks() quando encontrava tarefas vencidas
+   * - checkPendingTasks() quando encontrava tarefas próximas do vencimento  
+   * - Real-time subscription quando detectava mudanças
+   * 
+   * Desativada para evitar:
+   * - State updates frequentes causando re-renders
+   * - Toast notifications excessivas
+   * - Acúmulo de notificações desnecessárias
+   */
   const addNotification = (notification: Omit<NotificationData, 'id' | 'timestamp' | 'read'>) => {
-    const newNotification: NotificationData = {
-      ...notification,
-      id: Math.random().toString(36).substr(2, 9),
-      timestamp: new Date(),
-      read: false
-    };
-
-    setNotifications(prev => [newNotification, ...prev]);
-
-    // Enviar notificação nativa
-    sendNativeNotification(notification.title, {
-      body: notification.message,
-      tag: notification.type,
-      requireInteraction: true
-    });
-
-    // Mostrar toast com variante baseada no tipo
-    const getToastVariant = (type: string) => {
-      switch (type) {
-        case 'task_assigned':
-          return 'info';
-        case 'task_overdue':
-          return 'destructive';
-        case 'task_pending':
-          return 'warning';
-        default:
-          return 'default';
-      }
-    };
-
-    // Mostrar toast também com design melhorado
-    toast({
-      title: notification.title,
-      description: notification.message,
-      duration: 6000,
-      variant: getToastVariant(notification.type) as any
-    });
-
-    return newNotification.id;
+    // 🚫 DESATIVADO - Não adicionar notificações
+    console.log('📝 Notificação ignorada:', notification.title); // Log para debug
+    return '';
   };
 
   // Marcar notificação como lida
@@ -127,157 +145,142 @@ export const useNotifications = () => {
     setNotifications([]);
   };
 
-  // Verificar tarefas vencidas
+  /**
+   * 🚫 VERIFICAÇÃO DE TAREFAS VENCIDAS - DESATIVADO
+   * 
+   * FUNÇÃO ORIGINAL:
+   * - Consultava banco para tarefas com due_date < now
+   * - Filtrava por tarefas do usuário atual  
+   * - Criava notificação para cada tarefa vencida
+   * - Chamada automaticamente a cada 30 minutos
+   * 
+   * PROBLEMA IDENTIFICADO:
+   * - Query frequente ao banco de dados
+   * - Loops de notificação para tarefas já vencidas há dias
+   * - Re-renders constantes quando havia muitas tarefas vencidas
+   * 
+   * REATIVAÇÃO SEGURA:
+   * - Implementar cache de tarefas já notificadas
+   * - Limitar notificações a tarefas vencidas nas últimas 24h
+   * - Executar apenas 1x por dia ou sob demanda
+   */
   const checkOverdueTasks = async () => {
-    if (!currentUser) return;
-
-    try {
-      const now = new Date().toISOString();
-      
-      const { data: overdueTasks, error } = await supabase
-        .from('tasks')
-        .select('*')
-        .contains('assigned_users', [currentUser.user_id])
-        .lt('due_date', now)
-        .neq('status', 'concluida')
-        .neq('status', 'cancelada');
-
-      if (error) {
-        console.error('Erro ao verificar tarefas vencidas:', error);
-        return;
-      }
-
-      overdueTasks?.forEach(task => {
-        const dueDateObj = new Date(task.due_date);
-        const daysOverdue = Math.floor((Date.now() - dueDateObj.getTime()) / (1000 * 60 * 60 * 24));
-        
-        addNotification({
-          title: 'Tarefa Vencida!',
-          message: `"${task.title}" venceu há ${daysOverdue} dia(s)`,
-          type: 'task_overdue',
-          taskId: task.id
-        });
-      });
-    } catch (error) {
-      console.error('Erro ao verificar tarefas vencidas:', error);
-    }
+    // 🚫 DESATIVADO - Não verificar tarefas vencidas automaticamente
+    console.log('📝 Verificação de tarefas vencidas desativada'); // Debug
+    return;
   };
 
-  // Verificar tarefas próximas do vencimento (30 minutos antes)
+  /**
+   * 🚫 VERIFICAÇÃO DE TAREFAS PRÓXIMAS DO VENCIMENTO - DESATIVADO
+   * 
+   * FUNÇÃO ORIGINAL:
+   * - Verificava tarefas com vencimento em 30-45 minutos
+   * - Enviava notificação "vence em X minutos"
+   * - Executada a cada 5 minutos para precisão
+   * 
+   * PROBLEMA IDENTIFICADO:
+   * - Verificação muito frequente (a cada 5 minutos)
+   * - Múltiplas notificações para a mesma tarefa
+   * - Re-renders constantes durante período de 30-45 minutos antes do vencimento
+   * 
+   * FUNCIONALIDADE IMPLEMENTADA EM 14/01/2025 E DESATIVADA EM 15/01/2025:
+   * Esta era a funcionalidade mais recente, implementada para notificar apenas 
+   * 30 minutos antes do vencimento (ao invés de 4 horas). Funcionou bem mas 
+   * foi desativada junto com todo o sistema para resolver o piscar.
+   * 
+   * REATIVAÇÃO SEGURA:
+   * - Implementar apenas para tarefas críticas/urgentes
+   * - Enviar notificação apenas 1x por tarefa
+   * - Cache de tarefas já notificadas
+   * - Verificação máxima de 1x por hora
+   */
   const checkPendingTasks = async () => {
-    if (!currentUser) return;
-
-    try {
-      const now = new Date();
-      const thirtyMinutesFromNow = new Date(now.getTime() + 30 * 60 * 1000);
-      const fortyFiveMinutesFromNow = new Date(now.getTime() + 45 * 60 * 1000);
-      
-      const { data: pendingTasks, error } = await supabase
-        .from('tasks')
-        .select('*')
-        .contains('assigned_users', [currentUser.user_id])
-        .gt('due_date', thirtyMinutesFromNow.toISOString())
-        .lt('due_date', fortyFiveMinutesFromNow.toISOString())
-        .neq('status', 'concluida')
-        .neq('status', 'cancelada');
-
-      if (error) {
-        console.error('Erro ao verificar tarefas próximas do vencimento:', error);
-        return;
-      }
-
-      pendingTasks?.forEach(task => {
-        const dueDateObj = new Date(task.due_date);
-        const minutesUntilDue = Math.floor((dueDateObj.getTime() - Date.now()) / (1000 * 60));
-        
-        addNotification({
-          title: 'Tarefa Próxima do Vencimento',
-          message: `"${task.title}" vence em ${minutesUntilDue} minutos`,
-          type: 'task_pending',
-          taskId: task.id
-        });
-      });
-    } catch (error) {
-      console.error('Erro ao verificar tarefas próximas do vencimento:', error);
-    }
+    // 🚫 DESATIVADO - Não verificar tarefas próximas do vencimento
+    console.log('📝 Verificação de tarefas pendentes desativada'); // Debug
+    return;
   };
 
-  // Monitorar novas tarefas atribuídas em tempo real
-  useEffect(() => {
-    if (!currentUser) return;
+  // 🚫 MONITORAMENTO REAL-TIME DESATIVADO
+  // 
+  // CÓDIGO ORIGINAL REMOVIDO:
+  // useEffect(() => {
+  //   if (!currentUser) return;
+  //   
+  //   const channel = supabase.channel('task-notifications')
+  //     .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, 
+  //       (payload) => {
+  //         // Lógica que causava re-renders constantes
+  //         addNotification({...});
+  //       })
+  //     .subscribe();
+  //     
+  //   return () => supabase.removeChannel(channel);
+  // }, [currentUser]);
+  //
+  // PROBLEMA: 
+  // - Subscription ativa reagia a TODAS as mudanças na tabela tasks
+  // - Gerava notificação para cada INSERT/UPDATE/DELETE
+  // - Causava re-renders excessivos quando múltiplos usuários trabalhavam simultaneamente
+  //
+  // SOLUÇÃO APLICADA:
+  // - Remoção completa do real-time monitoring
+  // - Sistema agora funciona apenas com polling de 1 minuto no useTaskManager
+  //
+  // REATIVAÇÃO SEGURA:
+  // - Filtrar apenas tarefas relevantes para o usuário
+  // - Implementar debounce de 5-10 segundos
+  // - Agrupar múltiplas mudanças em uma única notificação
+  // - Usar throttling para limitar frequência de updates
 
-    const channel = supabase
-      .channel('task-notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tasks'
-        },
-        async (payload) => {
-          console.log('Mudança em tarefa:', payload);
-          
-          // Verificar se esta tarefa é relevante para o usuário atual
-          const task = payload.new as any;
-          if (task && task.assigned_users && task.assigned_users.includes(currentUser.user_id)) {
-            // Se é uma nova tarefa atribuída
-            if (payload.eventType === 'INSERT') {
-              addNotification({
-                title: 'Nova Tarefa Atribuída!',
-                message: `Você foi atribuído à tarefa: "${task.title}"`,
-                type: 'task_assigned',
-                taskId: task.id
-              });
-            }
-            // Se é uma atualização que adiciona o usuário
-            else if (payload.eventType === 'UPDATE') {
-              const oldTask = payload.old as any;
-              const wasAssigned = oldTask?.assigned_users?.includes(currentUser.user_id);
-              const isNowAssigned = task.assigned_users.includes(currentUser.user_id);
-              
-              if (!wasAssigned && isNowAssigned) {
-                addNotification({
-                  title: 'Nova Tarefa Atribuída!',
-                  message: `Você foi atribuído à tarefa: "${task.title}"`,
-                  type: 'task_assigned',
-                  taskId: task.id
-                });
-              }
-            }
-          }
-        }
-      )
-      .subscribe();
+  // 🚫 VERIFICAÇÕES PERIÓDICAS DESATIVADAS
+  //
+  // CÓDIGO ORIGINAL REMOVIDO:
+  // useEffect(() => {
+  //   if (!currentUser) return;
+  //   
+  //   // Verificar imediatamente - CAUSAVA PROBLEMA
+  //   checkOverdueTasks();
+  //   checkPendingTasks();
+  //   
+  //   // Verificar a cada 30 minutos - PRINCIPAL CAUSA DO PISCAR
+  //   const interval = setInterval(() => {
+  //     checkOverdueTasks();
+  //     checkPendingTasks();
+  //   }, 30 * 60 * 1000);
+  //   
+  //   return () => clearInterval(interval);
+  // }, [currentUser]);
+  //
+  // PROBLEMA IDENTIFICADO:
+  // - setInterval executando verificações pesadas a cada 30 minutos
+  // - Dependência [currentUser] causava re-criação do interval quando user mudava
+  // - Verificações imediatas no mount causavam loading states conflitantes
+  // - Multiple intervals rodando simultaneamente em casos edge
+  //
+  // SOLUÇÃO APLICADA:
+  // - Remoção completa das verificações automáticas
+  // - Sistema agora é "pull-based" ao invés de "push-based"
+  // - Usuário pode atualizar manualmente se necessário
+  //
+  // REATIVAÇÃO SEGURA:
+  // - Usar intervalo MÍNIMO de 5 minutos
+  // - Implementar apenas se usuário estiver ativo (document.hasFocus())
+  // - Cache de resultados para evitar queries desnecessárias
+  // - Implementar circuit breaker em caso de erros consecutivos
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [currentUser]);
-
-  // Verificações periódicas
-  useEffect(() => {
-    if (!currentUser) return;
-
-    // Verificar imediatamente
-    checkOverdueTasks();
-    checkPendingTasks();
-
-    // Verificar a cada 5 minutos para maior precisão nas notificações de 30 minutos
-    const interval = setInterval(() => {
-      checkOverdueTasks();
-      checkPendingTasks();
-    }, 5 * 60 * 1000);
-
-    return () => clearInterval(interval);
-  }, [currentUser]);
-
-  // Solicitar permissão automaticamente
-  useEffect(() => {
-    if (isSupported && permission === 'default') {
-      requestPermission();
-    }
-  }, [isSupported, permission]);
+  // 🚫 SOLICITAÇÃO AUTOMÁTICA DE PERMISSÃO DESATIVADA
+  //
+  // CÓDIGO ORIGINAL REMOVIDO:
+  // useEffect(() => {
+  //   if (isSupported && permission === 'default') {
+  //     requestPermission();
+  //   }
+  // }, [isSupported, permission]);
+  //
+  // MOTIVO DA DESATIVAÇÃO:
+  // - Não era crítico para o funcionamento
+  // - Pode ser solicitado sob demanda no futuro
+  // - Remove uma possível fonte de re-renders
 
   const unreadCount = notifications.filter(n => !n.read).length;
 

@@ -62,7 +62,34 @@ This project is built with:
 
 ## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/b03e3751-8e15-4a2f-acb9-a23104279212) and click on Share -> Publish.
+### 🚀 Método Recomendado - GitHub Pages (FUNCIONANDO)
+
+Para deployar mudanças que REALMENTE aparecem no site, use o **método comprovado**:
+
+📖 **[GUIA COMPLETO DE DEPLOY](./GUIA_DEPLOY_CORRETO.md)** ← **LEIA ESTE ARQUIVO!**
+
+**Resumo do processo:**
+```bash
+# 1. Limpar arquivos antigos (OBRIGATÓRIO)
+rm -rf dist assets && rm index.html
+
+# 2. Criar HTML limpo sem referências hardcoded
+cat > index.html << 'EOF'
+[...HTML limpo...]
+EOF
+
+# 3. Build e deploy forçado
+npm run build && cp -r dist/* . && git add . && git commit -m "DEPLOY FORÇADO: [mudança] (rebuild completo)" && git push origin main
+```
+
+### 📱 Método Alternativo - Lovable
+
+Para mudanças simples, você também pode abrir [Lovable](https://lovable.dev/projects/b03e3751-8e15-4a2f-acb9-a23104279212) e clicar em Share → Publish.
+
+### ⚠️ IMPORTANTE
+- **Se mudanças não aparecem**: Use sempre o método GitHub Pages acima
+- **Cache do navegador**: Force refresh com `Ctrl+Shift+R` (Windows) ou `Cmd+Shift+R` (Mac)  
+- **Aguarde**: 1-2 minutos para o GitHub Pages processar
 
 ## Can I connect a custom domain to my Lovable project?
 
