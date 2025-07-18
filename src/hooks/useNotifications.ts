@@ -16,6 +16,8 @@ interface NotificationData {
 
 // ⚠️ SISTEMA COMPLETAMENTE DESABILITADO para resolver piscar da tela
 // NÃO REATIVAR sem implementar throttling/debouncing adequado
+alert("NOTIFICAÇÕES DESATIVADAS - useNotifications.ts");
+console.log("DEBUG: useNotifications.ts carregado - notificações desativadas");
 const NOTIFICATIONS_ENABLED = false;
 
 /**
