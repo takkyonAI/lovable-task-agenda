@@ -83,6 +83,12 @@ export const useTaskManager = () => {
   const isLoadingRef = useRef(false);
   const refreshIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ⚠️ Polling reduzido para 1 minuto apenas
+  const REFRESH_INTERVAL = 60000; // 1 minuto (era 5 minutos)
+
+  // ⚠️ Real-time subscriptions DESABILITADAS
+  // setupRealTimeSubscriptions(); // COMENTADO
+
   /**
    * 🔄 SISTEMA DE REFRESH SIMPLIFICADO
    * 
@@ -116,7 +122,7 @@ export const useTaskManager = () => {
       console.log('🔄 Verificação tarefas (1 minuto)...');
       loadTasks(); // Carregamento simples e direto
       setupSimpleRefresh(); // Reagendar para próximo ciclo
-    }, 60000); // 1 minuto conforme especificado pelo usuário
+    }, REFRESH_INTERVAL); // 1 minuto conforme especificado pelo usuário
   }, []); // CRITICAL: Dependências vazias para estabilidade
 
   // 🎯 Função para formatar tarefa do banco para o tipo Task

@@ -14,6 +14,10 @@ interface NotificationData {
   read: boolean;
 }
 
+// ⚠️ SISTEMA COMPLETAMENTE DESABILITADO para resolver piscar da tela
+// NÃO REATIVAR sem implementar throttling/debouncing adequado
+const NOTIFICATIONS_ENABLED = false;
+
 /**
  * 🚫 HOOK DE NOTIFICAÇÕES - TEMPORARIAMENTE DESATIVADO
  * 
