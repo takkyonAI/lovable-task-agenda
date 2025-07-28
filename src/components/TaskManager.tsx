@@ -20,8 +20,8 @@ import { formatDateToBR, formatTimeToBR, isSameDay, getTodayBR, getWeekDaysBR, g
 import { NewTask, Task, EditTask } from '@/types/task';
 import { useUserProfiles } from '@/hooks/useUserProfiles';
 
-alert("SE VOCÊ VIU ISSO, O BUILD ESTÁ CERTO");
-console.log("FORCE DEBUG: build atualizado", Date.now());
+alert("🎯 LAYOUT CORRIGIDO - BUILD FINAL: " + Date.now());
+console.log("🎯 FORCE UPDATE LAYOUT DESKTOP lg: grid-cols-4", Date.now());
 
 const TaskManager = () => {
   const { 

@@ -12,6 +12,14 @@ export default {
 		'max-h-[200px]',
 		'max-h-[900px]',
 		'sm:max-h-[900px]',
+		'lg:grid-cols-4',
+		'grid-cols-2',
+		'sm:grid-cols-3',
+		'lg:grid-cols-5',
+		'text-xs',
+		'sm:text-sm',
+		'max-w-4xl',
+		'justify-end'
 	],
 	prefix: "",
 	theme: {
