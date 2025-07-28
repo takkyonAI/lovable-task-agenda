@@ -12,10 +12,10 @@ export default {
 		'max-h-[200px]',
 		'max-h-[900px]',
 		'sm:max-h-[900px]',
-		'lg:grid-cols-4',
+    'lg:grid-cols-4', // Adicionado para garantir que o layout desktop funcione
+    'lg:grid-cols-5', // Mantido para os filtros
 		'grid-cols-2',
 		'sm:grid-cols-3',
-		'lg:grid-cols-5',
 		'text-xs',
 		'sm:text-sm',
 		'max-w-4xl',

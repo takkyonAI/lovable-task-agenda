@@ -3,6 +3,7 @@ import { Task } from '@/types/task';
 import { supabase } from '@/integrations/supabase/client';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { useToast } from '@/hooks/use-toast';
+import React from 'react';
 
 /**
  * 🎯 HOOK GERENCIADOR DE TAREFAS - SISTEMA SIMPLIFICADO
@@ -217,17 +218,18 @@ export const useTaskManager = () => {
    * 4. Circuit breaker para fallback automático
    * 5. Feature flags para ativação gradual
    */
+  const effectRan = useRef(false);
+
   useEffect(() => {
-    loadTasks();
-    setupSimpleRefresh();
-    
+    if (process.env.NODE_ENV === 'production' || effectRan.current === true) {
+      loadTasks();
+      setupSimpleRefresh();
+    }
+
     return () => {
-      console.log('🧹 Limpando sistema simplificado...');
-      if (refreshIntervalRef.current) {
-        clearTimeout(refreshIntervalRef.current);
-      }
+      effectRan.current = true;
     };
-  }, [currentUser, setupSimpleRefresh]); // Dependências mínimas e estáveis
+  }, []); // Dependências vazias para rodar apenas uma vez
 
   useEffect(() => {
     filterTasks();

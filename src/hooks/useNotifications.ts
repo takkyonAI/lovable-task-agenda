@@ -3,6 +3,7 @@ import { useSupabaseAuth } from './useSupabaseAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Task } from '@/types/task';
 import { useToast } from '@/hooks/use-toast';
+import React from 'react';
 
 interface NotificationData {
   id: string;
@@ -206,7 +207,7 @@ export const useNotifications = () => {
     return;
   };
 
-  // 🚫 MONITORAMENTO REAL-TIME DESATIVADO
+  // �� MONITORAMENTO REAL-TIME DESATIVADO
   // 
   // CÓDIGO ORIGINAL REMOVIDO:
   // useEffect(() => {
