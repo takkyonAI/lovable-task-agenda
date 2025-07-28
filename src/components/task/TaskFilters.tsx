@@ -16,29 +16,29 @@ const TaskFilters: React.FC<TaskFiltersProps> = ({
 }) => {
   return (
     <div className="mb-6">
-      <div className="flex items-center space-x-2 mb-4">
-        <Filter className="w-4 h-4 text-slate-400" />
-        <span className="text-slate-300 text-sm font-medium">Filtrar por:</span>
+      <div className="flex justify-end">
+        <div className="w-full max-w-4xl">
+          <Tabs value={activeFilter} onValueChange={onFilterChange} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 bg-slate-800/50 border-slate-700">
+              <TabsTrigger value="all" className="data-[state=active]:bg-purple-600 text-xs sm:text-sm">
+                Todas ({getFilterCount('all')})
+              </TabsTrigger>
+              <TabsTrigger value="today" className="data-[state=active]:bg-purple-600 text-xs sm:text-sm">
+                Hoje ({getFilterCount('today')})
+              </TabsTrigger>
+              <TabsTrigger value="week" className="data-[state=active]:bg-purple-600 text-xs sm:text-sm">
+                Semana ({getFilterCount('week')})
+              </TabsTrigger>
+              <TabsTrigger value="month" className="data-[state=active]:bg-purple-600 text-xs sm:text-sm">
+                Mês ({getFilterCount('month')})
+              </TabsTrigger>
+              <TabsTrigger value="overdue" className="data-[state=active]:bg-red-600 text-xs sm:text-sm">
+                Atrasadas ({getFilterCount('overdue')})
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
-      <Tabs value={activeFilter} onValueChange={onFilterChange} className="w-full">
-        <TabsList className="grid w-full grid-cols-5 bg-slate-800/50 border-slate-700">
-          <TabsTrigger value="all" className="data-[state=active]:bg-purple-600">
-            Todas ({getFilterCount('all')})
-          </TabsTrigger>
-          <TabsTrigger value="today" className="data-[state=active]:bg-purple-600">
-            Hoje ({getFilterCount('today')})
-          </TabsTrigger>
-          <TabsTrigger value="week" className="data-[state=active]:bg-purple-600">
-            Semana ({getFilterCount('week')})
-          </TabsTrigger>
-          <TabsTrigger value="month" className="data-[state=active]:bg-purple-600">
-            Mês ({getFilterCount('month')})
-          </TabsTrigger>
-          <TabsTrigger value="overdue" className="data-[state=active]:bg-red-600">
-            Atrasadas ({getFilterCount('overdue')})
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
     </div>
   );
 };
