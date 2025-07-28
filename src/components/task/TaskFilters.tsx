@@ -17,7 +17,7 @@ const TaskFilters: React.FC<TaskFiltersProps> = ({
   return (
     <div className="mb-6">
       <div className="flex justify-end">
-        <div className="w-full max-w-4xl">
+        <div className="w-full max-w-4xl">{/* RESPONSIVE FILTERS FORCE UPDATE */}
           <Tabs value={activeFilter} onValueChange={onFilterChange} className="w-full">
             <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 bg-slate-800/50 border-slate-700">
               <TabsTrigger value="all" className="data-[state=active]:bg-purple-600 text-xs sm:text-sm">

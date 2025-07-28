@@ -655,7 +655,7 @@ const TaskManager = () => {
           onClearFilters={clearAdvancedFilters}
         />
 
-        {/* Cards de Estatísticas */}
+        {/* Cards de Estatísticas - FORCE UPDATE LAYOUT DESKTOP ONLY */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <Card 
             className="bg-slate-800/50 border-slate-700/50 cursor-pointer hover:bg-slate-800/70 transition-colors"
