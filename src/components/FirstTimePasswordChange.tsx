@@ -25,12 +25,12 @@ const FirstTimePasswordChange: React.FC = () => {
     e.preventDefault();
     
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert('As senhas não coincidem!');
+      console.log('As senhas não coincidem!');
       return;
     }
 
     if (passwordData.newPassword.length < 6) {
-      alert('A nova senha deve ter pelo menos 6 caracteres.');
+      console.log('A nova senha deve ter pelo menos 6 caracteres.');
       return;
     }
 

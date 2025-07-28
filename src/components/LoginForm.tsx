@@ -25,7 +25,7 @@ const LoginForm: React.FC = () => {
     
     // Rate limiting - simple client-side check
     if (loginAttempts >= 5) {
-      alert('Muitas tentativas de login. Tente novamente em alguns minutos.');
+      console.log('Muitas tentativas de login. Tente novamente em alguns minutos.');
       return;
     }
 
