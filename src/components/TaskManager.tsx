@@ -656,7 +656,7 @@ const TaskManager = () => {
         />
 
         {/* Cards de Estatísticas - CORRIGIDO FINAL DESKTOP 4 COLS */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <Card 
             className="bg-slate-800/50 border-slate-700/50 cursor-pointer hover:bg-slate-800/70 transition-colors"
             onClick={() => handleStatsClick('all')}
