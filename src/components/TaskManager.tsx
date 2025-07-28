@@ -20,8 +20,7 @@ import { formatDateToBR, formatTimeToBR, isSameDay, getTodayBR, getWeekDaysBR, g
 import { NewTask, Task, EditTask } from '@/types/task';
 import { useUserProfiles } from '@/hooks/useUserProfiles';
 
-// Debug removido para evitar popups
-console.log("🎯 LAYOUT DESKTOP lg: grid-cols-4");
+// Sistema estável sem alertas
 
 const TaskManager = () => {
   const { 
