@@ -84,7 +84,7 @@ export const useTaskManager = () => {
   const isLoadingRef = useRef(false);
   const refreshIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  alert("REAL-TIME DESATIVADO - useTaskManager.ts");
+  // Sistema funcionando sem real-time
   console.log("DEBUG: useTaskManager.ts carregado - real-time desativado");
   // ⚠️ Polling reduzido para 1 minuto apenas
   const REFRESH_INTERVAL = 60000; // 1 minuto (era 5 minutos)

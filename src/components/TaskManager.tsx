@@ -1,4 +1,4 @@
-// 🔥 FORCE REBUILD: 1721334000 - Forçando Vite a gerar novo hash
+// ✅ POPUPS REMOVIDOS - Sistema limpo sem alertas
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +20,7 @@ import { formatDateToBR, formatTimeToBR, isSameDay, getTodayBR, getWeekDaysBR, g
 import { NewTask, Task, EditTask } from '@/types/task';
 import { useUserProfiles } from '@/hooks/useUserProfiles';
 
-// Sistema estável sem alertas
+// Sistema estável sem alertas - versão 2.0
 
 const TaskManager = () => {
   const { 

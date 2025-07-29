@@ -133,7 +133,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // 🧹 CLEANUP: Remover listener quando componente for desmontado
     return () => subscription.unsubscribe();
-  }, [isCreatingUser]); // 🎯 DEPENDÊNCIA: Recriar listener quando flag de criação mudar
+  }, [isCreatingUser]); // Dependência: Recriar listener quando flag de criação mudar
 
   /**
    * 👤 BUSCAR PERFIL DO USUÁRIO
