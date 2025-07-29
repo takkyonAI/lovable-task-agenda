@@ -157,10 +157,35 @@ const TaskManager = () => {
     setTimeout(() => setIsRefreshing(false), 1000);
   };
 
-  // Handler para clique nos cards de estatísticas
-  const handleStatsClick = (status: 'all' | 'pendente' | 'concluida') => {
-    setSelectedStatus(status);
-    // Limpar outros filtros avançados para focar apenas no status
+  /* 
+   * 🎯 HANDLER UNIFICADO PARA CARDS DE ESTATÍSTICAS
+   * 
+   * Corrige problema: Clique em "Total" após "Atrasadas" não funcionava
+   * Motivo: Dois tipos de filtros estavam sendo misturados:
+   * - activeFilter (temporal: today, week, month, overdue)
+   * - selectedStatus (status: pendente, concluida, etc)
+   * 
+   * Solução: Usar o filtro correto para cada tipo de indicador
+   * - "Atrasadas" = activeFilter ('overdue')
+   * - "Total" = reset ambos filtros ('all')
+   * - Status específicos = selectedStatus (pendente, concluida)
+   */
+  const handleStatsClick = (filterType: 'all' | 'pendente' | 'concluida' | 'overdue') => {
+    if (filterType === 'overdue') {
+      // Para tarefas atrasadas, usar activeFilter (filtro temporal)
+      setActiveFilter('overdue');
+      setSelectedStatus('all'); // Resetar filtro de status
+    } else if (filterType === 'all') {
+      // Para "Total", mostrar todas as tarefas
+      setActiveFilter('all');
+      setSelectedStatus('all');
+    } else {
+      // Para status específicos (pendente, concluida), usar selectedStatus
+      setSelectedStatus(filterType);
+      setActiveFilter('all'); // Resetar filtro temporal
+    }
+    
+    // Limpar outros filtros avançados para focar apenas no filtro selecionado
     setSelectedUser('all');
     setSelectedAccessLevel('all');
     setSelectedPriority('all');
@@ -728,10 +753,7 @@ const TaskManager = () => {
 
           <Card 
             className="bg-slate-800/50 border-slate-700/50 cursor-pointer hover:bg-slate-800/70 transition-colors"
-            onClick={() => {
-              console.log("DEBUG: Card 'Atrasadas' clicado");
-              setActiveFilter('overdue');
-            }}
+            onClick={() => handleStatsClick('overdue')}
           >
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
