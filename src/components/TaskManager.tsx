@@ -20,7 +20,23 @@ import { formatDateToBR, formatTimeToBR, isSameDay, getTodayBR, getWeekDaysBR, g
 import { NewTask, Task, EditTask } from '@/types/task';
 import { useUserProfiles } from '@/hooks/useUserProfiles';
 
-// Sistema estável sem alertas - versão 2.0
+/* 
+ * ⚠️  ATENÇÃO - ÁREA LIVRE DE DEBUG ⚠️ 
+ * 
+ * NUNCA adicionar aqui:
+ * - console.log() com mensagens de debug
+ * - alert() ou confirm()
+ * - Logs que aparecem em produção
+ * 
+ * Para debug local, use:
+ * if (process.env.NODE_ENV === 'development') {
+ *   console.log("Debug apenas local");
+ * }
+ * 
+ * Histórico de problemas resolvidos:
+ * - Removido: console.log("🎯 FORCE UPDATE LAYOUT DESKTOP...")
+ * - Data: 28/01/2025
+ */
 
 const TaskManager = () => {
   const { 

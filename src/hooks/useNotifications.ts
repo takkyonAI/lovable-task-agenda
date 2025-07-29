@@ -15,10 +15,21 @@ interface NotificationData {
   read: boolean;
 }
 
-// ⚠️ SISTEMA COMPLETAMENTE DESABILITADO para resolver piscar da tela
-// NÃO REATIVAR sem implementar throttling/debouncing adequado
-  // Sistema de notificações funcionando
-  console.log("DEBUG: useNotifications.ts carregado - notificações desativadas");
+/* 
+ * ⚠️  ATENÇÃO - ÁREA LIVRE DE ALERTS ⚠️ 
+ * 
+ * NUNCA adicionar aqui:
+ * - alert() com mensagens de status
+ * - console.log() de debug em produção
+ * - Popups ou notificações que incomodem o usuário
+ * 
+ * Histórico de problemas resolvidos:
+ * - Removido: alert("NOTIFICAÇÕES DESATIVADAS - useNotifications.ts")
+ * - Data: 28/01/2025
+ * 
+ * SISTEMA COMPLETAMENTE DESABILITADO para resolver piscar da tela
+ * NÃO REATIVAR sem implementar throttling/debouncing adequado
+ */
 const NOTIFICATIONS_ENABLED = false;
 
 /**
