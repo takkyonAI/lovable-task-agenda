@@ -7,9 +7,9 @@ import { Task } from '@/types/task';
 interface TaskCardProps {
   task: Task;
   actionButtons: React.ReactNode;
-  getStatusColor: (status: string) => string;
+  getStatusColor: (status: string, task?: { due_date?: string; status: string }) => string;
   getPriorityColor: (priority: string) => string;
-  getStatusLabel: (status: string) => string;
+  getStatusLabel: (status: string, task?: { due_date?: string; status: string }) => string;
   getPriorityLabel: (priority: string) => string;
   getUserName: (userId: string) => string;
   canEditTask?: (() => boolean) | boolean;
@@ -81,8 +81,8 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
         {/* Badges de status e prioridade */}
         <div className="flex flex-wrap gap-1.5">
-          <Badge className={`${getStatusColor(task.status)} text-xs px-2 py-0.5 font-medium`}>
-            {getStatusLabel(task.status)}
+          <Badge className={`${getStatusColor(task.status, task)} text-xs px-2 py-0.5 font-medium`}>
+            {getStatusLabel(task.status, task)}
           </Badge>
           <Badge className={`${getPriorityColor(task.priority)} text-xs px-2 py-0.5 font-medium`}>
             {getPriorityLabel(task.priority)}

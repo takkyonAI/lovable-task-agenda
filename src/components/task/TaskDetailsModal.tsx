@@ -230,8 +230,8 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
         
         <div className="space-y-6">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge className={`${getStatusColor(task.status)} border`}>
-              {getStatusLabel(task.status)}
+            <Badge className={`${getStatusColor(task.status, task)} border`}>
+              {getStatusLabel(task.status, task)}
             </Badge>
             <Badge className={`${getPriorityColor(task.priority)} border`}>
               {getPriorityLabel(task.priority)}

@@ -562,7 +562,7 @@ const TaskManager = () => {
               {dayTasks.slice(0, 3).map((task) => (
                 <div
                   key={task.id}
-                  className={`text-xs p-1 rounded cursor-pointer ${getStatusColor(task.status)} ${getPriorityColor(task.priority)}`}
+                  className={`text-xs p-1 rounded cursor-pointer ${getStatusColor(task.status, task)} ${getPriorityColor(task.priority)}`}
                   onClick={() => handleTaskClick(task)}
                 >
                   <div className="truncate">{task.title}</div>

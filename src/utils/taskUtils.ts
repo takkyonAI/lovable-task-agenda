@@ -1,5 +1,20 @@
 
-export const getStatusColor = (status: string) => {
+// Função utilitária para determinar se uma tarefa está atrasada
+export const isTaskOverdue = (task: { due_date?: string; status: string }) => {
+  if (!task.due_date) return false;
+  if (task.status === 'concluida' || task.status === 'cancelada') return false;
+  
+  const now = new Date();
+  const taskDate = new Date(task.due_date);
+  return taskDate < now;
+};
+
+export const getStatusColor = (status: string, task?: { due_date?: string; status: string }) => {
+  // Se a tarefa está atrasada, sempre mostrar em vermelho
+  if (task && isTaskOverdue(task)) {
+    return 'bg-red-500/20 text-red-400 border-red-500/30';
+  }
+
   switch (status) {
     case 'pendente': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
     case 'em_andamento': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
@@ -18,7 +33,12 @@ export const getPriorityColor = (priority: string) => {
   }
 };
 
-export const getStatusLabel = (status: string) => {
+export const getStatusLabel = (status: string, task?: { due_date?: string; status: string }) => {
+  // Se a tarefa está atrasada, sempre mostrar "Atrasada"
+  if (task && isTaskOverdue(task)) {
+    return 'Atrasada';
+  }
+
   switch (status) {
     case 'pendente': return 'Pendente';
     case 'em_andamento': return 'Em Andamento';
