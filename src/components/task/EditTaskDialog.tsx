@@ -29,6 +29,21 @@ const EditTaskDialog: React.FC<EditTaskDialogProps> = ({
   onSaveTask,
   isSaving = false
 }) => {
+  /**
+   * 🔒 HOOK DE AUTENTICAÇÃO - Verificação de permissões
+   * 
+   * Este hook fornece acesso ao contexto de autenticação e
+   * funções de verificação de permissões do usuário atual.
+   * 
+   * FUNÇÕES UTILIZADAS:
+   * - canEditTaskDueDate(): Verifica se usuário pode editar datas de prazo
+   * 
+   * REGRAS DE PERMISSÃO:
+   * - Admin: ✅ Pode editar datas de prazo
+   * - Franqueado: ✅ Pode editar datas de prazo
+   * - Supervisor ADM: ✅ Pode editar datas de prazo
+   * - Outros níveis: ❌ Não podem editar datas de prazo
+   */
   const { canEditTaskDueDate } = useSupabaseAuth();
 
   /**
@@ -184,6 +199,21 @@ const EditTaskDialog: React.FC<EditTaskDialogProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="editTaskDueDate" className="text-slate-300">Data de Vencimento</Label>
+              {/* 
+               * CAMPO DE DATA - Controle de permissao implementado
+               * 
+               * COMPORTAMENTO:
+               * - Usuarios autorizados: Campo habilitado e funcional
+               * - Usuarios nao autorizados: Campo desabilitado e visualmente diferente
+               * 
+               * ESTILOS CONDICIONAIS:
+               * - Normal: bg-slate-700/50 border-slate-600 text-white
+               * - Desabilitado: + opacity-50 cursor-not-allowed
+               * 
+               * SEGURANCA:
+               * - disabled={!canEditTaskDueDate} - Bloqueia interacao
+               * - onChange so executa se campo estiver habilitado
+               */}
               <Input
                 id="editTaskDueDate"
                 type="date"
@@ -208,6 +238,21 @@ const EditTaskDialog: React.FC<EditTaskDialogProps> = ({
             
             <div>
               <Label htmlFor="editTaskDueTime" className="text-slate-300">Horário</Label>
+              {/* 
+               * CAMPO DE HORA - Controle de permissao implementado
+               * 
+               * COMPORTAMENTO:
+               * - Usuarios autorizados: Campo habilitado e funcional
+               * - Usuarios nao autorizados: Campo desabilitado e visualmente diferente
+               * 
+               * ESTILOS CONDICIONAIS:
+               * - Normal: bg-slate-700/50 border-slate-600 text-white
+               * - Desabilitado: + opacity-50 cursor-not-allowed
+               * 
+               * SEGURANCA:
+               * - disabled={!canEditTaskDueDate} - Bloqueia interacao
+               * - onChange so executa se campo estiver habilitado
+               */}
               <Input
                 id="editTaskDueTime"
                 type="time"
@@ -227,7 +272,23 @@ const EditTaskDialog: React.FC<EditTaskDialogProps> = ({
             </div>
           </div>
 
-          {/* Mensagem de restrição para usuários sem permissão */}
+          {/* 
+           * MENSAGEM DE RESTRICAO - Exibida apenas para usuarios sem permissao
+           * 
+           * PROPOSITO:
+           * - Informar claramente ao usuario sobre a restricao
+           * - Explicar o que fazer para obter permissao
+           * - Manter transparencia sobre as regras do sistema
+           * 
+           * ESTILO:
+           * - Cor ambar para destacar a mensagem
+           * - Icone de alerta para chamar atencao
+           * - Fundo semi-transparente para nao ser intrusivo
+           * 
+           * VISIBILIDADE:
+           * - So aparece quando !canEditTaskDueDate
+           * - Usuarios autorizados nao veem esta mensagem
+           */}
           {!canEditTaskDueDate && (
             <Alert className="border-amber-500/50 bg-amber-500/10">
               <AlertCircle className="h-4 w-4 text-amber-500" />
