@@ -6,11 +6,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Users, Plus, Crown, Shield, User as UserIcon, UserX, Mail, CheckCircle, Clock, RefreshCw, Trash2, UserMinus, Eye, EyeOff, GraduationCap, UserCheck, FileText, UserCog, Edit } from 'lucide-react';
+import { Users, Plus, Crown, Shield, User as UserIcon, UserX, Mail, CheckCircle, Clock, RefreshCw, Trash2, UserMinus, Eye, EyeOff, GraduationCap, UserCheck, FileText, UserCog, Edit, UserPlus } from 'lucide-react';
 import { User } from '@/types/user';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { useToast } from '@/hooks/use-toast';
 import PasswordManagement from './PasswordManagement';
+import { supabase } from '@/integrations/supabase/client';
 
 const UserManagement: React.FC = () => {
   const [confirmedUsers, setConfirmedUsers] = useState<User[]>([]);
@@ -51,7 +52,35 @@ const UserManagement: React.FC = () => {
   const loadUsers = async () => {
     setIsLoading(true);
     try {
-      const users = await getAllUsers();
+      // ✅ CARREGAR TODOS OS USUÁRIOS (ATIVOS E INATIVOS) para gerenciamento
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .order('name', { ascending: true });
+
+      if (error) {
+        console.error('Erro ao carregar usuários:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao carregar usuários",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const users = (data || []).map((user: any) => ({
+        id: user.id as string,
+        user_id: user.user_id as string,
+        name: user.name as string,
+        email: user.email as string,
+        role: user.role as User['role'],
+        is_active: user.is_active as boolean,
+        password_hash: user.password_hash as string,
+        created_at: new Date(user.created_at as string),
+        last_login: user.last_login ? new Date(user.last_login as string) : undefined,
+        first_login_completed: (user as any).first_login_completed as boolean
+      }));
+
       setConfirmedUsers(users);
       console.log('Usuários carregados no UserManagement:', users.length);
     } catch (error) {
@@ -271,7 +300,7 @@ const UserManagement: React.FC = () => {
         if (success) {
           toast({
             title: "Status Alterado",
-            description: `${userName} foi ${currentStatus ? 'desativado' : 'ativado'} com sucesso`,
+            description: `${userName} foi ${action} com sucesso`,
           });
           await loadUsers();
         }
@@ -452,16 +481,25 @@ const UserManagement: React.FC = () => {
                       </Button>
                       
                       <Button
-                        onClick={() => handleToggleUserStatus(user.id, user.name, user.is_active !== false)}
+                        onClick={() => handleToggleUserStatus(user.id, user.name, user.is_active)}
                         variant="outline"
                         size="sm"
-                        className={`text-xs ${user.is_active === false 
-                          ? "bg-green-500/20 border-green-500/30 hover:bg-green-500/30 text-green-400"
-                          : "bg-yellow-500/20 border-yellow-500/30 hover:bg-yellow-500/30 text-yellow-400"
+                        className={`text-xs ${user.is_active 
+                          ? "bg-yellow-500/20 border-yellow-500/30 hover:bg-yellow-500/30 text-yellow-400"
+                          : "bg-green-500/20 border-green-500/30 hover:bg-green-500/30 text-green-400"
                         }`}
                       >
-                        <UserMinus className="w-4 h-4 mr-2" />
-                        {user.is_active === false ? 'Ativar' : 'Desativar'}
+                        {user.is_active ? (
+                          <>
+                            <UserMinus className="w-4 h-4 mr-2" />
+                            Desativar
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="w-4 h-4 mr-2" />
+                            Ativar
+                          </>
+                        )}
                       </Button>
                       
                       <Button

@@ -258,6 +258,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
 
+      // ✅ VERIFICAR SE USUÁRIO ESTÁ ATIVO
+      if (data.user) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('user_profiles')
+          .select('is_active')
+          .eq('user_id', data.user.id)
+          .single();
+
+        if (profileError) {
+          console.error('Erro ao verificar status do usuário:', profileError);
+          toast({
+            title: "Erro no Login",
+            description: "Erro ao verificar status da conta. Tente novamente.",
+            variant: "destructive"
+          });
+          return false;
+        }
+
+        if (profileData && profileData.is_active === false) {
+          // 🔒 USUÁRIO DESATIVADO - Fazer logout e mostrar erro
+          await supabase.auth.signOut();
+          toast({
+            title: "Conta Desativada",
+            description: "Sua conta foi desativada. Entre em contato com o administrador.",
+            variant: "destructive"
+          });
+          return false;
+        }
+      }
+
       return true;
     } catch (error) {
       console.error('Erro no login:', error);
@@ -681,13 +711,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const getAllUsers = async (): Promise<User[]> => {
     try {
+      if (!canAccessUserManagement()) {
+        toast({
+          title: "Erro",
+          description: "Você não tem permissão para acessar esta funcionalidade.",
+          variant: "destructive"
+        });
+        return [];
+      }
+
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
-        .order('created_at', { ascending: false });
+        .eq('is_active', true) // ✅ FILTRAR APENAS USUÁRIOS ATIVOS
+        .order('name', { ascending: true });
 
       if (error) {
         console.error('Erro ao buscar usuários:', error);
+        toast({
+          title: "Erro",
+          description: "Falha ao buscar usuários",
+          variant: "destructive"
+        });
         return [];
       }
 
@@ -700,10 +745,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         is_active: user.is_active as boolean,
         password_hash: user.password_hash as string,
         created_at: new Date(user.created_at as string),
-        last_login: user.last_login ? new Date(user.last_login as string) : undefined
+        last_login: user.last_login ? new Date(user.last_login as string) : undefined,
+        first_login_completed: (user as any).first_login_completed as boolean
       }));
     } catch (error) {
       console.error('Erro ao buscar usuários:', error);
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao buscar usuários",
+        variant: "destructive"
+      });
       return [];
     }
   };
@@ -723,7 +774,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const { data: fallbackData, error: fallbackError } = await supabase
           .from('user_profiles')
           .select('*')
-          .eq('is_active', true)
+          .eq('is_active', true) // ✅ FILTRAR APENAS USUÁRIOS ATIVOS
           .order('name', { ascending: true });
         
         if (fallbackError) {
@@ -744,19 +795,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }));
       }
 
-      // Processar dados da função do banco
-      return (Array.isArray(data) ? data : [])
-        .map((user: any) => ({
-          id: user.user_id as string, // Função retorna user_id como id
-          user_id: user.user_id as string,
-          name: user.name as string,
-          email: user.email as string,
-          role: user.role as User['role'],
-          is_active: true, // Função já filtra por is_active
-          password_hash: '', // Não retornado pela função
-          created_at: new Date(), // Não retornado pela função
-          last_login: undefined // Não retornado pela função
-        }));
+      // ✅ FILTRAR APENAS USUÁRIOS ATIVOS da função RPC
+      // A função RPC já deve filtrar por is_active = true, mas vamos garantir
+      const activeUsers = (data || []).filter((user: any) => {
+        // Se a função RPC retorna is_active, usar esse valor
+        if (user.hasOwnProperty('is_active')) {
+          return user.is_active !== false;
+        }
+        // Se não retorna is_active, assumir que são todos ativos (comportamento padrão da RPC)
+        return true;
+      });
+      
+      return activeUsers.map((user: any) => ({
+        id: user.id || user.user_id, // Fallback para compatibilidade
+        user_id: user.user_id as string,
+        name: user.name as string,
+        email: user.email as string,
+        role: user.role as User['role'],
+        is_active: true, // Todos os usuários retornados pela RPC são ativos
+        password_hash: '', // Não retornado pela RPC
+        created_at: new Date(), // Não retornado pela RPC
+        last_login: undefined // Não retornado pela RPC
+      }));
     } catch (error) {
       console.error('Erro ao buscar usuários visíveis:', error);
       return [];
@@ -846,10 +906,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
 
-      // Alternar status
+      // ✅ ALTERNAR STATUS: Se está ativo, desativar; se está inativo, ativar
+      const newStatus = !(userData as any).is_active;
+      
       const { error } = await supabase
         .from('user_profiles')
-        .update({ is_active: !(userData as any).is_active })
+        .update({ is_active: newStatus })
         .eq('id', userId);
 
       if (error) {
