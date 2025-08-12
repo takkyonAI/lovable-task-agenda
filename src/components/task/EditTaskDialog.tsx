@@ -6,9 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Save, Key, Loader2 } from 'lucide-react';
+import { Save, Key, Loader2, AlertCircle } from 'lucide-react';
 import UserSelector from '../UserSelector';
 import { EditTask } from '@/types/task';
+import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface EditTaskDialogProps {
   isOpen: boolean;
@@ -27,6 +29,8 @@ const EditTaskDialog: React.FC<EditTaskDialogProps> = ({
   onSaveTask,
   isSaving = false
 }) => {
+  const { canEditTaskDueDate } = useSupabaseAuth();
+
   /**
    * Extrai a parte da data de uma string para uso em input type="date"
    * 
@@ -197,7 +201,8 @@ const EditTaskDialog: React.FC<EditTaskDialogProps> = ({
                     onTaskChange({ ...editTask, due_date: '' });
                   }
                 }}
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className={`bg-slate-700/50 border-slate-600 text-white ${!canEditTaskDueDate ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={!canEditTaskDueDate}
               />
             </div>
             
@@ -216,10 +221,21 @@ const EditTaskDialog: React.FC<EditTaskDialogProps> = ({
                   const localDateTime = `${dateValue} ${timeValue}:00`;
                   onTaskChange({ ...editTask, due_time: timeValue, due_date: localDateTime });
                 }}
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className={`bg-slate-700/50 border-slate-600 text-white ${!canEditTaskDueDate ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={!canEditTaskDueDate}
               />
             </div>
           </div>
+
+          {/* Mensagem de restrição para usuários sem permissão */}
+          {!canEditTaskDueDate && (
+            <Alert className="border-amber-500/50 bg-amber-500/10">
+              <AlertCircle className="h-4 w-4 text-amber-500" />
+              <AlertDescription className="text-amber-400">
+                Você não tem acesso à essa função. Fale com sua supervisora para alterar a data de prazo.
+              </AlertDescription>
+            </Alert>
+          )}
 
           <div>
             <Label className="text-slate-300">Atribuir Usuários</Label>

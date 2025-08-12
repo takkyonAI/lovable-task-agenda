@@ -42,6 +42,7 @@ interface AuthContextType {
   updateUser: (userId: string, userData: { name: string; email: string; role?: User['role'] }) => Promise<boolean>;
   hasPermission: (requiredRole: User['role']) => boolean;
   canAccessUserManagement: () => boolean;
+  canEditTaskDueDate: () => boolean;
   getAllUsers: () => Promise<User[]>;
   getVisibleUsers: () => Promise<User[]>;
   refreshProfile: () => Promise<void>;
@@ -943,6 +944,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return hasPermission('franqueado');
   };
 
+  const canEditTaskDueDate = (): boolean => {
+    if (!currentUser) return false;
+    
+    // Apenas admin, franqueado e supervisor_adm podem editar datas de prazo
+    return ['admin', 'franqueado', 'supervisor_adm'].includes(currentUser.role);
+  };
+
   const firstTimePasswordChange = async (newPassword: string): Promise<boolean> => {
     try {
       if (!currentUser) {
@@ -1197,6 +1205,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       updateUser,
       hasPermission,
       canAccessUserManagement,
+      canEditTaskDueDate,
       getAllUsers,
       getVisibleUsers,
       refreshProfile,
