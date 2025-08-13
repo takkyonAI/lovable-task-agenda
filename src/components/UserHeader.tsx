@@ -57,11 +57,11 @@ const UserHeader: React.FC = () => {
       <CardContent className="p-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center space-x-3">
-            <div>
-              <Logo size="xs" variant="icon" className="transform scale-[2] origin-left" />
+            <div className="h-12">
+              <Logo size="xs" variant="icon" className="w-24 h-12" />
             </div>
             <h1 className="text-3xl font-bold text-primary-foreground dark:text-white">
-              Daily Control - Navegantes
+              Daily Control - <span className="font-normal">Navegantes</span>
             </h1>
           </div>
           

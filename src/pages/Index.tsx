@@ -26,18 +26,7 @@ const Index = () => {
       <div className="container mx-auto px-4 py-6">
         <UserHeader />
         
-        <div className="mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4">
-            <Button 
-              onClick={handleLogout}
-              variant="outline"
-              className="bg-primary text-primary-foreground hover:opacity-90 w-full sm:w-auto"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Sair
-            </Button>
-          </div>
-        </div>
+        <div className="mb-6" />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className={`grid w-full ${canAccessUserManagement() ? 'grid-cols-3' : 'grid-cols-2'} bg-muted border border-border`}>
