@@ -670,12 +670,12 @@ const TaskManager = () => {
             </Button>
 
             <div className="flex items-center gap-2 flex-1 max-w-md">
-              <Search className="w-4 h-4 text-slate-400" />
+              <Search className="w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar tarefas..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1 bg-slate-700/50 border-slate-600 text-white placeholder-slate-400"
+                className="flex-1 bg-muted border-border text-foreground placeholder-muted-foreground"
               />
             </div>
 
@@ -770,7 +770,7 @@ const TaskManager = () => {
         </div>
 
         {/* Navegação de visualização */}
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl shadow-lg p-6 mb-6 border border-slate-700/50">
+        <div className="bg-card backdrop-blur-sm rounded-xl shadow-lg p-6 mb-6 border border-border">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
               <Button
@@ -781,7 +781,7 @@ const TaskManager = () => {
               >
                 <ChevronLeft className="w-4 h-4" />
               </Button>
-              <h2 className="text-xl font-semibold text-white">
+              <h2 className="text-xl font-semibold text-foreground">
                 {getViewTitleBR(currentView, selectedDate)}
               </h2>
               <Button
@@ -799,7 +799,7 @@ const TaskManager = () => {
                 onClick={() => setCurrentView('day')}
                 variant={currentView === 'day' ? 'default' : 'outline'}
                 size="sm"
-                className={currentView === 'day' ? 'bg-blue-600 hover:bg-blue-700' : 'border-slate-600 hover:border-slate-500'}
+                className={currentView === 'day' ? 'bg-primary text-primary-foreground hover:opacity-90' : 'border-border'}
               >
                 Dia
               </Button>
@@ -807,7 +807,7 @@ const TaskManager = () => {
                 onClick={() => setCurrentView('week')}
                 variant={currentView === 'week' ? 'default' : 'outline'}
                 size="sm"
-                className={currentView === 'week' ? 'bg-blue-600 hover:bg-blue-700' : 'border-slate-600 hover:border-slate-500'}
+                className={currentView === 'week' ? 'bg-primary text-primary-foreground hover:opacity-90' : 'border-border'}
               >
                 Semana
               </Button>
@@ -815,7 +815,7 @@ const TaskManager = () => {
                 onClick={() => setCurrentView('month')}
                 variant={currentView === 'month' ? 'default' : 'outline'}
                 size="sm"
-                className={currentView === 'month' ? 'bg-blue-600 hover:bg-blue-700' : 'border-slate-600 hover:border-slate-500'}
+                className={currentView === 'month' ? 'bg-primary text-primary-foreground hover:opacity-90' : 'border-border'}
               >
                 Mês
               </Button>
@@ -830,11 +830,11 @@ const TaskManager = () => {
         </div>
 
         {/* Conteúdo das tarefas */}
-        <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-slate-700/50">
+        <div className="bg-card backdrop-blur-sm rounded-xl shadow-lg p-6 border border-border">
           {isLoading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="text-slate-400 mt-4">Carregando tarefas...</p>
+              <p className="text-muted-foreground mt-4">Carregando tarefas...</p>
             </div>
           ) : (
             <>

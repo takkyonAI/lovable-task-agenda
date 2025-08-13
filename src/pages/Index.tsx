@@ -39,7 +39,7 @@ const Index = () => {
             <Button 
               onClick={handleLogout}
               variant="outline"
-              className="bg-card text-foreground border-border hover:bg-accent hover:text-accent-foreground w-full sm:w-auto"
+              className="bg-primary text-primary-foreground hover:opacity-90 w-full sm:w-auto"
             >
               <LogOut className="w-4 h-4 mr-2" />
               Sair
