@@ -57,21 +57,18 @@ const UserHeader: React.FC = () => {
       <CardContent className="p-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center space-x-3">
-            {/* Logo da Rockfeller no UserHeader */}
             <div className="p-1">
               <Logo size="xs" variant="icon" />
             </div>
-            <div className="min-w-0 flex-1">
-              <h2 className="font-semibold text-primary-foreground dark:text-white truncate">{currentUser.name}</h2>
-              <p className="text-primary-foreground/80 dark:text-slate-400 text-sm truncate">{currentUser.email}</p>
-            </div>
-            <Badge className={`${getRoleColor(currentUser.role)} whitespace-nowrap`}>
-              {getRoleIcon(currentUser.role)}
-              <span className="ml-1">{getRoleLabel(currentUser.role)}</span>
-            </Badge>
+            <h1 className="text-base sm:text-lg font-semibold text-primary-foreground dark:text-white">
+              Daily Control - Navegantes
+            </h1>
           </div>
           
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
+            <span className="hidden sm:block font-medium text-primary-foreground dark:text-white max-w-[220px] truncate">
+              {currentUser.name}
+            </span>
             <ThemeToggle />
             <NotificationCenter />
             
