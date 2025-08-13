@@ -57,8 +57,8 @@ const UserHeader: React.FC = () => {
       <CardContent className="p-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center space-x-3">
-            <div className="p-1">
-              <Logo size="xs" variant="icon" />
+            <div>
+              <Logo size="xs" variant="icon" className="transform scale-[2] origin-left" />
             </div>
             <h1 className="text-3xl font-bold text-primary-foreground dark:text-white">
               Daily Control - Navegantes
