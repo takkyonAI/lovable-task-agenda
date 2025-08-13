@@ -391,10 +391,16 @@ export const useTaskManager = () => {
     const weekStart = new Date(today);
     weekStart.setDate(today.getDate() - today.getDay());
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
     switch (filter) {
       case 'all':
-        return tasks.length;
+        // Total do mês vigente
+        return tasks.filter(task => {
+          if (!task.due_date) return false;
+          const taskDate = new Date(task.due_date);
+          return taskDate >= monthStart && taskDate < monthEnd;
+        }).length;
       case 'today':
         return tasks.filter(task => {
           if (!task.due_date) return false;
@@ -412,7 +418,6 @@ export const useTaskManager = () => {
         return tasks.filter(task => {
           if (!task.due_date) return false;
           const taskDate = new Date(task.due_date);
-          const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
           return taskDate >= monthStart && taskDate < monthEnd;
         }).length;
       case 'overdue':

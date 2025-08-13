@@ -705,8 +705,8 @@ const TaskManager = () => {
             <CardContent className="p-6 rounded-lg text-white bg-gradient-to-br from-blue-500 to-blue-700 shadow-md dark:hidden">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-white/80 text-sm font-medium">Total</p>
-                  <p className="text-3xl font-bold">{filteredTasks.length}</p>
+                  <p className="text-white/80 text-sm font-medium">Total - {new Date().toLocaleString('pt-BR', { month: 'long' })}</p>
+                  <p className="text-3xl font-bold">{getFilterCount('all')}</p>
                 </div>
                 <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center ring-1 ring-white/30">
                   <ShieldCheck className="w-6 h-6 text-white" />
@@ -717,8 +717,8 @@ const TaskManager = () => {
             <CardContent className="hidden dark:block p-6 rounded-lg bg-slate-800/50 border border-slate-700/50">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-blue-400 text-sm font-medium">Total</p>
-                  <p className="text-3xl font-bold text-blue-400">{filteredTasks.length}</p>
+                  <p className="text-blue-400 text-sm font-medium">Total - {new Date().toLocaleString('pt-BR', { month: 'long' })}</p>
+                  <p className="text-3xl font-bold text-blue-400">{getFilterCount('all')}</p>
                 </div>
                 <div className="w-12 h-12 bg-slate-700/70 rounded-full flex items-center justify-center">
                   <ShieldCheck className="w-6 h-6 text-blue-400" />
@@ -766,7 +766,7 @@ const TaskManager = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-white/80 text-sm font-medium">Concluídas</p>
-                  <p className="text-3xl font-bold">{filteredTasks.filter(t => t.status === 'concluida').length}</p>
+                  <p className="text-3xl font-bold">{tasks.filter(t => t.status === 'concluida' && t.due_date && (() => { const d = new Date(t.due_date as any); const now = new Date(); return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth(); })()).length}</p>
                 </div>
                 <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center ring-1 ring-white/30">
                   <CheckCircle className="w-6 h-6 text-white" />
@@ -778,7 +778,7 @@ const TaskManager = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-green-400 text-sm font-medium">Concluídas</p>
-                  <p className="text-3xl font-bold text-green-400">{filteredTasks.filter(t => t.status === 'concluida').length}</p>
+                  <p className="text-3xl font-bold text-green-400">{tasks.filter(t => t.status === 'concluida' && t.due_date && (() => { const d = new Date(t.due_date as any); const now = new Date(); return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth(); })()).length}</p>
                 </div>
                 <div className="w-12 h-12 bg-slate-700/70 rounded-full flex items-center justify-center">
                   <CheckCircle className="w-6 h-6 text-green-400" />
