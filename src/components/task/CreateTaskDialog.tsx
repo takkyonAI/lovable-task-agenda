@@ -104,29 +104,29 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
           Nova Tarefa
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-slate-800 border-slate-700 max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto bg-card text-foreground border border-border dark:bg-slate-800 dark:border-slate-700">
         <DialogHeader>
-          <DialogTitle className="text-white">Criar Nova Tarefa</DialogTitle>
+          <DialogTitle className="text-foreground dark:text-white">Criar Nova Tarefa</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="taskTitle" className="text-slate-300">Título</Label>
+            <Label htmlFor="taskTitle" className="text-muted-foreground dark:text-slate-300">Título</Label>
             <Input
               id="taskTitle"
               value={newTask.title}
               onChange={(e) => onTaskChange({ ...newTask, title: e.target.value })}
-              className="bg-slate-700/50 border-slate-600 text-white"
+              className="bg-muted border-border text-foreground dark:bg-slate-700/50 dark:border-slate-600 dark:text-white"
               placeholder="Título da tarefa"
             />
           </div>
           
           <div>
-            <Label htmlFor="taskDescription" className="text-slate-300">Descrição</Label>
+            <Label htmlFor="taskDescription" className="text-muted-foreground dark:text-slate-300">Descrição</Label>
             <Textarea
               id="taskDescription"
               value={newTask.description}
               onChange={(e) => onTaskChange({ ...newTask, description: e.target.value })}
-              className="bg-slate-700/50 border-slate-600 text-white"
+              className="bg-muted border-border text-foreground dark:bg-slate-700/50 dark:border-slate-600 dark:text-white"
               placeholder="Descrição da tarefa"
               rows={3}
             />
@@ -134,12 +134,12 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="taskStatus" className="text-slate-300">Status</Label>
+              <Label htmlFor="taskStatus" className="text-muted-foreground dark:text-slate-300">Status</Label>
               <Select value={newTask.status} onValueChange={(value: any) => onTaskChange({ ...newTask, status: value })}>
-                <SelectTrigger className="bg-slate-700/50 border-slate-600">
+                <SelectTrigger className="bg-muted border-border dark:bg-slate-700/50 dark:border-slate-600">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-700">
+                <SelectContent className="bg-card border-border dark:bg-slate-800 dark:border-slate-700">
                   <SelectItem value="pendente">Pendente</SelectItem>
                   <SelectItem value="em_andamento">Em Andamento</SelectItem>
                   <SelectItem value="concluida">Concluída</SelectItem>
@@ -149,12 +149,12 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
             </div>
             
             <div>
-              <Label htmlFor="taskPriority" className="text-slate-300">Prioridade</Label>
+              <Label htmlFor="taskPriority" className="text-muted-foreground dark:text-slate-300">Prioridade</Label>
               <Select value={newTask.priority} onValueChange={(value: any) => onTaskChange({ ...newTask, priority: value })}>
-                <SelectTrigger className="bg-slate-700/50 border-slate-600">
+                <SelectTrigger className="bg-muted border-border dark:bg-slate-700/50 dark:border-slate-600">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-700">
+                <SelectContent className="bg-card border-border dark:bg-slate-800 dark:border-slate-700">
                   <SelectItem value="baixa">Baixa</SelectItem>
                   <SelectItem value="media">Média</SelectItem>
                   <SelectItem value="urgente">Urgente</SelectItem>
@@ -165,7 +165,7 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="taskDueDate" className="text-slate-300">Data de Vencimento</Label>
+              <Label htmlFor="taskDueDate" className="text-muted-foreground dark:text-slate-300">Data de Vencimento</Label>
               <Input
                 id="taskDueDate"
                 type="date"
@@ -183,12 +183,12 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
                     onTaskChange({ ...newTask, due_date: '' });
                   }
                 }}
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-muted border-border text-foreground dark:bg-slate-700/50 dark:border-slate-600 dark:text-white"
               />
             </div>
             
             <div>
-              <Label htmlFor="taskDueTime" className="text-slate-300">Horário</Label>
+              <Label htmlFor="taskDueTime" className="text-muted-foreground dark:text-slate-300">Horário</Label>
               <Input
                 id="taskDueTime"
                 type="time"
@@ -202,7 +202,7 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
                   const localDateTime = `${dateValue} ${timeValue}:00`;
                   onTaskChange({ ...newTask, due_time: timeValue, due_date: localDateTime });
                 }}
-                className="bg-slate-700/50 border-slate-600 text-white"
+                className="bg-muted border-border text-foreground dark:bg-slate-700/50 dark:border-slate-600 dark:text-white"
               />
             </div>
           </div>
@@ -217,12 +217,12 @@ const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({
           </div>
 
           {/* Privacy Toggle */}
-          <div className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg border border-slate-600">
+          <div className="flex items-center justify-between p-3 bg-muted/40 rounded-lg border border-border dark:bg-slate-700/30 dark:border-slate-600">
             <div className="flex items-center space-x-2">
               <Key className="w-4 h-4 text-amber-400" />
               <div>
-                <Label className="text-slate-300 font-medium">Tarefa Privada</Label>
-                <p className="text-xs text-slate-400">Visível apenas para criador, atribuídos e admin/franqueados</p>
+                <Label className="text-foreground font-medium dark:text-slate-300">Tarefa Privada</Label>
+                <p className="text-xs text-muted-foreground dark:text-slate-400">Visível apenas para criador, atribuídos e admin/franqueados</p>
               </div>
             </div>
             <Switch
