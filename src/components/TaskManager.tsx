@@ -701,68 +701,68 @@ const TaskManager = () => {
           style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}
         >
           <Card 
-            className="bg-card border-border cursor-pointer hover:bg-accent transition-colors"
+            className="cursor-pointer transition-colors"
             onClick={() => handleStatsClick('all')}
           >
-            <CardContent className="p-6">
+            <CardContent className="p-6 bg-blue-600 text-white rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-muted-foreground text-sm font-medium">Total</p>
-                  <p className="text-3xl font-bold text-foreground">{filteredTasks.length}</p>
+                  <p className="text-white/80 text-sm font-medium">Total</p>
+                  <p className="text-3xl font-bold">{filteredTasks.length}</p>
                 </div>
-                <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center">
-                  <ShieldCheck className="w-6 h-6 text-blue-400" />
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                  <ShieldCheck className="w-6 h-6 text-white" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card 
-            className="bg-card border-border cursor-pointer hover:bg-accent transition-colors"
+            className="cursor-pointer transition-colors"
             onClick={() => handleStatsClick('pendente')}
           >
-            <CardContent className="p-6">
+            <CardContent className="p-6 bg-yellow-400 text-black rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-muted-foreground text-sm font-medium">Pendentes</p>
-                  <p className="text-3xl font-bold text-yellow-400">{filteredTasks.filter(t => t.status === 'pendente').length}</p>
+                  <p className="text-black/70 text-sm font-medium">Pendentes</p>
+                  <p className="text-3xl font-bold">{filteredTasks.filter(t => t.status === 'pendente').length}</p>
                 </div>
-                <div className="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center">
-                  <Clock className="w-6 h-6 text-yellow-400" />
+                <div className="w-12 h-12 bg-black/10 rounded-full flex items-center justify-center">
+                  <Clock className="w-6 h-6 text-black/70" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card 
-            className="bg-card border-border cursor-pointer hover:bg-accent transition-colors"
+            className="cursor-pointer transition-colors"
             onClick={() => handleStatsClick('concluida')}
           >
-            <CardContent className="p-6">
+            <CardContent className="p-6 bg-green-500 text-white rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-400 text-sm font-medium">Concluídas</p>
-                  <p className="text-3xl font-bold text-green-400">{filteredTasks.filter(t => t.status === 'concluida').length}</p>
+                  <p className="text-white/80 text-sm font-medium">Concluídas</p>
+                  <p className="text-3xl font-bold">{filteredTasks.filter(t => t.status === 'concluida').length}</p>
                 </div>
-                <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-6 h-6 text-green-400" />
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-6 h-6 text-white" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card 
-            className="bg-slate-800/50 border-slate-700/50 cursor-pointer hover:bg-slate-800/70 transition-colors"
+            className="cursor-pointer transition-colors"
             onClick={() => handleStatsClick('overdue')}
           >
-            <CardContent className="p-6">
+            <CardContent className="p-6 bg-red-500 text-white rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-400 text-sm font-medium">Atrasadas</p>
-                  <p className="text-3xl font-bold text-red-400">{getFilterCount('overdue')}</p>
+                  <p className="text-white/80 text-sm font-medium">Atrasadas</p>
+                  <p className="text-3xl font-bold">{getFilterCount('overdue')}</p>
                 </div>
-                <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center">
-                  <AlertTriangle className="w-6 h-6 text-red-400" />
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                  <AlertTriangle className="w-6 h-6 text-white" />
                 </div>
               </div>
             </CardContent>

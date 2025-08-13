@@ -53,7 +53,7 @@ const UserHeader: React.FC = () => {
   };
 
   return (
-    <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700 mb-6">
+    <Card className="mb-6 border bg-primary text-primary-foreground dark:bg-slate-800/50 dark:border-slate-700">
       <CardContent className="p-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center space-x-3">
@@ -62,8 +62,8 @@ const UserHeader: React.FC = () => {
               <Logo size="xs" variant="icon" />
             </div>
             <div className="min-w-0 flex-1">
-              <h2 className="font-semibold text-white truncate">{currentUser.name}</h2>
-              <p className="text-slate-400 text-sm truncate">{currentUser.email}</p>
+              <h2 className="font-semibold text-primary-foreground dark:text-white truncate">{currentUser.name}</h2>
+              <p className="text-primary-foreground/80 dark:text-slate-400 text-sm truncate">{currentUser.email}</p>
             </div>
             <Badge className={`${getRoleColor(currentUser.role)} whitespace-nowrap`}>
               {getRoleIcon(currentUser.role)}
@@ -79,7 +79,7 @@ const UserHeader: React.FC = () => {
               variant="outline"
               size="sm"
               onClick={logout}
-              className="bg-slate-700/50 border-slate-600 hover:bg-slate-600/50 text-white w-full sm:w-auto"
+              className="bg-white/10 border-white/20 text-primary-foreground hover:bg-white/20 dark:bg-slate-700/50 dark:border-slate-600 dark:hover:bg-slate-600/50 dark:text-white w-full sm:w-auto"
             >
               <LogOut className="w-4 h-4 mr-2" />
               Sair
