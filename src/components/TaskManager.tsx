@@ -721,14 +721,14 @@ const TaskManager = () => {
             className="cursor-pointer transition-colors"
             onClick={() => handleStatsClick('pendente')}
           >
-            <CardContent className="p-6 rounded-lg text-black bg-gradient-to-br from-yellow-400 to-yellow-500 shadow-md">
+            <CardContent className="p-6 rounded-lg text-white bg-gradient-to-br from-yellow-400 to-yellow-500 shadow-md">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-black/70 text-sm font-medium">Pendentes</p>
-                  <p className="text-3xl font-bold">{filteredTasks.filter(t => t.status === 'pendente').length}</p>
+                  <p className="text-white/90 text-sm font-medium">Pendentes</p>
+                  <p className="text-3xl font-bold text-white">{filteredTasks.filter(t => t.status === 'pendente').length}</p>
                 </div>
-                <div className="w-12 h-12 bg-black/10 rounded-full flex items-center justify-center ring-1 ring-black/10">
-                  <Clock className="w-6 h-6 text-black/70" />
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center ring-1 ring-white/30">
+                  <Clock className="w-6 h-6 text-white" />
                 </div>
               </div>
             </CardContent>
