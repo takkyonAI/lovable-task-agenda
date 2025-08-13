@@ -31,6 +31,10 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
   isUpdating
 }) => {
   const { getUserName } = useUserProfiles();
+  // Atualiza o título quando status mudar sem fechar o modal
+  useEffect(() => {
+    // no-op: re-render garantido via props atualizadas
+  }, [task?.status]);
 
   if (!task) return null;
 

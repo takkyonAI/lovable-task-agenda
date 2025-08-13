@@ -441,6 +441,8 @@ export const useTaskManager = () => {
     }
 
     setUpdatingTask(taskId);
+    // Atualização otimista: refletir imediatamente na lista local
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus, updated_at: new Date() as any } : t));
     try {
       const task = tasks.find(t => t.id === taskId);
       
@@ -492,6 +494,7 @@ export const useTaskManager = () => {
         variant: statusMessage.variant as any
       });
 
+      // Sincroniza lista após confirmação do backend
       await loadTasks();
     } catch (error) {
       console.error('Erro ao atualizar status da tarefa:', error);
