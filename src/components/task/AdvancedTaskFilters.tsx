@@ -68,19 +68,19 @@ const AdvancedTaskFilters: React.FC<AdvancedTaskFiltersProps> = ({
   const hasActiveFilters = selectedUser !== 'all' || selectedAccessLevel !== 'all' || selectedPriority !== 'all';
 
   return (
-    <Card className="bg-slate-700/30 border-slate-600 mb-4">
+    <Card className="mb-4 bg-muted/40 border border-border">
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
-            <Filter className="w-4 h-4 text-slate-400" />
-            <span className="text-slate-300 text-sm font-medium">Filtros Avançados</span>
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            <span className="text-foreground/80 text-sm font-medium">Filtros Avançados</span>
           </div>
           {hasActiveFilters && (
             <Button
               variant="ghost"
               size="sm"
               onClick={onClearFilters}
-              className="text-slate-400 hover:text-white hover:bg-slate-600/50"
+              className="text-muted-foreground hover:text-foreground hover:bg-accent"
             >
               <X className="w-4 h-4 mr-1" />
               Limpar
@@ -90,12 +90,12 @@ const AdvancedTaskFilters: React.FC<AdvancedTaskFiltersProps> = ({
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <Label className="text-slate-300 text-sm mb-2 block">Filtrar por Usuário Atribuído</Label>
+            <Label className="text-muted-foreground text-sm mb-2 block">Filtrar por Usuário Atribuído</Label>
             <Select value={selectedUser} onValueChange={onUserChange}>
-              <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+              <SelectTrigger className="bg-muted border-border text-foreground">
                 <SelectValue placeholder="Selecionar usuário atribuído..." />
               </SelectTrigger>
-              <SelectContent className="bg-slate-800 border-slate-700">
+              <SelectContent className="bg-card border-border">
                 <SelectItem value="all">Todos os usuários</SelectItem>
                 {userList.map((user) => (
                   <SelectItem key={user.user_id} value={user.user_id}>
@@ -107,12 +107,12 @@ const AdvancedTaskFilters: React.FC<AdvancedTaskFiltersProps> = ({
           </div>
 
           <div>
-            <Label className="text-slate-300 text-sm mb-2 block">Filtrar por Nível de Acesso</Label>
+            <Label className="text-muted-foreground text-sm mb-2 block">Filtrar por Nível de Acesso</Label>
             <Select value={selectedAccessLevel} onValueChange={onAccessLevelChange}>
-              <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+              <SelectTrigger className="bg-muted border-border text-foreground">
                 <SelectValue placeholder="Selecionar nível de acesso..." />
               </SelectTrigger>
-              <SelectContent className="bg-slate-800 border-slate-700">
+              <SelectContent className="bg-card border-border">
                 {accessLevels.map((level) => (
                   <SelectItem key={level.value} value={level.value}>
                     {level.label}
@@ -123,12 +123,12 @@ const AdvancedTaskFilters: React.FC<AdvancedTaskFiltersProps> = ({
           </div>
 
           <div>
-            <Label className="text-slate-300 text-sm mb-2 block">Filtrar por Prioridade</Label>
+            <Label className="text-muted-foreground text-sm mb-2 block">Filtrar por Prioridade</Label>
             <Select value={selectedPriority} onValueChange={onPriorityChange}>
-              <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+              <SelectTrigger className="bg-muted border-border text-foreground">
                 <SelectValue placeholder="Selecionar prioridade..." />
               </SelectTrigger>
-              <SelectContent className="bg-slate-800 border-slate-700">
+              <SelectContent className="bg-card border-border">
                 {priorities.map((priority) => (
                   <SelectItem key={priority.value} value={priority.value}>
                     {priority.label}

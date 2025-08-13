@@ -704,13 +704,13 @@ const TaskManager = () => {
             className="cursor-pointer transition-colors"
             onClick={() => handleStatsClick('all')}
           >
-            <CardContent className="p-6 bg-blue-600 text-white rounded-lg">
+            <CardContent className="p-6 rounded-lg text-white bg-gradient-to-br from-blue-500 to-blue-700 shadow-md">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-white/80 text-sm font-medium">Total</p>
                   <p className="text-3xl font-bold">{filteredTasks.length}</p>
                 </div>
-                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center ring-1 ring-white/30">
                   <ShieldCheck className="w-6 h-6 text-white" />
                 </div>
               </div>
@@ -721,13 +721,13 @@ const TaskManager = () => {
             className="cursor-pointer transition-colors"
             onClick={() => handleStatsClick('pendente')}
           >
-            <CardContent className="p-6 bg-yellow-400 text-black rounded-lg">
+            <CardContent className="p-6 rounded-lg text-black bg-gradient-to-br from-yellow-400 to-yellow-500 shadow-md">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-black/70 text-sm font-medium">Pendentes</p>
                   <p className="text-3xl font-bold">{filteredTasks.filter(t => t.status === 'pendente').length}</p>
                 </div>
-                <div className="w-12 h-12 bg-black/10 rounded-full flex items-center justify-center">
+                <div className="w-12 h-12 bg-black/10 rounded-full flex items-center justify-center ring-1 ring-black/10">
                   <Clock className="w-6 h-6 text-black/70" />
                 </div>
               </div>
@@ -738,13 +738,13 @@ const TaskManager = () => {
             className="cursor-pointer transition-colors"
             onClick={() => handleStatsClick('concluida')}
           >
-            <CardContent className="p-6 bg-green-500 text-white rounded-lg">
+            <CardContent className="p-6 rounded-lg text-white bg-gradient-to-br from-green-500 to-green-600 shadow-md">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-white/80 text-sm font-medium">Concluídas</p>
                   <p className="text-3xl font-bold">{filteredTasks.filter(t => t.status === 'concluida').length}</p>
                 </div>
-                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center ring-1 ring-white/30">
                   <CheckCircle className="w-6 h-6 text-white" />
                 </div>
               </div>
@@ -755,13 +755,13 @@ const TaskManager = () => {
             className="cursor-pointer transition-colors"
             onClick={() => handleStatsClick('overdue')}
           >
-            <CardContent className="p-6 bg-red-500 text-white rounded-lg">
+            <CardContent className="p-6 rounded-lg text-white bg-gradient-to-br from-red-500 to-red-600 shadow-md">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-white/80 text-sm font-medium">Atrasadas</p>
                   <p className="text-3xl font-bold">{getFilterCount('overdue')}</p>
                 </div>
-                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center ring-1 ring-white/30">
                   <AlertTriangle className="w-6 h-6 text-white" />
                 </div>
               </div>
