@@ -48,13 +48,13 @@ const TaskCard: React.FC<TaskCardProps> = ({
   };
 
   return (
-    <div className="bg-slate-700/80 backdrop-blur-sm border border-slate-600/50 rounded-lg p-3 hover:bg-slate-700/90 transition-all duration-200">
+    <div className="bg-card/80 border border-border rounded-lg p-3 hover:bg-card transition-all duration-200 shadow-sm">
       <div className="space-y-2">
         {/* Título e horário */}
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="text-white font-medium text-sm leading-tight">{task.title}</h3>
+              <h3 className="text-foreground font-medium text-sm leading-tight">{task.title}</h3>
               {canEdit && (
                 <button
                   onClick={handleEditClick}
@@ -67,7 +67,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             </div>
             
             {task.due_date && (
-              <div className="text-slate-300 text-xs font-medium">
+              <div className="text-muted-foreground text-xs font-medium">
                 {getTimeFromDate(task.due_date)}
               </div>
             )}
@@ -76,7 +76,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
         {/* Description se existir */}
         {task.description && (
-          <p className="text-slate-400 text-xs leading-relaxed">{task.description}</p>
+          <p className="text-muted-foreground text-xs leading-relaxed">{task.description}</p>
         )}
 
         {/* Badges de status e prioridade */}
@@ -91,7 +91,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
         {/* Informações de atribuição */}
         {task.assigned_users && task.assigned_users.length > 0 && (
-          <div className="flex items-center gap-1 text-slate-400">
+          <div className="flex items-center gap-1 text-muted-foreground">
             <User className="w-3 h-3" />
             <span className="text-xs">Atribuído: {task.assigned_users.map(userId => getUserName(userId)).join(', ')}</span>
           </div>
@@ -99,12 +99,12 @@ const TaskCard: React.FC<TaskCardProps> = ({
 
         {/* Histórico de edição */}
         {task.edited_by && task.edited_at && (
-          <div className="pt-2 border-t border-slate-600/50">
-            <div className="flex items-center gap-1 text-slate-400">
+          <div className="pt-2 border-t border-border">
+            <div className="flex items-center gap-1 text-muted-foreground">
               <History className="w-3 h-3" />
               <span className="text-xs">
-                Editado por <span className="text-amber-400 font-medium">{getUserName(task.edited_by)}</span> em{' '}
-                <span className="text-slate-300">
+                Editado por <span className="text-amber-600 font-medium">{getUserName(task.edited_by)}</span> em{' '}
+                <span className="text-foreground/80">
                   {task.edited_at.toLocaleDateString('pt-BR')} às {task.edited_at.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </span>

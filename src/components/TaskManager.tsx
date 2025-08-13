@@ -471,28 +471,28 @@ const TaskManager = () => {
         return (
           <div
             key={index}
-            className={`bg-slate-800/30 backdrop-blur-sm rounded-lg border border-slate-700/50 flex flex-col h-[300px] sm:h-[900px] ${
-              isToday ? 'ring-2 ring-blue-500/50' : ''
+            className={`bg-muted/30 rounded-lg border border-border flex flex-col h-[300px] sm:h-[900px] ${
+              isToday ? 'ring-2 ring-primary/40' : ''
             }`}
             onDoubleClick={() => handleDoubleClickDay(day)}
           >
             {/* Header do dia */}
-            <div className="flex items-center justify-between p-2 sm:p-3 border-b border-slate-700/30">
-              <div className="text-sm font-medium text-slate-300">
+            <div className="flex items-center justify-between p-2 sm:p-3 border-b border-border/60">
+              <div className="text-sm font-medium text-foreground/90">
                 {dayLabel}
               </div>
-              <div className="text-xs text-slate-400">
+              <div className="text-xs text-muted-foreground">
                 {day.getDate()}
               </div>
             </div>
             
             {/* Container das tarefas com scroll */}
             <div 
-              className="flex-1 p-2 sm:p-3 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800 h-[220px] max-h-[220px] sm:h-[800px] sm:max-h-[800px]"
+              className="flex-1 p-2 sm:p-3 overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-muted/40 h-[220px] max-h-[220px] sm:h-[800px] sm:max-h-[800px]"
             >
               <div className="space-y-1 sm:space-y-2">
                 {dayTasks.length === 0 ? (
-                  <div className="text-xs text-slate-500 text-center py-4">
+                  <div className="text-xs text-muted-foreground text-center py-4">
                     Nenhuma tarefa
                   </div>
                 ) : (
@@ -549,12 +549,12 @@ const TaskManager = () => {
         return (
           <div
             key={index}
-            className={`bg-slate-800/20 backdrop-blur-sm rounded border border-slate-700/30 p-1 min-h-[80px] ${
-              isToday ? 'ring-1 ring-blue-500/50' : ''
+            className={`bg-muted/30 rounded border border-border p-1 min-h-[80px] ${
+              isToday ? 'ring-1 ring-primary/40' : ''
             } ${!isCurrentMonth ? 'opacity-50' : ''}`}
             onDoubleClick={() => handleDoubleClickDay(day)}
           >
-            <div className="text-xs text-slate-400 mb-1">
+            <div className="text-xs text-muted-foreground mb-1">
               {day.getDate()}
             </div>
             
@@ -562,19 +562,19 @@ const TaskManager = () => {
               {dayTasks.slice(0, 3).map((task) => (
                 <div
                   key={task.id}
-                  className={`text-xs p-1 rounded cursor-pointer ${getStatusColor(task.status, task)} ${getPriorityColor(task.priority)}`}
+                  className={`text-xs p-1 rounded cursor-pointer ${getStatusColor(task.status, task)} ${getPriorityColor(task.priority)} bg-card/70 text-foreground`}
                   onClick={() => handleTaskClick(task)}
                 >
                   <div className="truncate">{task.title}</div>
                   {task.due_date && (
-                    <div className="text-xs opacity-70">
+                    <div className="text-xs opacity-70 text-muted-foreground">
                       {formatTimeToBR(task.due_date)}
                     </div>
                   )}
                 </div>
               ))}
               {dayTasks.length > 3 && (
-                <div className="text-xs text-slate-400 text-center">
+                <div className="text-xs text-muted-foreground text-center">
                   +{dayTasks.length - 3} mais
                 </div>
               )}
@@ -595,11 +595,11 @@ const TaskManager = () => {
         return (
           <div
             key={hour}
-            className="bg-slate-800/20 backdrop-blur-sm rounded-lg p-3 border border-slate-700/30"
+            className="bg-muted/30 rounded-lg p-3 border border-border"
             onDoubleClick={() => handleDoubleClickHour(hour, selectedDate)}
           >
             <div className="flex items-center gap-4">
-              <div className="text-sm font-medium text-slate-300 w-16">
+              <div className="text-sm font-medium text-foreground/90 w-16">
                 {timeLabel}
               </div>
               <div className="flex-1 space-y-2">
