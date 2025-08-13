@@ -48,7 +48,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
   };
 
   return (
-    <div className="bg-muted border border-border rounded-lg p-3 transition-all duration-200 shadow-sm hover:shadow-md dark:bg-slate-700/80 dark:border-slate-600/50 dark:hover:bg-slate-700/90">
+    <div className="bg-muted border-2 border-border rounded-lg p-3 transition-all duration-200 shadow-sm hover:shadow-md dark:bg-slate-700/80 dark:border dark:border-slate-600/50 dark:hover:bg-slate-700/90">
       <div className="space-y-2">
         {/* Título e horário */}
         <div className="flex items-start justify-between">
