@@ -921,10 +921,11 @@ const TaskManager = () => {
         task={selectedTask}
         isOpen={isTaskDetailsOpen}
         onClose={handleCloseTaskDetails}
-        onUpdateStatus={async (taskId, newStatus) => {
-          await updateTaskStatus(taskId, newStatus);
-          // Atualiza a task selecionada imediatamente para refletir no modal aberto
-          setSelectedTask(prev => prev && prev.id === taskId ? { ...prev, status: newStatus } as any : prev);
+        onUpdateStatus={(taskId, newStatus) => {
+          // Otimista no modal: mudar imediatamente o botão/estado
+          setSelectedTask(prev => (prev && prev.id === taskId ? { ...prev, status: newStatus } as any : prev));
+          // Dispara a atualização assíncrona (já otimista na lista)
+          updateTaskStatus(taskId, newStatus);
         }}
         onDeleteTask={handleDeleteTask}
         canEdit={selectedTask ? canEditTask(selectedTask) : false}
