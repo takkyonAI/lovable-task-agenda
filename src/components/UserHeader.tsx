@@ -60,7 +60,7 @@ const UserHeader: React.FC = () => {
             <div className="p-1">
               <Logo size="xs" variant="icon" />
             </div>
-            <h1 className="text-base sm:text-lg font-semibold text-primary-foreground dark:text-white">
+            <h1 className="text-3xl font-bold text-primary-foreground dark:text-white">
               Daily Control - Navegantes
             </h1>
           </div>

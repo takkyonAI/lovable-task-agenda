@@ -637,9 +637,6 @@ const TaskManager = () => {
         <div className="bg-card backdrop-blur-sm rounded-xl shadow-lg p-6 mb-6 border border-border dark:bg-slate-800/50 dark:border-slate-700/50">
           <div className="flex justify-between items-center mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-foreground dark:text-white">
-                Daily Control - Navegantes
-              </h1>
               <p className="text-muted-foreground mt-1 dark:text-slate-400">
                 Gerencie suas tarefas de forma eficiente
               </p>
