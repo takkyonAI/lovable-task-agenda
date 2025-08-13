@@ -19,20 +19,20 @@ const TaskFilters: React.FC<TaskFiltersProps> = ({
       <div className="flex justify-end">
         <div className="w-full max-w-4xl">{/* Filtros responsivos */}
           <Tabs value={activeFilter} onValueChange={onFilterChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 bg-slate-800/50 border-slate-700">
-              <TabsTrigger value="all" className="data-[state=active]:bg-purple-600 text-xs sm:text-sm">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 bg-muted border border-border dark:bg-slate-800/50 dark:border-slate-700">
+              <TabsTrigger value="all" className="text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 Todas ({getFilterCount('all')})
               </TabsTrigger>
-              <TabsTrigger value="today" className="data-[state=active]:bg-purple-600 text-xs sm:text-sm">
+              <TabsTrigger value="today" className="text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 Hoje ({getFilterCount('today')})
               </TabsTrigger>
-              <TabsTrigger value="week" className="data-[state=active]:bg-purple-600 text-xs sm:text-sm">
+              <TabsTrigger value="week" className="text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 Semana ({getFilterCount('week')})
               </TabsTrigger>
-              <TabsTrigger value="month" className="data-[state=active]:bg-purple-600 text-xs sm:text-sm">
+              <TabsTrigger value="month" className="text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 Mês ({getFilterCount('month')})
               </TabsTrigger>
-              <TabsTrigger value="overdue" className="data-[state=active]:bg-red-600 text-xs sm:text-sm">
+              <TabsTrigger value="overdue" className="text-xs sm:text-sm data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground dark:data-[state=active]:bg-red-600">
                 Atrasadas ({getFilterCount('overdue')})
               </TabsTrigger>
             </TabsList>
