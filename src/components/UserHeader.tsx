@@ -6,6 +6,7 @@ import { LogOut, Crown, Shield, User, GraduationCap, UserCheck, FileText, UserCo
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import NotificationCenter from './NotificationCenter';
 import Logo from '@/components/ui/Logo';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 const UserHeader: React.FC = () => {
   const { currentUser, logout } = useSupabaseAuth();
@@ -71,6 +72,7 @@ const UserHeader: React.FC = () => {
           </div>
           
           <div className="flex items-center space-x-2">
+            <ThemeToggle />
             <NotificationCenter />
             
             <Button
