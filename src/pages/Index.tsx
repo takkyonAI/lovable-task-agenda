@@ -27,15 +27,7 @@ const Index = () => {
         <UserHeader />
         
         <div className="mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="min-w-0 flex-1">
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
-                Gerenciador de Tarefas Rockfeller Navegantes
-              </h1>
-              <p className="text-muted-foreground text-sm sm:text-base">
-                Bem-vindo, {currentUser.name}! Seu papel: {currentUser.role}
-              </p>
-            </div>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4">
             <Button 
               onClick={handleLogout}
               variant="outline"
