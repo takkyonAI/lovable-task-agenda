@@ -720,8 +720,8 @@ const TaskManager = () => {
             <CardContent className="hidden dark:block p-6 rounded-lg bg-slate-800/50 border border-slate-700/50">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-400 text-sm font-medium">Total</p>
-                  <p className="text-3xl font-bold text-white">{filteredTasks.length}</p>
+                  <p className="text-blue-400 text-sm font-medium">Total</p>
+                  <p className="text-3xl font-bold text-blue-400">{filteredTasks.length}</p>
                 </div>
                 <div className="w-12 h-12 bg-slate-700/70 rounded-full flex items-center justify-center">
                   <ShieldCheck className="w-6 h-6 text-blue-400" />
@@ -750,8 +750,8 @@ const TaskManager = () => {
             <CardContent className="hidden dark:block p-6 rounded-lg bg-slate-800/50 border border-slate-700/50">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-400 text-sm font-medium">Pendentes</p>
-                  <p className="text-3xl font-bold text-white">{filteredTasks.filter(t => t.status === 'pendente').length}</p>
+                  <p className="text-yellow-400 text-sm font-medium">Pendentes</p>
+                  <p className="text-3xl font-bold text-yellow-400">{filteredTasks.filter(t => t.status === 'pendente').length}</p>
                 </div>
                 <div className="w-12 h-12 bg-slate-700/70 rounded-full flex items-center justify-center">
                   <Clock className="w-6 h-6 text-yellow-400" />
@@ -780,8 +780,8 @@ const TaskManager = () => {
             <CardContent className="hidden dark:block p-6 rounded-lg bg-slate-800/50 border border-slate-700/50">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-400 text-sm font-medium">Concluídas</p>
-                  <p className="text-3xl font-bold text-white">{filteredTasks.filter(t => t.status === 'concluida').length}</p>
+                  <p className="text-green-400 text-sm font-medium">Concluídas</p>
+                  <p className="text-3xl font-bold text-green-400">{filteredTasks.filter(t => t.status === 'concluida').length}</p>
                 </div>
                 <div className="w-12 h-12 bg-slate-700/70 rounded-full flex items-center justify-center">
                   <CheckCircle className="w-6 h-6 text-green-400" />
@@ -810,8 +810,8 @@ const TaskManager = () => {
             <CardContent className="hidden dark:block p-6 rounded-lg bg-slate-800/50 border border-slate-700/50">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-400 text-sm font-medium">Atrasadas</p>
-                  <p className="text-3xl font-bold text-white">{getFilterCount('overdue')}</p>
+                  <p className="text-red-400 text-sm font-medium">Atrasadas</p>
+                  <p className="text-3xl font-bold text-red-400">{getFilterCount('overdue')}</p>
                 </div>
                 <div className="w-12 h-12 bg-slate-700/70 rounded-full flex items-center justify-center">
                   <AlertTriangle className="w-6 h-6 text-red-400" />
