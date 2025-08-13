@@ -701,68 +701,68 @@ const TaskManager = () => {
           style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}
         >
           <Card 
-            className="cursor-pointer transition-colors"
+            className="cursor-pointer transition-colors dark:bg-slate-800/50 dark:border-slate-700/50 dark:text-white"
             onClick={() => handleStatsClick('all')}
           >
-            <CardContent className="p-6 rounded-lg text-white bg-gradient-to-br from-blue-500 to-blue-700 shadow-md">
+            <CardContent className="p-6 rounded-lg text-white bg-gradient-to-br from-blue-500 to-blue-700 shadow-md dark:bg-transparent dark:shadow-none">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-white/80 text-sm font-medium">Total</p>
-                  <p className="text-3xl font-bold">{filteredTasks.length}</p>
+                  <p className="text-white/80 text-sm font-medium dark:text-slate-400">Total</p>
+                  <p className="text-3xl font-bold dark:text-white">{filteredTasks.length}</p>
                 </div>
-                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center ring-1 ring-white/30">
-                  <ShieldCheck className="w-6 h-6 text-white" />
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center ring-1 ring-white/30 dark:bg-blue-500/20 dark:ring-0">
+                  <ShieldCheck className="w-6 h-6 text-white dark:text-blue-400" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card 
-            className="cursor-pointer transition-colors"
+            className="cursor-pointer transition-colors dark:bg-slate-800/50 dark:border-slate-700/50 dark:text-white"
             onClick={() => handleStatsClick('pendente')}
           >
-            <CardContent className="p-6 rounded-lg text-white bg-gradient-to-br from-yellow-400 to-yellow-500 shadow-md">
+            <CardContent className="p-6 rounded-lg text-white bg-gradient-to-br from-yellow-400 to-yellow-500 shadow-md dark:bg-transparent dark:shadow-none">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-white/90 text-sm font-medium">Pendentes</p>
-                  <p className="text-3xl font-bold text-white">{filteredTasks.filter(t => t.status === 'pendente').length}</p>
+                  <p className="text-white/90 text-sm font-medium dark:text-slate-400">Pendentes</p>
+                  <p className="text-3xl font-bold text-white dark:text-white">{filteredTasks.filter(t => t.status === 'pendente').length}</p>
                 </div>
-                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center ring-1 ring-white/30">
-                  <Clock className="w-6 h-6 text-white" />
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center ring-1 ring-white/30 dark:bg-yellow-500/20 dark:ring-0">
+                  <Clock className="w-6 h-6 text-white dark:text-yellow-400" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card 
-            className="cursor-pointer transition-colors"
+            className="cursor-pointer transition-colors dark:bg-slate-800/50 dark:border-slate-700/50 dark:text-white"
             onClick={() => handleStatsClick('concluida')}
           >
-            <CardContent className="p-6 rounded-lg text-white bg-gradient-to-br from-green-500 to-green-600 shadow-md">
+            <CardContent className="p-6 rounded-lg text-white bg-gradient-to-br from-green-500 to-green-600 shadow-md dark:bg-transparent dark:shadow-none">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-white/80 text-sm font-medium">Concluídas</p>
-                  <p className="text-3xl font-bold">{filteredTasks.filter(t => t.status === 'concluida').length}</p>
+                  <p className="text-white/80 text-sm font-medium dark:text-slate-400">Concluídas</p>
+                  <p className="text-3xl font-bold dark:text-white">{filteredTasks.filter(t => t.status === 'concluida').length}</p>
                 </div>
-                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center ring-1 ring-white/30">
-                  <CheckCircle className="w-6 h-6 text-white" />
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center ring-1 ring-white/30 dark:bg-green-500/20 dark:ring-0">
+                  <CheckCircle className="w-6 h-6 text-white dark:text-green-400" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card 
-            className="cursor-pointer transition-colors"
+            className="cursor-pointer transition-colors dark:bg-slate-800/50 dark:border-slate-700/50 dark:text-white"
             onClick={() => handleStatsClick('overdue')}
           >
-            <CardContent className="p-6 rounded-lg text-white bg-gradient-to-br from-red-500 to-red-600 shadow-md">
+            <CardContent className="p-6 rounded-lg text-white bg-gradient-to-br from-red-500 to-red-600 shadow-md dark:bg-transparent dark:shadow-none">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-white/80 text-sm font-medium">Atrasadas</p>
-                  <p className="text-3xl font-bold">{getFilterCount('overdue')}</p>
+                  <p className="text-white/80 text-sm font-medium dark:text-slate-400">Atrasadas</p>
+                  <p className="text-3xl font-bold dark:text-white">{getFilterCount('overdue')}</p>
                 </div>
-                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center ring-1 ring-white/30">
-                  <AlertTriangle className="w-6 h-6 text-white" />
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center ring-1 ring-white/30 dark:bg-red-500/20 dark:ring-0">
+                  <AlertTriangle className="w-6 h-6 text-white dark:text-red-400" />
                 </div>
               </div>
             </CardContent>
