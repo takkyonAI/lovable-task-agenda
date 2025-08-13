@@ -223,9 +223,9 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-slate-800 border-slate-700 max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-card text-foreground border border-border dark:bg-slate-800 dark:border-slate-700">
         <DialogHeader>
-          <DialogTitle className="text-white text-lg sm:text-xl pr-8 break-words">{task.title}</DialogTitle>
+          <DialogTitle className="text-foreground dark:text-white text-lg sm:text-xl pr-8 break-words">{task.title}</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-6">
@@ -240,27 +240,27 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
 
           {task.description && (
             <div>
-              <h4 className="text-sm font-medium text-slate-300 mb-2">Descrição</h4>
-              <p className="text-slate-400 break-words">{task.description}</p>
+              <h4 className="text-sm font-medium text-muted-foreground dark:text-slate-300 mb-2">Descrição</h4>
+              <p className="text-muted-foreground dark:text-slate-400 break-words">{task.description}</p>
             </div>
           )}
 
           <div className="grid grid-cols-1 gap-4">
             <div className="space-y-3">
-              <div className="flex items-center space-x-2 text-sm text-slate-400">
+              <div className="flex items-center space-x-2 text-sm text-muted-foreground dark:text-slate-400">
                 <Calendar className="w-4 h-4 flex-shrink-0" />
                 <span>Criado em: {formatDateToBR(task.created_at)}</span>
               </div>
               
               {task.due_date && (
-                <div className="flex items-center space-x-2 text-sm text-slate-400">
+                <div className="flex items-center space-x-2 text-sm text-muted-foreground dark:text-slate-400">
                   <Clock className="w-4 h-4 flex-shrink-0" />
                   <span>Vence em: {formatDateTimeToBR(task.due_date)}</span>
                 </div>
               )}
               
               {task.completed_at && (
-                <div className="flex items-center space-x-2 text-sm text-slate-400">
+                <div className="flex items-center space-x-2 text-sm text-muted-foreground dark:text-slate-400">
                   <CheckCircle className="w-4 h-4 flex-shrink-0" />
                   <span>Concluído em: {formatDateToBR(task.completed_at)}</span>
                 </div>
@@ -269,11 +269,11 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
 
             {task.assigned_users && task.assigned_users.length > 0 && (
               <div>
-                <div className="flex items-center space-x-2 text-sm text-slate-300 mb-2">
+                <div className="flex items-center space-x-2 text-sm text-muted-foreground dark:text-slate-300 mb-2">
                   <Users className="w-4 h-4 flex-shrink-0" />
                   <span>Atribuído a:</span>
                 </div>
-                <p className="text-sm text-slate-400">
+                <p className="text-sm text-muted-foreground dark:text-slate-400">
                   {task.assigned_users.map((userId: string) => getUserName(userId)).join(', ')}
                 </p>
               </div>
@@ -281,11 +281,11 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
             
             {task.created_by && (
               <div>
-                <div className="flex items-center space-x-2 text-sm text-slate-300 mb-2">
+                <div className="flex items-center space-x-2 text-sm text-muted-foreground dark:text-slate-300 mb-2">
                   <User className="w-4 h-4 flex-shrink-0" />
                   <span>Criado por:</span>
                 </div>
-                <p className="text-sm text-slate-400">
+                <p className="text-sm text-muted-foreground dark:text-slate-400">
                   {getUserName(task.created_by)}
                 </p>
               </div>
@@ -293,8 +293,8 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
           </div>
 
           {renderActionButtons() && (
-            <div className="pt-4 border-t border-slate-600">
-              <h4 className="text-sm font-medium text-slate-300 mb-3">Ações</h4>
+            <div className="pt-4 border-t border-border dark:border-slate-600">
+              <h4 className="text-sm font-medium text-muted-foreground dark:text-slate-300 mb-3">Ações</h4>
               {renderActionButtons()}
             </div>
           )}
