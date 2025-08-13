@@ -23,7 +23,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
       size={size}
       onClick={toggleTheme}
       className={cn(
-        "transition-all duration-200 hover:scale-105",
+        "transition-all duration-200 hover:scale-105 text-foreground dark:text-white",
         className
       )}
       title={`Alternar para ${theme === 'dark' ? 'modo claro' : 'modo escuro'}`}

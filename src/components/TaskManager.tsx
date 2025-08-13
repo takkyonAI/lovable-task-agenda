@@ -471,28 +471,28 @@ const TaskManager = () => {
         return (
           <div
             key={index}
-            className={`bg-muted/30 rounded-lg border border-border flex flex-col h-[300px] sm:h-[900px] ${
-              isToday ? 'ring-2 ring-primary/40' : ''
+            className={`bg-muted/30 rounded-lg border border-border dark:bg-slate-800/30 dark:border-slate-700/50 flex flex-col h-[300px] sm:h-[900px] ${
+              isToday ? 'ring-2 ring-primary/40 dark:ring-blue-500/50' : ''
             }`}
             onDoubleClick={() => handleDoubleClickDay(day)}
           >
             {/* Header do dia */}
-            <div className="flex items-center justify-between p-2 sm:p-3 border-b border-border/60">
-              <div className="text-sm font-medium text-foreground/90">
+            <div className="flex items-center justify-between p-2 sm:p-3 border-b border-border/60 dark:border-slate-700/30">
+              <div className="text-sm font-medium text-foreground/90 dark:text-slate-300">
                 {dayLabel}
               </div>
-              <div className="text-xs text-muted-foreground">
+              <div className="text-xs text-muted-foreground dark:text-slate-400">
                 {day.getDate()}
               </div>
             </div>
             
             {/* Container das tarefas com scroll */}
             <div 
-              className="flex-1 p-2 sm:p-3 overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-muted/40 h-[220px] max-h-[220px] sm:h-[800px] sm:max-h-[800px]"
+              className="flex-1 p-2 sm:p-3 overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-muted/40 dark:scrollbar-thumb-slate-600 dark:scrollbar-track-slate-800 h-[220px] max-h-[220px] sm:h-[800px] sm:max-h-[800px]"
             >
               <div className="space-y-1 sm:space-y-2">
                 {dayTasks.length === 0 ? (
-                  <div className="text-xs text-muted-foreground text-center py-4">
+                  <div className="text-xs text-muted-foreground dark:text-slate-500 text-center py-4">
                     Nenhuma tarefa
                   </div>
                 ) : (
@@ -634,13 +634,13 @@ const TaskManager = () => {
     <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-7xl mx-auto p-4">
         {/* Header */}
-        <div className="bg-card backdrop-blur-sm rounded-xl shadow-lg p-6 mb-6 border border-border">
+        <div className="bg-card backdrop-blur-sm rounded-xl shadow-lg p-6 mb-6 border border-border dark:bg-slate-800/50 dark:border-slate-700/50">
           <div className="flex justify-between items-center mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">
+              <h1 className="text-3xl font-bold text-foreground dark:text-white">
                 Gerenciador de Tarefas
               </h1>
-              <p className="text-muted-foreground mt-1">
+              <p className="text-muted-foreground mt-1 dark:text-slate-400">
                 Gerencie suas tarefas de forma eficiente
               </p>
             </div>
@@ -651,7 +651,7 @@ const TaskManager = () => {
                 disabled={isRefreshing}
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-2 border-border"
+                className="flex items-center gap-2 border-border dark:border-slate-600"
               >
                 <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                 Atualizar
