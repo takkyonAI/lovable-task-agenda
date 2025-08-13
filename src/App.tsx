@@ -35,16 +35,16 @@ class ErrorBoundary extends Component<
                      (navigator.platform.includes('Mac') && navigator.maxTouchPoints > 0);
       
       return (
-        <div className="h-screen w-full bg-gradient-to-br from-slate-900 via-red-900 to-slate-800 flex items-center justify-center p-6">
-          <div className="max-w-md w-full bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg p-6 text-center">
-            <div className="text-red-400 text-lg font-bold mb-4">
+        <div className="h-screen w-full bg-background text-foreground flex items-center justify-center p-6">
+          <div className="max-w-md w-full bg-card backdrop-blur-sm border border-border rounded-lg p-6 text-center">
+            <div className="text-destructive text-lg font-bold mb-4">
               {isIPad ? '🍎 iPad Error Detected' : '❌ Application Error'}
             </div>
-            <div className="text-white text-sm mb-4">
+            <div className="text-foreground text-sm mb-4">
               {this.state.error?.message || 'Unknown error occurred'}
             </div>
             {isIPad && (
-              <div className="text-slate-300 text-xs mb-4">
+              <div className="text-muted-foreground text-xs mb-4">
                 <strong>iPad Debug Info:</strong><br/>
                 Platform: {navigator.platform}<br/>
                 User Agent: {navigator.userAgent.substring(0, 50)}...<br/>
@@ -56,7 +56,7 @@ class ErrorBoundary extends Component<
                 this.setState({ hasError: false, error: null });
                 window.location.reload();
               }}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+              className="bg-primary hover:opacity-90 text-primary-foreground px-4 py-2 rounded"
             >
               Reload Page
             </button>
@@ -82,16 +82,16 @@ function LoadingScreen() {
   }, []);
   
   return (
-    <div className="h-screen w-full bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex items-center justify-center prevent-white-screen">
+    <div className="h-screen w-full bg-background text-foreground flex items-center justify-center prevent-white-screen">
       <div className="text-center">
-        <div className="text-white text-xl mb-4">Carregando...</div>
-        <div className="text-slate-300 text-sm">
+        <div className="text-foreground text-xl mb-4">Carregando...</div>
+        <div className="text-muted-foreground text-sm">
           {loadingTime > 10 && "Carregamento está demorando mais que o esperado..."}
           {loadingTime > 20 && (
             <div className="mt-2">
               <button 
                 onClick={() => window.location.reload()} 
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
+                className="bg-primary hover:opacity-90 text-primary-foreground px-4 py-2 rounded text-sm"
               >
                 Recarregar Página
               </button>

@@ -22,24 +22,24 @@ const Index = () => {
   }
 
   return (
-    <div className="h-screen w-full bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 overflow-auto">
+    <div className="h-screen w-full bg-background text-foreground overflow-auto">
       <div className="container mx-auto px-4 py-6">
         <UserHeader />
         
         <div className="mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="min-w-0 flex-1">
-              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
                 Gerenciador de Tarefas Rockfeller Navegantes
               </h1>
-              <p className="text-slate-300 text-sm sm:text-base">
+              <p className="text-muted-foreground text-sm sm:text-base">
                 Bem-vindo, {currentUser.name}! Seu papel: {currentUser.role}
               </p>
             </div>
             <Button 
               onClick={handleLogout}
               variant="outline"
-              className="bg-slate-800/50 text-white border-slate-600 hover:bg-slate-700/50 w-full sm:w-auto"
+              className="bg-card text-foreground border-border hover:bg-accent hover:text-accent-foreground w-full sm:w-auto"
             >
               <LogOut className="w-4 h-4 mr-2" />
               Sair
@@ -48,10 +48,10 @@ const Index = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className={`grid w-full ${canAccessUserManagement() ? 'grid-cols-3' : 'grid-cols-2'} bg-slate-800/50 border-slate-700`}>
+          <TabsList className={`grid w-full ${canAccessUserManagement() ? 'grid-cols-3' : 'grid-cols-2'} bg-muted border border-border`}>
             <TabsTrigger 
               value="tasks" 
-              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             >
               <Calendar className="w-4 h-4 mr-2" />
               <span className="hidden sm:inline">Tarefas</span>
@@ -59,7 +59,7 @@ const Index = () => {
             </TabsTrigger>
             <TabsTrigger 
               value="notifications" 
-              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             >
               <Bell className="w-4 h-4 mr-2" />
               <span className="hidden sm:inline">Notificações</span>
@@ -68,7 +68,7 @@ const Index = () => {
             {canAccessUserManagement() && (
               <TabsTrigger 
                 value="users" 
-                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
               >
                 <Users className="w-4 h-4 mr-2" />
                 <span className="hidden sm:inline">Usuários</span>
@@ -87,9 +87,9 @@ const Index = () => {
 
           {canAccessUserManagement() && (
             <TabsContent value="users" className="space-y-6">
-              <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700">
+              <Card className="bg-card backdrop-blur-sm border border-border">
                 <CardHeader>
-                  <CardTitle className="text-white flex items-center">
+                  <CardTitle className="text-foreground flex items-center">
                     <Users className="w-5 h-5 mr-2" />
                     Gerenciar Usuários
                   </CardTitle>
