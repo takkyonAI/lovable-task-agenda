@@ -316,16 +316,16 @@ const UserManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700">
+      <Card className="bg-card backdrop-blur-sm border border-border dark:bg-slate-800/50 dark:border-slate-700">
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
-                <Users className="w-5 h-5 text-white" />
+              <div className="p-2 rounded-lg bg-primary text-primary-foreground dark:bg-gradient-to-r dark:from-purple-500 dark:to-pink-500">
+                <Users className="w-5 h-5" />
               </div>
               <div>
-                <CardTitle className="text-white text-lg">Usuários Ativos</CardTitle>
-                <p className="text-slate-400 text-sm">Usuários confirmados no sistema</p>
+                <CardTitle className="text-foreground text-lg dark:text-white">Usuários Ativos</CardTitle>
+                <p className="text-muted-foreground text-sm dark:text-slate-400">Usuários confirmados no sistema</p>
               </div>
             </div>
             
@@ -334,7 +334,7 @@ const UserManagement: React.FC = () => {
                 onClick={loadUsers}
                 disabled={isLoading}
                 variant="outline" 
-                className="bg-slate-700/50 border-slate-600 hover:bg-slate-600/50 text-white w-full sm:w-auto"
+                className="bg-muted border-border hover:bg-accent hover:text-accent-foreground w-full sm:w-auto dark:bg-slate-700/50 dark:border-slate-600 dark:text-white dark:hover:bg-slate-600/50"
               >
                 {isLoading ? (
                   <>
@@ -351,52 +351,52 @@ const UserManagement: React.FC = () => {
 
               <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 w-full sm:w-auto">
+                  <Button className="w-full sm:w-auto bg-primary text-primary-foreground hover:opacity-90 dark:bg-gradient-to-r dark:from-purple-600 dark:to-pink-600 dark:hover:from-purple-700 dark:hover:to-pink-700">
                     <Plus className="w-4 h-4 mr-2" />
                     Novo Usuário
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-slate-800 border-slate-700 max-w-md max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto bg-card text-foreground border border-border dark:bg-slate-800 dark:border-slate-700">
                   <DialogHeader>
-                    <DialogTitle className="text-white">Criar Novo Usuário</DialogTitle>
+                    <DialogTitle className="text-foreground dark:text-white">Criar Novo Usuário</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="userName" className="text-slate-300">Nome *</Label>
+                      <Label htmlFor="userName" className="text-muted-foreground dark:text-slate-300">Nome *</Label>
                       <Input
                         id="userName"
                         value={newUser.name}
                         onChange={(e) => setNewUser(prev => ({ ...prev, name: e.target.value }))}
-                        className="bg-slate-700/50 border-slate-600 text-white"
+                        className="bg-muted border-border text-foreground dark:bg-slate-700/50 dark:border-slate-600 dark:text-white"
                         placeholder="Nome completo do usuário"
                         disabled={isCreating}
                       />
                     </div>
                     
                     <div>
-                      <Label htmlFor="userEmail" className="text-slate-300">Email *</Label>
+                      <Label htmlFor="userEmail" className="text-muted-foreground dark:text-slate-300">Email *</Label>
                       <Input
                         id="userEmail"
                         type="email"
                         value={newUser.email}
                         onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
-                        className="bg-slate-700/50 border-slate-600 text-white"
+                        className="bg-muted border-border text-foreground dark:bg-slate-700/50 dark:border-slate-600 dark:text-white"
                         placeholder="email@exemplo.com"
                         disabled={isCreating}
                       />
                     </div>
                     
                     <div>
-                      <Label htmlFor="userRole" className="text-slate-300">Papel</Label>
+                      <Label htmlFor="userRole" className="text-muted-foreground dark:text-slate-300">Papel</Label>
                       <Select 
                         value={newUser.role} 
                         onValueChange={(value: any) => setNewUser(prev => ({ ...prev, role: value }))}
                         disabled={isCreating}
                       >
-                        <SelectTrigger className="bg-slate-700/50 border-slate-600">
+                        <SelectTrigger className="bg-muted border-border dark:bg-slate-700/50 dark:border-slate-600">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-slate-800 border-slate-700">
+                        <SelectContent className="bg-card border-border dark:bg-slate-800 dark:border-slate-700">
                           <SelectItem value="admin">Administrador</SelectItem>
                           <SelectItem value="franqueado">Franqueado</SelectItem>
                           <SelectItem value="vendedor">Vendedor</SelectItem>
@@ -411,7 +411,7 @@ const UserManagement: React.FC = () => {
                     <Button 
                       onClick={handleCreateUser}
                       disabled={isCreating}
-                      className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                      className="w-full bg-primary text-primary-foreground hover:opacity-90 dark:bg-gradient-to-r dark:from-purple-600 dark:to-pink-600 dark:hover:from-purple-700 dark:hover:to-pink-700"
                     >
                       {isCreating ? (
                         <>
@@ -438,18 +438,18 @@ const UserManagement: React.FC = () => {
               <div key={user.id} className={`flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 rounded-lg border gap-4 ${
                 user.is_active === false 
                   ? 'bg-red-500/10 border-red-500/30' 
-                  : 'bg-slate-700/30 border-slate-600'
+                  : 'bg-muted/40 border-border dark:bg-slate-700/30 dark:border-slate-600'
               }`}>
                 <div className="flex items-center space-x-3">
                   <div className={`p-2 rounded-lg ${
-                    user.is_active === false ? 'bg-red-500/20' : 'bg-slate-600/50'
+                    user.is_active === false ? 'bg-red-500/20' : 'bg-muted dark:bg-slate-600/50'
                   }`}>
                     {getRoleIcon(user.role)}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center space-x-2">
                       <h4 className={`font-medium truncate ${
-                        user.is_active === false ? 'text-red-300 line-through' : 'text-white'
+                        user.is_active === false ? 'text-red-300 line-through' : 'text-foreground dark:text-white'
                       }`}>
                         {user.name}
                       </h4>
@@ -457,7 +457,7 @@ const UserManagement: React.FC = () => {
                         <Badge className="bg-red-500/20 text-red-400">Inativo</Badge>
                       )}
                     </div>
-                    <p className="text-sm text-slate-400 truncate">{user.email}</p>
+                    <p className="text-sm text-muted-foreground dark:text-slate-400 truncate">{user.email}</p>
                   </div>
                 </div>
                 
@@ -474,7 +474,7 @@ const UserManagement: React.FC = () => {
                         onClick={() => handleEditUser(user)}
                         variant="outline"
                         size="sm"
-                        className="bg-blue-500/20 border-blue-500/30 hover:bg-blue-500/30 text-blue-400 text-xs"
+                        className="text-xs bg-blue-600 text-white hover:opacity-90 dark:bg-blue-500/20 dark:border-blue-500/30 dark:hover:bg-blue-500/30 dark:text-blue-400"
                       >
                         <Edit className="w-4 h-4 mr-2" />
                         Editar
@@ -485,8 +485,8 @@ const UserManagement: React.FC = () => {
                         variant="outline"
                         size="sm"
                         className={`text-xs ${user.is_active 
-                          ? "bg-yellow-500/20 border-yellow-500/30 hover:bg-yellow-500/30 text-yellow-400"
-                          : "bg-green-500/20 border-green-500/30 hover:bg-green-500/30 text-green-400"
+                          ? "bg-yellow-500 text-black hover:opacity-90 dark:bg-yellow-500/20 dark:border-yellow-500/30 dark:hover:bg-yellow-500/30 dark:text-yellow-400"
+                          : "bg-green-600 text-white hover:opacity-90 dark:bg-green-500/20 dark:border-green-500/30 dark:hover:bg-green-500/30 dark:text-green-400"
                         }`}
                       >
                         {user.is_active ? (
@@ -506,7 +506,7 @@ const UserManagement: React.FC = () => {
                         onClick={() => handleDeleteUser(user.id, user.name)}
                         variant="outline"
                         size="sm"
-                        className="bg-red-500/20 border-red-500/30 hover:bg-red-500/30 text-red-400 text-xs"
+                        className="text-xs bg-red-600 text-white hover:opacity-90 dark:bg-red-500/20 dark:border-red-500/30 dark:hover:bg-red-500/30 dark:text-red-400"
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
                         Excluir
@@ -515,7 +515,7 @@ const UserManagement: React.FC = () => {
                   )}
                   
                   {user.last_login && (
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs text-muted-foreground dark:text-slate-400">
                       Último acesso: {user.last_login.toLocaleDateString('pt-BR')}
                     </span>
                   )}
