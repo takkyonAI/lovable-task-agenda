@@ -379,7 +379,7 @@ export const useTaskManager = () => {
   };
 
   const clearAdvancedFilters = () => {
-    setSelectedUser('all');
+    // Preservar o filtro de usuário conforme solicitado
     setSelectedAccessLevel('all');
     setSelectedPriority('all');
     setSelectedStatus('all');

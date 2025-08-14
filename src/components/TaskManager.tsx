@@ -185,8 +185,8 @@ const TaskManager = () => {
       setActiveFilter('all'); // Resetar filtro temporal
     }
     
-    // Limpar outros filtros avançados para focar apenas no filtro selecionado
-    setSelectedUser('all');
+    // Limpar filtros avançados relevantes, preservando o filtro de usuário
+    // (não resetar selectedUser para manter o contexto do usuário selecionado)
     setSelectedAccessLevel('all');
     setSelectedPriority('all');
   };
