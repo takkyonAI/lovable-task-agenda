@@ -65,3 +65,6 @@ Sistema de controle de tarefas (Daily Control - Navegantes) com suporte a light/
 - KPIs mês vigente (Total/Concluídas).
 - Light/Dark unificado via tokens.
 - Atualização otimista do status.
+ - Fix: Filtro de usuários não é mais resetado ao clicar nos indicadores (Pendentes/Concluídas/Atrasadas/Total). O usuário selecionado permanece até que "Todos os usuários" seja escolhido manualmente.
+   - Arquivos: `src/components/TaskManager.tsx` (não reseta `selectedUser` em `handleStatsClick`), `src/hooks/useTaskManager.ts` (não zera `selectedUser` em `clearAdvancedFilters`).
+   - Commit: 42a8be1

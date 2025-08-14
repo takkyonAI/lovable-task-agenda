@@ -231,6 +231,12 @@ const channel = supabase
 - React Query para cache de dados do servidor
 - Optimistic updates para melhor UX
 
+### Nota de Correção (2025-08-14)
+- Preservação do filtro de usuário ao interagir com indicadores de status/KPIs.
+  - Antes: ao clicar em "Pendentes/Concluídas/Atrasadas/Total", o filtro de usuário era resetado para "Todos".
+  - Depois: o `selectedUser` é mantido; apenas nível de acesso, prioridade e filtro temporal/status são ajustados conforme o indicador.
+  - Implementação: `TaskManager.tsx` (ajuste em `handleStatsClick`) e `useTaskManager.ts` (ajuste em `clearAdvancedFilters`). Commit `42a8be1`.
+
 ## Segurança
 
 ### Row Level Security
